@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useReducer,
   useRef,
@@ -11,7 +12,10 @@ import React, {
 import { AppState, AppStateStatus } from 'react-native';
 
 import { createInitialGameState } from '@/game/initialGame';
+import { gameAudio } from '@/game/audioManager';
 import { reduceGame, type GameAction } from '@/game/gameReducer';
+import { reactToGameAudio } from '@/game/reactGameAudio';
+import { loadAudioSettings } from '@/storage/audioSettingsStorage';
 
 const IMMEDIATE_SAVE = new Set<GameAction['type']>([
   'START_MISSION',
@@ -59,8 +63,27 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [appForeground, setAppForeground] = useState(true);
   const stateRef = useRef(state);
   stateRef.current = state;
+  /** Chains `reduceGame` previews when multiple dispatches batch before the next paint. */
+  const audioChainRef = useRef<GameState | null>(null);
+  useLayoutEffect(() => {
+    audioChainRef.current = null;
+  });
   const skipInitialSave = useRef(true);
   const pendingImmediateSave = useRef(false);
+
+  useEffect(() => {
+    void gameAudio.ensureInitialized();
+    void loadAudioSettings().then((s) => gameAudio.applyUserSettings(s));
+  }, []);
+
+  const dispatch = useCallback((action: GameAction) => {
+    const prev = audioChainRef.current ?? stateRef.current;
+    const next = reduceGame(prev, action);
+    audioChainRef.current = next;
+    if (IMMEDIATE_SAVE.has(action.type)) pendingImmediateSave.current = true;
+    dispatchBase(action);
+    reactToGameAudio(prev, next, action);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,7 +91,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const loaded = await loadGameState();
       if (cancelled) return;
       if (loaded) {
-        dispatchBase({ type: 'HYDRATE', state: loaded });
+        dispatch({ type: 'HYDRATE', state: loaded });
         setHasSaveFile(true);
       } else {
         setHasSaveFile(false);
@@ -78,20 +101,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [dispatch]);
 
   /** Cold start: resolve one offline interval if the player left with exploration enabled. */
   useEffect(() => {
     if (!hydrated) return;
     const d = stateRef.current.dive;
     if (!d?.continueExplorationWhileAway || !d.backgroundedAt || d.status !== 'active') return;
-    dispatchBase({ type: 'APPLY_OFFLINE_RESOLUTION', now: Date.now() });
-  }, [hydrated]);
-
-  const dispatch = useCallback((action: GameAction) => {
-    if (IMMEDIATE_SAVE.has(action.type)) pendingImmediateSave.current = true;
-    dispatchBase(action);
-  }, []);
+    dispatch({ type: 'APPLY_OFFLINE_RESOLUTION', now: Date.now() });
+  }, [hydrated, dispatch]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -115,6 +133,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const prev = AppState.currentState;
       setAppForeground(next === 'active');
       if (next === 'inactive' || next === 'background') {
+        void gameAudio.pauseAmbienceForBackground();
         const dive = stateRef.current.dive;
         if (
           dive &&
@@ -122,16 +141,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           dive.continueExplorationWhileAway &&
           !dive.backgroundedAt
         ) {
-          dispatchBase({ type: 'MARK_DIVER_BACKGROUND', now: Date.now() });
+          dispatch({ type: 'MARK_DIVER_BACKGROUND', now: Date.now() });
         }
       }
       if (next === 'active' && (prev === 'background' || prev === 'inactive')) {
-        dispatchBase({ type: 'APPLY_OFFLINE_RESOLUTION', now: Date.now() });
+        dispatch({ type: 'APPLY_OFFLINE_RESOLUTION', now: Date.now() });
       }
     };
     const sub = AppState.addEventListener('change', onChange);
     return () => sub.remove();
-  }, []);
+  }, [dispatch]);
 
   const value = useMemo(
     () => ({ state, dispatch, hydrated, hasSaveFile, appForeground }),
