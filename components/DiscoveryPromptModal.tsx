@@ -1,6 +1,7 @@
 import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import type { ExternalDiscovery } from '@/types';
 
@@ -41,7 +42,13 @@ export function DiscoveryPromptModal({
           ) : null}
           <View style={styles.actions}>
             {scanAvailable && !discovery.scanned ? (
-              <PrimaryButton title="Scan first" variant="ghost" onPress={onScan} />
+              <PrimaryButton
+                title="Scan first"
+                variant="ghost"
+                iconLeft={GAME_ASSETS.icons.scanArea}
+                iconLeftSize={24}
+                onPress={onScan}
+              />
             ) : null}
             <PrimaryButton title="Attempt recovery" onPress={onAttempt} />
             <PrimaryButton title="Ignore contact" variant="ghost" onPress={onIgnore} />

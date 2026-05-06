@@ -9,8 +9,10 @@ import { DiveFlashBand } from '@/components/DiveFlashBand';
 import { Gauge } from '@/components/Gauge';
 import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { SafeIcon } from '@/components/SafeIcon';
 import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
+import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
 import { useDiveFeedback } from '@/hooks/useDiveFeedback';
@@ -78,11 +80,10 @@ export default function DiveScreen() {
   const oxyThreat = threatForHigherIsBetter(dive.oxygenPercent);
   const waterThreat = threatForLowerIsBetter(dive.waterLevelPercent);
 
-  const leakSeverity = dive.rooms.some((r) => r.cracks.some((c) => c.severity === 'critical'))
-    ? 'CRITICAL LEAK'
-    : leaks > 0
-      ? 'ACTIVE LEAKS'
-      : 'DRY BILGE';
+  const criticalLeak = dive.rooms.some((r) =>
+    r.cracks.some((c) => c.severity === 'critical'),
+  );
+  const leakSeverity = criticalLeak ? 'CRITICAL LEAK' : leaks > 0 ? 'ACTIVE LEAKS' : 'DRY BILGE';
 
   const roomAccent = (t: DiveRoomThreat) => {
     switch (t) {
@@ -101,7 +102,12 @@ export default function DiveScreen() {
 
   return (
     <View style={styles.wrapper}>
-      <ScreenShell scroll contentStyle={styles.scrollPad}>
+      <ScreenShell
+        scroll
+        contentStyle={styles.scrollPad}
+        backgroundImage={GAME_ASSETS.diveScreenBg}
+        backgroundScrimOpacity={0.68}
+      >
         <SectionHeader
           title={dive.missionName}
           subtitle={`Contract ${dive.targetDepthM}m · mission risk ${riskScore}%`}
@@ -116,25 +122,37 @@ export default function DiveScreen() {
             onPress={() => router.push('/inventory')}
           />
         </View>
-        <View style={[styles.alertBar, leaks > 0 ? styles.alertWarn : styles.alertOk]}>
-          <Text style={styles.alertText}>{leakSeverity}</Text>
-          <Text style={styles.alertMeta}>{leaks} crack(s) across compartments</Text>
+        <View
+          style={[
+            styles.alertBar,
+            criticalLeak ? styles.alertCrit : leaks > 0 ? styles.alertWarn : styles.alertOk,
+          ]}
+        >
+          <View style={styles.alertHead}>
+            {leaks > 0 ? (
+              <SafeIcon source={GAME_ASSETS.icons.crack} size={26} style={styles.alertIcon} />
+            ) : null}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.alertText}>{leakSeverity}</Text>
+              <Text style={styles.alertMeta}>{leaks} crack(s) across compartments</Text>
+            </View>
+          </View>
         </View>
         <View style={styles.threatRow}>
-          <View style={styles.pill}>
+          <View style={[styles.pill, hullThreat === 'critical' && styles.pillCrit]}>
             <Text style={styles.pillLabel}>Hull</Text>
             <Text style={styles.pillValue}>{formatThreatLabel(hullThreat)}</Text>
           </View>
-          <View style={styles.pill}>
+          <View style={[styles.pill, oxyThreat === 'critical' && styles.pillCrit]}>
             <Text style={styles.pillLabel}>O₂</Text>
             <Text style={styles.pillValue}>{formatThreatLabel(oxyThreat)}</Text>
           </View>
-          <View style={styles.pill}>
+          <View style={[styles.pill, waterThreat === 'critical' && styles.pillCrit]}>
             <Text style={styles.pillLabel}>Water</Text>
             <Text style={styles.pillValue}>{formatThreatLabel(waterThreat)}</Text>
           </View>
         </View>
-        <PanelCard>
+        <PanelCard style={styles.consoleCard}>
           <Text style={styles.label}>Current depth</Text>
           <Text style={styles.hero}>{Math.round(dive.currentDepthM)} m</Text>
           <Gauge
@@ -169,7 +187,7 @@ export default function DiveScreen() {
             />
           ))}
         </PanelCard>
-        <PanelCard>
+        <PanelCard style={styles.consoleCard}>
           <Text style={styles.cardTitle}>Sensors & life support</Text>
           <PrimaryButton
             title={
@@ -177,6 +195,8 @@ export default function DiveScreen() {
                 ? 'Scan area'
                 : `Scan cooling (${Math.max(1, Math.ceil(scanCooldownLeftMs / 1000))}s)`
             }
+            iconLeft={GAME_ASSETS.icons.scanArea}
+            iconLeftSize={26}
             disabled={!scanReady || !!dive.pendingDiscovery}
             onPress={() => dispatch({ type: 'SCAN_AREA', now: Date.now() })}
           />
@@ -289,6 +309,11 @@ export default function DiveScreen() {
                 onPress={() => router.push(`/room/${room.id}`)}
                 style={[styles.roomRow, roomAccent(tier)]}
               >
+                {room.cracks.length > 0 ? (
+                  <SafeIcon source={GAME_ASSETS.icons.crack} size={22} style={styles.roomCrackIcon} />
+                ) : (
+                  <View style={{ width: 22 }} />
+                )}
                 <View style={{ flex: 1 }}>
                   <Text style={styles.roomName}>{room.name}</Text>
                   <Text style={styles.meta}>
@@ -353,8 +378,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderLeftWidth: 3,
-    paddingLeft: 10,
+    paddingLeft: 8,
+    gap: 8,
   },
+  roomCrackIcon: { marginRight: 2 },
   roomSafe: { borderLeftColor: '#15803d' },
   roomWarn: { borderLeftColor: '#ca8a04' },
   roomDanger: { borderLeftColor: '#ea580c' },
@@ -373,6 +400,9 @@ const styles = StyleSheet.create({
   },
   alertOk: { borderColor: '#14532d55', backgroundColor: '#052e1644' },
   alertWarn: { borderColor: '#b4530944', backgroundColor: '#451a0344' },
+  alertCrit: { borderColor: '#e11d48aa', backgroundColor: '#450a0a66' },
+  alertHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  alertIcon: {},
   alertText: { color: theme.text, fontWeight: '800', letterSpacing: 1 },
   alertMeta: { color: theme.textMuted, marginTop: 4, fontSize: 12 },
   threatRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
@@ -384,6 +414,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surface,
     paddingVertical: 8,
     paddingHorizontal: 8,
+  },
+  pillCrit: {
+    borderColor: '#fb7185',
+    backgroundColor: '#450a0a44',
+  },
+  consoleCard: {
+    borderColor: '#38bdf855',
+    backgroundColor: '#020617cc',
   },
   pillLabel: { color: theme.textMuted, fontSize: 11, textTransform: 'uppercase' },
   pillValue: { color: theme.text, fontWeight: '700', marginTop: 4, fontSize: 12 },

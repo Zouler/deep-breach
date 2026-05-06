@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BarracudaGamesIntro } from '@/components/BarracudaGamesIntro';
 import { PrimaryButton } from '@/components/PrimaryButton';
-import { BRANDING_ASSETS } from '@/constants/brandingAssets';
+import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
 
@@ -38,7 +38,7 @@ export default function StartScreen() {
   return (
     <View style={styles.root}>
       <ImageBackground
-        source={BRANDING_ASSETS.splashTitleBackground}
+        source={GAME_ASSETS.splashTitleBg}
         style={styles.bg}
         resizeMode="cover"
       >

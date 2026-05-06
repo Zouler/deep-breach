@@ -4,9 +4,12 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { SafeIcon } from '@/components/SafeIcon';
 import { ScreenShell } from '@/components/ScreenShell';
+import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
+import { repairTemplateIconSource } from '@/game/assetVisuals';
 import { validateRepairPreconditions } from '@/game/repairOutcome';
 import { getRoomStatus } from '@/game/statusHelpers';
 
@@ -58,7 +61,7 @@ export default function RoomDetailScreen() {
   );
 
   return (
-    <ScreenShell scroll>
+    <ScreenShell scroll backgroundImage={GAME_ASSETS.diveScreenBg} backgroundScrimOpacity={0.66}>
       <Text style={styles.title}>{room.name}</Text>
       <Text style={styles.meta}>Status: {derivedStatus}</Text>
       {banner ? (
@@ -71,16 +74,19 @@ export default function RoomDetailScreen() {
           <Text style={styles.bannerText}>{banner.text}</Text>
         </View>
       ) : null}
-      <PanelCard>
+      <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Cracks / leaks</Text>
         {room.cracks.length === 0 ? (
           <Text style={styles.muted}>No structural breaches.</Text>
         ) : (
           room.cracks.map((c) => (
             <View key={c.id} style={styles.crackBox}>
-              <Text style={styles.meta}>
-                {c.severity.toUpperCase()} · leak {c.leakRatePerSecond.toFixed(2)} u/s
-              </Text>
+              <View style={styles.crackHead}>
+                <SafeIcon source={GAME_ASSETS.icons.crack} size={28} />
+                <Text style={styles.crackMeta}>
+                  {c.severity.toUpperCase()} · leak {c.leakRatePerSecond.toFixed(2)} u/s
+                </Text>
+              </View>
               {(dive.expeditionRepairInventory ?? [])
                 .filter((item) => item.kind !== 'oxygen')
                 .map((item) => {
@@ -89,6 +95,8 @@ export default function RoomDetailScreen() {
                     key={`${c.id}_${item.id}`}
                     title={`Repair with ${item.name} (${item.quantity})`}
                     variant="ghost"
+                    iconLeft={repairTemplateIconSource(item.id)}
+                    iconLeftSize={22}
                     disabled={item.quantity <= 0}
                     onPress={() => {
                       const pre = validateRepairPreconditions(c, item);
@@ -114,7 +122,7 @@ export default function RoomDetailScreen() {
           collect staged overflow from recoveries.
         </Text>
       </PanelCard>
-      <PanelCard>
+      <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Emergency supplies (staged)</Text>
         {stagedSupplies.length === 0 ? (
           <Text style={styles.muted}>
@@ -148,10 +156,16 @@ export default function RoomDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  consoleCard: {
+    borderColor: '#38bdf855',
+    backgroundColor: '#020617cc',
+  },
   title: { color: theme.text, fontSize: 22, fontWeight: '800', marginBottom: 4 },
   meta: { color: theme.textMuted, marginBottom: 6 },
+  crackMeta: { color: theme.textMuted, marginBottom: 0, flex: 1, fontWeight: '700' },
   cardTitle: { color: theme.text, fontWeight: '700', marginBottom: 8 },
   muted: { color: theme.textMuted, fontStyle: 'italic' },
+  crackHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
   crackBox: { marginBottom: 12, gap: 8 },
   lootRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   lootName: { color: theme.text, fontWeight: '600' },

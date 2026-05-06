@@ -1,10 +1,12 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { IconLabelRow } from '@/components/IconLabelRow';
 import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
+import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
 import { totalRepairSupplyUnits } from '@/game/baseStorage';
@@ -21,26 +23,27 @@ export default function BaseScreen() {
   const hullBand = formatThreatLabel(threatForHigherIsBetter(submarine.hullIntegrityPercent));
 
   return (
-    <ScreenShell scroll>
+    <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.7}>
       <SectionHeader title="Triton Outpost" subtitle="Surface staging · drydock grid" />
-      <PanelCard>
+      <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Resources</Text>
-        <View style={styles.resourceRow}>
-          <View style={styles.resourceChip}>
-            <Text style={styles.chipLabel}>Scrap</Text>
-            <Text style={styles.chipValue}>{resources.scrap}</Text>
-          </View>
-          <View style={styles.resourceChip}>
-            <Text style={styles.chipLabel}>Research</Text>
-            <Text style={styles.chipValue}>{resources.researchData}</Text>
-          </View>
-          <View style={styles.resourceChip}>
-            <Text style={styles.chipLabel}>Relics</Text>
-            <Text style={styles.chipValue}>{state.treasureInventory.length}</Text>
-          </View>
-        </View>
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.scrap}
+          label="Scrap"
+          value={`×${resources.scrap}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.researchData}
+          label="Research Data"
+          value={`×${resources.researchData}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.artifact}
+          label="Relics in vault"
+          value={`×${state.treasureInventory.length}`}
+        />
       </PanelCard>
-      <PanelCard>
+      <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Base Storage (surface)</Text>
         <Text style={styles.meta}>
           Scrap {baseStorage.scrap} · Research {baseStorage.researchData} · Treasures{' '}
@@ -118,6 +121,10 @@ export default function BaseScreen() {
 }
 
 const styles = StyleSheet.create({
+  consoleCard: {
+    borderColor: '#38bdf855',
+    backgroundColor: '#020617cc',
+  },
   cardTitle: { color: theme.text, fontWeight: '700', marginBottom: 10 },
   resourceRow: { flexDirection: 'row', gap: 10 },
   resourceChip: {

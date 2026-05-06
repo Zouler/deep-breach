@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { IconLabelRow } from '@/components/IconLabelRow';
 import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
+import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
 import type { CargoTransferSummary } from '@/types';
@@ -43,42 +45,93 @@ export default function MissionResultScreen() {
   }
 
   return (
-    <ScreenShell scroll>
+    <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.74}>
       <Text style={[styles.title, { color: outcome.success ? theme.ok : theme.danger }]}>
         {outcome.success ? 'Mission Complete' : 'Mission Failure'}
       </Text>
       <Text style={styles.sub}>{outcome.missionName}</Text>
-      <PanelCard>
+      <PanelCard style={styles.consoleCard}>
         <Text style={styles.line}>Depth reached: {outcome.depthReachedM}m / {outcome.targetDepthM}m</Text>
-        <Text style={styles.line}>Scrap recovered (during dive): {outcome.rewards.scrap}</Text>
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.scrap}
+          label="Scrap recovered (during dive)"
+          value={`×${outcome.rewards.scrap}`}
+        />
         {(outcome.missionCompletionBonusScrap ?? 0) > 0 ? (
-          <Text style={styles.line}>
-            Mission completion bonus: +{outcome.missionCompletionBonusScrap} Scrap
-          </Text>
+          <IconLabelRow
+            icon={GAME_ASSETS.icons.scrap}
+            label="Mission completion bonus"
+            value={`+${outcome.missionCompletionBonusScrap} Scrap`}
+            emphasize
+          />
         ) : null}
-        <Text style={styles.line}>Research recovered: {outcome.rewards.researchData}</Text>
-        <Text style={styles.line}>Relics secured: {outcome.treasures.length}</Text>
-        <Text style={styles.line}>Approx hull stress: {outcome.hullDamageTakenApprox}%</Text>
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.researchData}
+          label="Research recovered"
+          value={`×${outcome.rewards.researchData}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.artifact}
+          label="Relics secured"
+          value={`×${outcome.treasures.length}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.crack}
+          label="Approx hull stress"
+          value={`${outcome.hullDamageTakenApprox}%`}
+        />
         <Text style={styles.line}>Dominant route: {outcome.dominantRoute.replace(/_/g, ' ')}</Text>
-        <Text style={styles.line}>Area scans: {outcome.scansPerformed}</Text>
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.scanArea}
+          label="Area scans"
+          value={`×${outcome.scansPerformed}`}
+        />
         <Text style={styles.line}>Contacts from scans: {outcome.discoveriesFromScan}</Text>
         <Text style={styles.line}>Passive contacts: {outcome.discoveriesFromPassive}</Text>
-        <Text style={styles.line}>Emergency oxygen uses: {outcome.emergencyOxygenUses}</Text>
-        <Text style={styles.line}>Oxygen canister uses: {outcome.oxygenCanisterUses}</Text>
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.oxygenCanister}
+          label="Emergency oxygen uses"
+          value={`×${outcome.emergencyOxygenUses}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.oxygenCanister}
+          label="Oxygen canister uses"
+          value={`×${outcome.oxygenCanisterUses}`}
+        />
         <Text style={styles.line}>Crew comms logged: {outcome.crewMessageCount}</Text>
         <Text style={styles.line}>
           Cargo (end): {outcome.cargoUsedApprox} / {outcome.cargoLimit}
         </Text>
-        <Text style={styles.line}>Repair supplies consumed: {outcome.repairSuppliesConsumed}</Text>
-        <Text style={styles.line}>Repair supplies recovered: {outcome.repairSuppliesRecovered}</Text>
-        <Text style={styles.line}>Treasures: {outcome.treasuresRecovered}</Text>
-        <Text style={styles.line}>Artifacts: {outcome.artifactsRecovered}</Text>
-        <Text style={styles.line}>Samples: {outcome.samplesRecovered}</Text>
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.hullPatchKit}
+          label="Repair supplies consumed"
+          value={`×${outcome.repairSuppliesConsumed}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.hullPatchKit}
+          label="Repair supplies recovered"
+          value={`×${outcome.repairSuppliesRecovered}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.artifact}
+          label="Treasures (tally)"
+          value={`×${outcome.treasuresRecovered}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.artifact}
+          label="Artifacts (tally)"
+          value={`×${outcome.artifactsRecovered}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.researchData}
+          label="Samples (tally)"
+          value={`×${outcome.samplesRecovered}`}
+        />
         <Text style={styles.line}>Recoveries completed (scan): {outcome.discoveriesResolvedViaScan}</Text>
         <Text style={styles.line}>Recoveries completed (passive): {outcome.discoveriesResolvedPassive}</Text>
       </PanelCard>
       {outcome.storageTransferPreview ? (
-        <PanelCard>
+        <PanelCard style={styles.consoleCard}>
           <Text style={styles.cardTitle}>Cargo transferred to Base Storage</Text>
           <Text style={styles.line}>
             On return, expedition cargo is moved into Base Storage (one transfer per mission).
@@ -90,7 +143,7 @@ export default function MissionResultScreen() {
           ))}
         </PanelCard>
       ) : null}
-      <PanelCard>
+      <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Items & recoveries</Text>
         {outcome.itemsCollectedSummary.length === 0 ? (
           <Text style={styles.muted}>No extra supply notes.</Text>
@@ -112,7 +165,7 @@ export default function MissionResultScreen() {
           </>
         ) : null}
       </PanelCard>
-      <PanelCard>
+      <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>External discoveries</Text>
         <Text style={styles.line}>Attempted: {outcome.externalDiscoveriesAttempted}</Text>
         <Text style={styles.line}>Ignored: {outcome.externalDiscoveriesIgnored}</Text>
@@ -128,7 +181,7 @@ export default function MissionResultScreen() {
           ))
         )}
       </PanelCard>
-      <PanelCard>
+      <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Signals & events</Text>
         {outcome.events.length === 0 ? (
           <Text style={styles.muted}>Quiet log.</Text>
@@ -160,6 +213,10 @@ export default function MissionResultScreen() {
 }
 
 const styles = StyleSheet.create({
+  consoleCard: {
+    borderColor: '#38bdf855',
+    backgroundColor: '#020617cc',
+  },
   title: { fontSize: 26, fontWeight: '800' },
   sub: { color: theme.textMuted, marginBottom: 12 },
   cardTitle: { color: theme.text, fontWeight: '700', marginBottom: 6 },

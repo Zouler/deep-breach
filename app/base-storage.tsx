@@ -1,10 +1,12 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { IconLabelRow } from '@/components/IconLabelRow';
 import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
+import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
 import { salvageTreasureValueScrap, totalRepairSupplyUnits } from '@/game/baseStorage';
@@ -23,27 +25,59 @@ export default function BaseStorageScreen() {
   const rareTreasures = bs.treasures.filter((t) => (t.rarity ?? 'common') === 'rare').length;
 
   return (
-    <ScreenShell scroll>
+    <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.72}>
       <SectionHeader title="Base Storage" subtitle="Surface warehouse · Triton Outpost" />
-      <PanelCard>
+      <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Resources</Text>
-        <Text style={styles.line}>Scrap ×{bs.scrap}</Text>
-        <Text style={styles.line}>Research Data ×{bs.researchData}</Text>
+        <IconLabelRow icon={GAME_ASSETS.icons.scrap} label="Scrap" value={`×${bs.scrap}`} />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.researchData}
+          label="Research Data"
+          value={`×${bs.researchData}`}
+        />
       </PanelCard>
-      <PanelCard>
+      <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Repair supplies</Text>
-        <Text style={styles.line}>Hull Patch Kit ×{bs.hullPatchKits}</Text>
-        <Text style={styles.line}>Pressure Sealant ×{bs.pressureSealant}</Text>
-        <Text style={styles.line}>Emergency Brace ×{bs.emergencyBrace}</Text>
-        <Text style={styles.line}>Oxygen Canister ×{bs.oxygenCanisters}</Text>
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.hullPatchKit}
+          label="Hull Patch Kit"
+          value={`×${bs.hullPatchKits}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.pressureSealant}
+          label="Pressure Sealant"
+          value={`×${bs.pressureSealant}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.hullPatchKit}
+          label="Emergency Brace"
+          value={`×${bs.emergencyBrace}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.oxygenCanister}
+          label="Oxygen Canister"
+          value={`×${bs.oxygenCanisters}`}
+        />
         <Text style={styles.meta}>Total supply units: {totalRepairSupplyUnits(bs)}</Text>
       </PanelCard>
-      <PanelCard>
+      <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Recovered valuables</Text>
-        <Text style={styles.line}>Common Treasure ×{commonTreasures}</Text>
-        <Text style={styles.line}>Rare Relic ×{rareTreasures}</Text>
-        <Text style={styles.line}>Unknown Artifact ×{bs.artifacts}</Text>
-        <Text style={styles.line}>Deep Sample ×{bs.samples}</Text>
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.artifact}
+          label="Common Treasure"
+          value={`×${commonTreasures}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.artifact}
+          label="Rare Relic"
+          value={`×${rareTreasures}`}
+        />
+        <IconLabelRow icon={GAME_ASSETS.icons.artifact} label="Artifact" value={`×${bs.artifacts}`} />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.researchData}
+          label="Deep Sample"
+          value={`×${bs.samples}`}
+        />
 
         <View style={styles.actions}>
           <PrimaryButton
@@ -82,6 +116,10 @@ export default function BaseStorageScreen() {
 }
 
 const styles = StyleSheet.create({
+  consoleCard: {
+    borderColor: '#38bdf855',
+    backgroundColor: '#020617cc',
+  },
   cardTitle: { color: theme.text, fontWeight: '700', marginBottom: 8 },
   line: { color: theme.textMuted, marginBottom: 4 },
   meta: { color: theme.textMuted, fontSize: 12, marginTop: 6 },
