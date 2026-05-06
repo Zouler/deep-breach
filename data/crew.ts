@@ -1,0 +1,37 @@
+import type { CrewMember } from '@/types';
+
+export const INITIAL_CREW: CrewMember[] = [
+  {
+    id: 'crew_engineer',
+    name: 'Mara Okonkwo',
+    role: 'engineer',
+    hired: false,
+    assignedToDive: false,
+    repairSkill: 0.85,
+    navigationSkill: 0.35,
+    researchSkill: 0.4,
+    hireCostScrap: 40,
+  },
+  {
+    id: 'crew_navigator',
+    name: 'Jon Reyes',
+    role: 'navigator',
+    hired: false,
+    assignedToDive: false,
+    repairSkill: 0.4,
+    navigationSkill: 0.9,
+    researchSkill: 0.45,
+    hireCostScrap: 45,
+  },
+  {
+    id: 'crew_scientist',
+    name: 'Dr. Lena Cho',
+    role: 'scientist',
+    hired: false,
+    assignedToDive: false,
+    repairSkill: 0.35,
+    navigationSkill: 0.4,
+    researchSkill: 0.92,
+    hireCostScrap: 50,
+  },
+];

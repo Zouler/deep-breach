@@ -1,0 +1,40 @@
+import type { Mission } from '@/types';
+
+export const MOCK_MISSIONS: Mission[] = [
+  {
+    id: 'shallow_descent',
+    name: 'Shallow Descent',
+    targetDepthM: 300,
+    durationMinutes: 3,
+    risk: 'low',
+    expectedRewardsText: 'Scrap · small research packets · repair supplies',
+    scrapRewardRange: [35, 60],
+    researchRewardRange: [1, 4],
+    treasureChance: 0,
+    specialEventChance: 0.05,
+  },
+  {
+    id: 'wreck_survey',
+    name: 'Wreck Survey',
+    targetDepthM: 500,
+    durationMinutes: 5,
+    risk: 'medium',
+    expectedRewardsText: 'Scrap · research · possible relic',
+    scrapRewardRange: [60, 100],
+    researchRewardRange: [4, 12],
+    treasureChance: 0.18,
+    specialEventChance: 0.1,
+  },
+  {
+    id: 'signal_below',
+    name: 'Signal Below',
+    targetDepthM: 800,
+    durationMinutes: 7,
+    risk: 'medium-high',
+    expectedRewardsText: 'Dense research · relics · unknown signals',
+    scrapRewardRange: [100, 150],
+    researchRewardRange: [10, 28],
+    treasureChance: 0.28,
+    specialEventChance: 0.22,
+  },
+];

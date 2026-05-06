@@ -1,0 +1,150 @@
+import { useRouter } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { PanelCard } from '@/components/PanelCard';
+import { PrimaryButton } from '@/components/PrimaryButton';
+import { ScreenShell } from '@/components/ScreenShell';
+import { SectionHeader } from '@/components/SectionHeader';
+import { theme } from '@/constants/theme';
+import { useGame } from '@/context/GameContext';
+import { totalRepairSupplyUnits } from '@/game/baseStorage';
+import { moduleLevel } from '@/game/submarineStats';
+import { formatThreatLabel, threatForHigherIsBetter } from '@/game/threatLevels';
+import { getSubmarineStatus } from '@/game/statusHelpers';
+
+export default function BaseScreen() {
+  const router = useRouter();
+  const { state } = useGame();
+  const { resources, submarine, crew, baseStorage } = state;
+  const hired = crew.filter((c) => c.hired);
+  const subStatus = getSubmarineStatus(submarine);
+  const hullBand = formatThreatLabel(threatForHigherIsBetter(submarine.hullIntegrityPercent));
+
+  return (
+    <ScreenShell scroll>
+      <SectionHeader title="Triton Outpost" subtitle="Surface staging · drydock grid" />
+      <PanelCard>
+        <Text style={styles.cardTitle}>Resources</Text>
+        <View style={styles.resourceRow}>
+          <View style={styles.resourceChip}>
+            <Text style={styles.chipLabel}>Scrap</Text>
+            <Text style={styles.chipValue}>{resources.scrap}</Text>
+          </View>
+          <View style={styles.resourceChip}>
+            <Text style={styles.chipLabel}>Research</Text>
+            <Text style={styles.chipValue}>{resources.researchData}</Text>
+          </View>
+          <View style={styles.resourceChip}>
+            <Text style={styles.chipLabel}>Relics</Text>
+            <Text style={styles.chipValue}>{state.treasureInventory.length}</Text>
+          </View>
+        </View>
+      </PanelCard>
+      <PanelCard>
+        <Text style={styles.cardTitle}>Base Storage (surface)</Text>
+        <Text style={styles.meta}>
+          Scrap {baseStorage.scrap} · Research {baseStorage.researchData} · Treasures{' '}
+          {baseStorage.treasures.length} · Artifacts {baseStorage.artifacts} · Samples{' '}
+          {baseStorage.samples}
+        </Text>
+        <Text style={styles.meta}>
+          Repair supply units staged: {totalRepairSupplyUnits(baseStorage)}
+        </Text>
+        <PrimaryButton
+          title="Open Base Storage"
+          variant="ghost"
+          onPress={() => router.push('/base-storage' as never)}
+        />
+      </PanelCard>
+      <PanelCard>
+        <Text style={styles.cardTitle}>Submarine condition</Text>
+        <Text style={styles.statusLine}>{subStatus.label}</Text>
+        <Text style={styles.meta}>
+          Hull {Math.round(submarine.hullIntegrityPercent)}% · band {hullBand}
+        </Text>
+      </PanelCard>
+      <PanelCard>
+        <Text style={styles.cardTitle}>Modules</Text>
+        {submarine.modules.map((m) => (
+          <View key={m.id} style={styles.moduleRow}>
+            <Text style={styles.moduleName}>{m.name}</Text>
+            <Text style={styles.moduleMeta}>
+              L{m.level}/{m.maxLevel}
+              {m.type === 'hull' || m.type === 'sonar'
+                ? ` · focus ${m.type === 'hull' ? 'integrity' : 'survey'}`
+                : ''}
+            </Text>
+          </View>
+        ))}
+        <Text style={styles.hint}>
+          Hull module L{moduleLevel(submarine, 'hull')} · Sonar L{moduleLevel(submarine, 'sonar')}
+        </Text>
+      </PanelCard>
+      <PanelCard>
+        <Text style={styles.cardTitle}>Crew status</Text>
+        {hired.length === 0 ? (
+          <Text style={styles.muted}>No hired crew — open Crew to recruit.</Text>
+        ) : (
+          hired.map((c) => (
+            <View key={c.id} style={styles.crewRow}>
+              <Text style={styles.crewName}>
+                {c.name} · {c.role}
+              </Text>
+              <Text style={styles.meta}>
+                {c.assignedToDive ? 'On dive roster' : 'Standby at base'}
+              </Text>
+            </View>
+          ))
+        )}
+      </PanelCard>
+      <Text style={styles.navLabel}>Operations</Text>
+      <PrimaryButton title="Repair Dock" onPress={() => router.push('/repair-dock' as never)} />
+      <PrimaryButton title="Mission Select" onPress={() => router.push('/mission-select')} />
+      <PrimaryButton title="Upgrades" variant="ghost" onPress={() => router.push('/upgrades')} />
+      <PrimaryButton title="Crew" variant="ghost" onPress={() => router.push('/crew')} />
+      <PrimaryButton title="Inventory" variant="ghost" onPress={() => router.push('/inventory')} />
+      {state.dive?.status === 'active' ? (
+        <PrimaryButton title="Resume Dive" variant="ghost" onPress={() => router.push('/dive')} />
+      ) : null}
+      {state.dive && state.dive.status !== 'active' ? (
+        <PrimaryButton
+          title="Open Mission Debrief"
+          variant="ghost"
+          onPress={() => router.push('/mission-result')}
+        />
+      ) : null}
+    </ScreenShell>
+  );
+}
+
+const styles = StyleSheet.create({
+  cardTitle: { color: theme.text, fontWeight: '700', marginBottom: 10 },
+  resourceRow: { flexDirection: 'row', gap: 10 },
+  resourceChip: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 10,
+    backgroundColor: '#071a2f',
+  },
+  chipLabel: { color: theme.textMuted, fontSize: 11, textTransform: 'uppercase' },
+  chipValue: { color: theme.text, fontSize: 20, fontWeight: '800', marginTop: 4 },
+  statusLine: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  meta: { color: theme.textMuted },
+  moduleRow: { marginBottom: 8 },
+  moduleName: { color: theme.text, fontWeight: '600' },
+  moduleMeta: { color: theme.textMuted, fontSize: 12, marginTop: 2 },
+  hint: { color: theme.textMuted, marginTop: 6, fontSize: 12 },
+  crewRow: { marginBottom: 10 },
+  crewName: { color: theme.text, fontWeight: '600' },
+  navLabel: {
+    color: theme.textMuted,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    fontSize: 12,
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  muted: { color: theme.textMuted, fontStyle: 'italic' },
+});

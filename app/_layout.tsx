@@ -1,24 +1,22 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { ThemeProvider, DarkTheme } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
+import { NavigationBridge } from '@/components/NavigationBridge';
+import { theme } from '@/constants/theme';
+import { GameProvider } from '@/context/GameContext';
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
+export { ErrorBoundary } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: 'index',
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -27,33 +25,62 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
+    if (loaded) SplashScreen.hideAsync();
   }, [loaded]);
 
-  if (!loaded) {
-    return null;
-  }
-
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  if (!loaded) return null;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+    <GameProvider>
+      <ThemeProvider
+        value={{
+          ...DarkTheme,
+          colors: {
+            ...DarkTheme.colors,
+            background: theme.bg,
+            card: theme.surface,
+            text: theme.text,
+            border: theme.border,
+            primary: theme.accent,
+          },
+        }}
+      >
+        <StatusBar style="light" />
+        <NavigationBridge />
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: theme.bgElevated },
+            headerTintColor: theme.text,
+            headerTitleStyle: { fontWeight: '700' },
+            contentStyle: { backgroundColor: theme.bg },
+          }}
+        >
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="base" options={{ title: 'Deep Breach — Base' }} />
+          <Stack.Screen name="base-storage" options={{ title: 'Base Storage' }} />
+          <Stack.Screen name="repair-dock" options={{ title: 'Repair Dock' }} />
+          <Stack.Screen name="mission-select" options={{ title: 'Mission Select' }} />
+          <Stack.Screen name="dive" options={{ title: 'Active Dive', headerBackVisible: false }} />
+          <Stack.Screen name="room/[roomId]" options={{ title: 'Room Detail' }} />
+          <Stack.Screen name="inventory" options={{ title: 'Inventory' }} />
+          <Stack.Screen name="upgrades" options={{ title: 'Upgrades' }} />
+          <Stack.Screen name="crew" options={{ title: 'Crew' }} />
+          <Stack.Screen
+            name="expedition-report"
+            options={{ title: 'Expedition Report', headerBackVisible: false }}
+          />
+          <Stack.Screen
+            name="mission-result"
+            options={{ title: 'Mission Result', headerBackVisible: false }}
+          />
+          <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+        </Stack>
+      </ThemeProvider>
+    </GameProvider>
   );
 }

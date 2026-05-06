@@ -1,0 +1,17 @@
+export const theme = {
+  bg: '#030712',
+  bgElevated: '#0a1628',
+  surface: '#0f2744',
+  border: '#1e3a5f',
+  text: '#e8f1ff',
+  textMuted: '#8ba3c4',
+  accent: '#22d3ee',
+  accentDim: '#0e7490',
+  danger: '#f87171',
+  critical: '#fb7185',
+  warning: '#fbbf24',
+  ok: '#4ade80',
+  radar: '#1d4ed8',
+  cardRadius: 14,
+  fontMono: 'SpaceMono' as const,
+};
