@@ -3,7 +3,7 @@ import type { Mission } from '@/types';
 export const MOCK_MISSIONS: Mission[] = [
   {
     id: 'shallow_descent',
-    name: 'Shallow Descent',
+    name: 'Pressure Trial I',
     targetDepthM: 300,
     durationMinutes: 3,
     risk: 'low',
@@ -12,10 +12,12 @@ export const MOCK_MISSIONS: Mission[] = [
     researchRewardRange: [1, 4],
     treasureChance: 0,
     specialEventChance: 0.05,
+    trialPurpose:
+      'Basic pressure validation, oxygen monitoring, hull response, and controlled descent.',
   },
   {
     id: 'wreck_survey',
-    name: 'Wreck Survey',
+    name: 'Recovery Drill',
     targetDepthM: 500,
     durationMinutes: 5,
     risk: 'medium',
@@ -24,10 +26,12 @@ export const MOCK_MISSIONS: Mission[] = [
     researchRewardRange: [4, 12],
     treasureChance: 0.18,
     specialEventChance: 0.1,
+    trialPurpose:
+      'Test external scanner, retrieval protocols, and expedition cargo handling.',
   },
   {
     id: 'signal_below',
-    name: 'Signal Below',
+    name: 'Signal Calibration',
     targetDepthM: 800,
     durationMinutes: 7,
     risk: 'medium-high',
@@ -36,5 +40,7 @@ export const MOCK_MISSIONS: Mission[] = [
     researchRewardRange: [10, 28],
     treasureChance: 0.28,
     specialEventChance: 0.22,
+    trialPurpose:
+      'Calibrate sonar, identify unknown contacts, and evaluate crew response under pressure.',
   },
 ];

@@ -9,6 +9,7 @@ import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
 import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
+import { NARRATIVE_UI } from '@/data/storyBriefings';
 import { useGame } from '@/context/GameContext';
 import {
   calculateHullRepairCost,
@@ -33,9 +34,12 @@ export default function RepairDockScreen() {
   const fullCost = useMemo(() => calculateHullRepairCost(hull, 100), [hull]);
   const restock = describeBasicRestock(state);
 
+  const rd = NARRATIVE_UI.repairDock;
+
   return (
     <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.72}>
-      <SectionHeader title="Repair Dock" subtitle="Submarine maintenance and refit" />
+      <SectionHeader title={rd.title} subtitle={rd.subtitle} />
+      <Text style={styles.blurb}>{rd.blurb}</Text>
       {banner ? (
         <View style={styles.banner}>
           <Text style={styles.bannerText}>{banner}</Text>
@@ -137,6 +141,7 @@ export default function RepairDockScreen() {
 }
 
 const styles = StyleSheet.create({
+  blurb: { color: theme.textMuted, fontSize: 13, lineHeight: 18, marginBottom: 12 },
   consoleCard: {
     borderColor: '#38bdf855',
     backgroundColor: '#020617cc',

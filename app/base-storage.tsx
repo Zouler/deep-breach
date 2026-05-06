@@ -8,6 +8,7 @@ import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
 import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
+import { NARRATIVE_UI } from '@/data/storyBriefings';
 import { useGame } from '@/context/GameContext';
 import { salvageTreasureValueScrap, totalRepairSupplyUnits } from '@/game/baseStorage';
 import {
@@ -24,9 +25,11 @@ export default function BaseStorageScreen() {
   const commonTreasures = bs.treasures.filter((t) => (t.rarity ?? 'common') === 'common').length;
   const rareTreasures = bs.treasures.filter((t) => (t.rarity ?? 'common') === 'rare').length;
 
+  const bsCopy = NARRATIVE_UI.baseStorage;
+
   return (
     <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.72}>
-      <SectionHeader title="Base Storage" subtitle="Surface warehouse · Triton Outpost" />
+      <SectionHeader title={bsCopy.title} subtitle={bsCopy.subtitle} />
       <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Resources</Text>
         <IconLabelRow icon={GAME_ASSETS.icons.scrap} label="Scrap" value={`×${bs.scrap}`} />

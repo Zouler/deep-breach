@@ -4,12 +4,8 @@ import { tickAmbientCrewChatter } from '@/game/crewMessages';
 import { generateExternalDiscovery } from '@/game/discoveries';
 import { makePacedCrack, randomRoomId, tryAmbientDiveEvent } from '@/game/diveEvents';
 import { createId } from '@/game/ids';
-import {
-  ambientRouteMultiplier,
-  crackSpawnRouteMultiplier,
-  depthRateMultiplier,
-  passiveDiscoveryRouteMultiplier,
-} from '@/game/navigation';
+import { getCommandIntentModifiers } from '@/game/navigationIntent';
+import { tickNavigationKinematics } from '@/game/navigationVector';
 import { computeOxygenDrainPercent } from '@/game/oxygen';
 import {
   canOfferDiscovery,
@@ -53,6 +49,7 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
   const hullMit = hullMitigation(submarine);
   const inGrace = inEarlyGracePeriod(dive, now);
   const route = dive.currentRoute;
+  const intent = getCommandIntentModifiers(route);
 
   let {
     missionElapsedMs,
@@ -75,8 +72,10 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
   missionElapsedMs = Math.min(dive.missionDurationMs, missionElapsedMs + deltaMs);
 
   const target = dive.targetDepthM;
-  const depthStepRate = (target / dive.missionDurationMs) * depthRateMultiplier(route);
+  const depthBefore = currentDepthM;
+  const depthStepRate = (target / dive.missionDurationMs) * intent.depthSpeedMultiplier;
   currentDepthM = Math.min(target, currentDepthM + deltaMs * depthStepRate);
+  const depthDeltaM = currentDepthM - depthBefore;
 
   const routeKey = route;
   routeTimeMs = {
@@ -97,6 +96,7 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
     submarine,
     waterLevelPercent,
     route,
+    oxygenIntentMultiplier: intent.oxygenDrainMultiplier,
   });
   oxygenPercent = Math.max(0, oxygenPercent - o2Drain);
 
@@ -105,6 +105,8 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
     (floodingStress * 0.06 + (oxygenPercent < 25 ? 0.04 : 0)) * dt * 60 * rs * (1 - repairBonus * 0.25);
 
   hullIntegrityPercent -= totalLeak * dt * 0.48 * rs * (1 - hullMit * 0.55);
+
+  const kinematics = tickNavigationKinematics(dive, deltaMs, depthDeltaM, intent);
 
   let nextDive: DiveSession = {
     ...dive,
@@ -123,6 +125,7 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
     lastDiscoveryOfferAt,
     pendingDiscovery,
     routeTimeMs,
+    ...kinematics,
   };
 
   const stressHigh = hasUnresolvedHighStress(nextDive);
@@ -138,7 +141,7 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
       rs *
       graceFactor *
       stressFactor *
-      crackSpawnRouteMultiplier(route);
+      intent.crackRiskMultiplier;
     if (Math.random() < crackChance) {
       const rid = randomRoomId(nextDive.rooms);
       const allowCrit = criticalRandomAllowed(nextDive) && !inGrace;
@@ -147,6 +150,7 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
         missionProgress: mProg,
         inGrace,
         allowCriticalRandom: allowCrit,
+        crackEscalationMultiplier: intent.crackEscalationMultiplier,
       });
       const nextRooms = nextDive.rooms.map((r) =>
         r.id === rid
@@ -182,7 +186,8 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
       deltaMs *
       (inGrace ? 0.65 : 1) *
       (stressHigh ? 0.55 : 1) *
-      ambientRouteMultiplier(route);
+      intent.ambientChanceMultiplier *
+      intent.hazardChanceMultiplier;
     if (Math.random() < ambientChance) {
       const evt = tryAmbientDiveEvent(mission, randomRoomId(nextDive.rooms), now, {
         inGrace,
@@ -206,7 +211,7 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
       deltaMs *
       (inGrace ? 0.55 : 1) *
       (1 + rs * 0.1) *
-      passiveDiscoveryRouteMultiplier(route) *
+      intent.discoveryChanceMultiplier *
       lowMissionBoost;
     if (Math.random() < discChance) {
       const disc = generateExternalDiscovery(mission, nextDive, submarine, crew, now, {

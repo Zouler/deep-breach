@@ -353,7 +353,7 @@ export function scanNarrativeForDiscovery(discovery: ExternalDiscovery): string 
       extra = ' Warning: unstable thermal readings detected.';
     }
   }
-  return `Scan complete. Estimated risk: ${risk} (~${haz}% hazard). Possible rewards: ${rewardWords} (quality ~${rw}%).${extra}`;
+  return `Research Lead — scan confirms. Estimated risk: ${risk} (~${haz}% hazard). Possible rewards: ${rewardWords} (quality ~${rw}%).${extra}`;
 }
 
 function rewardWordsForCategory(cat: ExternalDiscovery['category']): string {

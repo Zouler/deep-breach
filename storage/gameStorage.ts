@@ -4,6 +4,7 @@ import {
   createExpeditionRepairInventory,
   REPAIR_ITEM_TEMPLATES,
 } from '@/data/repairItems';
+import { DEFAULT_COMMANDER } from '@/data/storyBriefings';
 import {
   baseStorageFromRepairRows,
   createEmptyBaseStorage,
@@ -11,7 +12,14 @@ import {
 } from '@/game/baseStorage';
 import { DEFAULT_DIVE_ROUTE, emptyRouteTimeMs } from '@/game/navigation';
 import { emergencyOxygenMaxCharges } from '@/game/oxygen';
-import type { BaseStorage, DiveRoute, GameState, OfflineReport, RepairItem } from '@/types';
+import type {
+  BaseStorage,
+  DiveRoute,
+  GameState,
+  OfflineReport,
+  RepairItem,
+} from '@/types';
+import type { CommanderProfile, StoryProgress } from '@/types/story';
 
 const STORAGE_KEY = '@deep_breach/game_state_v1';
 
@@ -134,6 +142,11 @@ function migrate(state: GameState): GameState {
         oxygenCanisterUsesThisDive: state.dive.oxygenCanisterUsesThisDive ?? 0,
         cargoLeftBehindNotes: state.dive.cargoLeftBehindNotes ?? [],
         cargoTransferredToBase: state.dive.cargoTransferredToBase ?? false,
+        horizontalDistanceKm: state.dive.horizontalDistanceKm ?? 0,
+        verticalMovementState: state.dive.verticalMovementState ?? 'descending',
+        horizontalMovementState: state.dive.horizontalMovementState ?? 'advancing',
+        descentRateMPerMin: state.dive.descentRateMPerMin ?? 0,
+        horizontalSpeedKmPerMin: state.dive.horizontalSpeedKmPerMin ?? 0,
       }
     : null;
   const pendingOfflineReport = state.pendingOfflineReport
@@ -174,11 +187,31 @@ function migrate(state: GameState): GameState {
           state.lastMissionOutcome.discoveriesResolvedViaScan ?? 0,
         discoveriesResolvedPassive:
           state.lastMissionOutcome.discoveriesResolvedPassive ?? 0,
+        trialAborted: state.lastMissionOutcome.trialAborted ?? false,
         storageTransferPreview: state.lastMissionOutcome.storageTransferPreview,
       }
     : null;
+  const legacy = state as GameState & Partial<{ commander: CommanderProfile; story: StoryProgress }>;
+  const commander = legacy.commander ?? { ...DEFAULT_COMMANDER };
+  const s: Partial<StoryProgress> = legacy.story ?? { assignmentBriefingSeen: true };
+  const seen = s.assignmentBriefingSeen ?? false;
+  const migratedFromLegacy =
+    Boolean(seen) &&
+    s.introSequenceCompleted === undefined &&
+    s.assignmentBriefingAccepted === undefined &&
+    s.assignmentBriefingSkipped === undefined;
+  const story: StoryProgress = {
+    assignmentBriefingSeen: seen,
+    assignmentBriefingAccepted: s.assignmentBriefingAccepted ?? migratedFromLegacy,
+    assignmentBriefingSkipped: s.assignmentBriefingSkipped ?? false,
+    introSequenceCompleted: s.introSequenceCompleted ?? migratedFromLegacy,
+    introSequenceSkipped: s.introSequenceSkipped ?? false,
+  };
+
   const merged: GameState = {
     ...state,
+    commander,
+    story,
     baseStorage,
     repairInventory: migrateRepairItems(state.repairInventory),
     dive,

@@ -8,6 +8,8 @@ import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
 import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
+import { NARRATIVE_UI } from '@/data/storyBriefings';
+import { SUBMARINE_IDENTITY } from '@/data/submarine';
 import { useGame } from '@/context/GameContext';
 import { totalRepairSupplyUnits } from '@/game/baseStorage';
 import { moduleLevel } from '@/game/submarineStats';
@@ -17,14 +19,16 @@ import { getSubmarineStatus } from '@/game/statusHelpers';
 export default function BaseScreen() {
   const router = useRouter();
   const { state } = useGame();
-  const { resources, submarine, crew, baseStorage } = state;
+  const { resources, submarine, crew, baseStorage, commander } = state;
+  const nu = NARRATIVE_UI.base;
   const hired = crew.filter((c) => c.hired);
   const subStatus = getSubmarineStatus(submarine);
   const hullBand = formatThreatLabel(threatForHigherIsBetter(submarine.hullIntegrityPercent));
 
   return (
     <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.7}>
-      <SectionHeader title="Triton Outpost" subtitle="Surface staging · drydock grid" />
+      <SectionHeader title={nu.title} subtitle={nu.subtitle} />
+      <Text style={styles.commanderLine}>{nu.commanderLine(commander.name, commander.title)}</Text>
       <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Resources</Text>
         <IconLabelRow
@@ -44,7 +48,7 @@ export default function BaseScreen() {
         />
       </PanelCard>
       <PanelCard style={styles.consoleCard}>
-        <Text style={styles.cardTitle}>Base Storage (surface)</Text>
+        <Text style={styles.cardTitle}>{nu.storageCardTitle}</Text>
         <Text style={styles.meta}>
           Scrap {baseStorage.scrap} · Research {baseStorage.researchData} · Treasures{' '}
           {baseStorage.treasures.length} · Artifacts {baseStorage.artifacts} · Samples{' '}
@@ -60,7 +64,9 @@ export default function BaseScreen() {
         />
       </PanelCard>
       <PanelCard>
-        <Text style={styles.cardTitle}>Submarine condition</Text>
+        <Text style={styles.cardTitle}>
+          {SUBMARINE_IDENTITY.displayName} · condition
+        </Text>
         <Text style={styles.statusLine}>{subStatus.label}</Text>
         <Text style={styles.meta}>
           Hull {Math.round(submarine.hullIntegrityPercent)}% · band {hullBand}
@@ -102,7 +108,12 @@ export default function BaseScreen() {
       </PanelCard>
       <Text style={styles.navLabel}>Operations</Text>
       <PrimaryButton title="Repair Dock" onPress={() => router.push('/repair-dock' as never)} />
-      <PrimaryButton title="Mission Select" onPress={() => router.push('/mission-select')} />
+      <PrimaryButton
+        title="Campaigns / Service Record"
+        variant="ghost"
+        onPress={() => router.push('/campaigns' as never)}
+      />
+      <PrimaryButton title="Trial schedule" onPress={() => router.push('/mission-select')} />
       <PrimaryButton title="Upgrades" variant="ghost" onPress={() => router.push('/upgrades')} />
       <PrimaryButton title="Crew" variant="ghost" onPress={() => router.push('/crew')} />
       <PrimaryButton title="Inventory" variant="ghost" onPress={() => router.push('/inventory')} />
@@ -111,7 +122,7 @@ export default function BaseScreen() {
       ) : null}
       {state.dive && state.dive.status !== 'active' ? (
         <PrimaryButton
-          title="Open Mission Debrief"
+          title="Open Trial Report"
           variant="ghost"
           onPress={() => router.push('/mission-result')}
         />
@@ -121,6 +132,12 @@ export default function BaseScreen() {
 }
 
 const styles = StyleSheet.create({
+  commanderLine: {
+    color: theme.textMuted,
+    fontSize: 13,
+    marginBottom: 12,
+    lineHeight: 18,
+  },
   consoleCard: {
     borderColor: '#38bdf855',
     backgroundColor: '#020617cc',

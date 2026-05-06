@@ -54,7 +54,7 @@ export default function StartScreen() {
                   CH
                 </Text>
               </View>
-              <Text style={styles.subtitle}>Idle survival · submarine expeditions</Text>
+              <Text style={styles.subtitle}>Act 1 — Experimental Trials · deep-sea prototype command</Text>
             </View>
 
             <View style={styles.actions}>
@@ -62,7 +62,7 @@ export default function StartScreen() {
                 title="Start New Expedition"
                 onPress={() => {
                   dispatch({ type: 'NEW_GAME' });
-                  router.push('/base');
+                  router.push('/assignment-briefing');
                 }}
               />
               <PrimaryButton

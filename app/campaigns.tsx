@@ -1,0 +1,114 @@
+import { useRouter } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { PanelCard } from '@/components/PanelCard';
+import { PrimaryButton } from '@/components/PrimaryButton';
+import { ScreenShell } from '@/components/ScreenShell';
+import { CAMPAIGNS, getCampaignById } from '@/data/campaigns';
+import { DBX_FUTURE_ACT_VARIANTS, DBX_PROTOTYPE_LORE } from '@/data/dbxProgramLore';
+import { SUBMARINE_IDENTITY } from '@/data/submarine';
+import { theme } from '@/constants/theme';
+import { useGame } from '@/context/GameContext';
+
+export default function CampaignsScreen() {
+  const router = useRouter();
+  const { state } = useGame();
+  const id = SUBMARINE_IDENTITY;
+
+  return (
+    <ScreenShell scroll>
+      <Text style={styles.title}>Campaigns / Service Record</Text>
+      <Text style={styles.sub}>
+        Commander {state.commander.name} · {state.commander.title}
+      </Text>
+      <Text style={styles.vesselLine}>{id.displayName}</Text>
+      <Text style={styles.meta}>
+        {id.className} · {id.programName} · {id.currentVariant} variant
+      </Text>
+      <Text style={styles.meta}>
+        Current focus:{' '}
+        {getCampaignById(state.commander.currentActId)?.name ??
+          state.commander.currentActId.replace(/_/g, ' ')}
+      </Text>
+      <PrimaryButton
+        title="Review assignment memorandum"
+        variant="ghost"
+        onPress={() => router.push('/assignment-memo' as never)}
+      />
+      {CAMPAIGNS.map((c) => (
+        <PanelCard key={c.id} style={styles.card}>
+          <View style={styles.row}>
+            <Text style={styles.name}>{c.name}</Text>
+            <Text
+              style={[
+                styles.badge,
+                c.status === 'active' ? styles.badgeActive : styles.badgeLocked,
+              ]}
+            >
+              {c.status === 'active' ? 'Active' : 'Locked'}
+            </Text>
+          </View>
+          <Text style={styles.subtitle}>{c.subtitle}</Text>
+          <Text style={styles.desc}>{c.description}</Text>
+        </PanelCard>
+      ))}
+
+      <Text style={styles.sectionLabel}>Program archives (optional)</Text>
+      <Text style={styles.sectionHint}>
+        Prior DBX hulls — background only; not required for trials.
+      </Text>
+      <PanelCard style={styles.loreCard}>
+        {DBX_PROTOTYPE_LORE.map((entry) => (
+          <View key={entry.designation} style={styles.loreRow}>
+            <Text style={styles.loreDesignation}>{entry.designation}</Text>
+            <Text style={styles.loreSummary}>{entry.summary}</Text>
+          </View>
+        ))}
+      </PanelCard>
+
+      <Text style={styles.sectionLabel}>Reserved retrofit designations</Text>
+      <Text style={styles.sectionHint}>Story planning only — not available in MVP.</Text>
+      <PanelCard style={styles.loreCard}>
+        {DBX_FUTURE_ACT_VARIANTS.map((row) => (
+          <Text key={row.act} style={styles.futureLine}>
+            • {row.label}
+          </Text>
+        ))}
+      </PanelCard>
+
+      <PrimaryButton title="Back" variant="ghost" onPress={() => router.back()} />
+    </ScreenShell>
+  );
+}
+
+const styles = StyleSheet.create({
+  title: { color: theme.text, fontSize: 22, fontWeight: '900', marginBottom: 6 },
+  sub: { color: theme.text, fontWeight: '700', marginBottom: 4 },
+  vesselLine: { color: theme.accent, fontWeight: '800', fontSize: 16, marginBottom: 4 },
+  meta: { color: theme.textMuted, marginBottom: 6, fontSize: 13 },
+  sectionLabel: {
+    color: theme.text,
+    fontWeight: '800',
+    marginTop: 8,
+    marginBottom: 4,
+    fontSize: 14,
+  },
+  sectionHint: { color: theme.textMuted, fontSize: 12, lineHeight: 17, marginBottom: 8 },
+  card: { marginBottom: 10, borderColor: '#38bdf833', backgroundColor: '#020617cc' },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  name: { color: theme.text, fontWeight: '800', flex: 1 },
+  subtitle: { color: theme.textMuted, fontSize: 12, marginTop: 6 },
+  desc: { color: theme.textMuted, fontSize: 13, lineHeight: 18, marginTop: 8 },
+  badge: { fontSize: 11, fontWeight: '900', letterSpacing: 0.6, textTransform: 'uppercase' },
+  badgeActive: { color: '#86efac' },
+  badgeLocked: { color: theme.textMuted },
+  loreCard: {
+    marginBottom: 14,
+    borderColor: '#33415588',
+    backgroundColor: '#020617aa',
+  },
+  loreRow: { marginBottom: 12 },
+  loreDesignation: { color: theme.text, fontWeight: '800', marginBottom: 2 },
+  loreSummary: { color: theme.textMuted, fontSize: 12, lineHeight: 17 },
+  futureLine: { color: theme.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 6 },
+});

@@ -1,6 +1,7 @@
 import { INITIAL_CREW } from '@/data/crew';
 import { MOCK_MISSIONS } from '@/data/missions';
 import { STARTER_REPAIR_INVENTORY, createExpeditionRepairInventory } from '@/data/repairItems';
+import { DEFAULT_COMMANDER } from '@/data/storyBriefings';
 import {
   baseStorageFromRepairRows,
   createEmptyBaseStorage,
@@ -8,6 +9,8 @@ import {
 } from '@/game/baseStorage';
 import { createId } from '@/game/ids';
 import { DEFAULT_DIVE_ROUTE, emptyRouteTimeMs } from '@/game/navigation';
+import { horizontalKmPerMinute } from '@/game/navigationVector';
+import { getCommandIntentModifiers } from '@/game/navigationIntent';
 import { emergencyOxygenMaxCharges } from '@/game/oxygen';
 import { initializePacingGaps } from '@/game/pacing';
 import { createEmptyRooms } from '@/game/rooms';
@@ -31,7 +34,7 @@ export function createNewProfile(): PlayerProfile {
   const now = Date.now();
   return {
     id: createId('captain'),
-    displayName: 'Captain',
+    displayName: DEFAULT_COMMANDER.name,
     createdAt: now,
     lastSavedAt: now,
   };
@@ -50,6 +53,14 @@ export function createInitialGameState(): GameState {
   const raw: GameState = {
     version: GAME_STATE_VERSION,
     profile: createNewProfile(),
+    commander: { ...DEFAULT_COMMANDER },
+    story: {
+      assignmentBriefingSeen: false,
+      assignmentBriefingAccepted: false,
+      assignmentBriefingSkipped: false,
+      introSequenceCompleted: false,
+      introSequenceSkipped: false,
+    },
     resources: { scrap: baseStorage.scrap, researchData: baseStorage.researchData },
     baseStorage,
     submarine: defaultSubmarine(),
@@ -70,6 +81,7 @@ export function createDiveSessionForMission(
 ): DiveSession {
   const now = Date.now();
   const initialHull = Math.max(5, Math.min(100, submarine.hullIntegrityPercent));
+  const startIntent = getCommandIntentModifiers(DEFAULT_DIVE_ROUTE);
   const base: DiveSession = {
     outcomeRecorded: false,
     missionId: mission.id,
@@ -109,6 +121,11 @@ export function createDiveSessionForMission(
     nextDiscoveryGapMs: 70_000,
     currentRoute: DEFAULT_DIVE_ROUTE,
     routeTimeMs: emptyRouteTimeMs(),
+    horizontalDistanceKm: 0,
+    verticalMovementState: 'descending',
+    horizontalMovementState: 'advancing',
+    descentRateMPerMin: 0,
+    horizontalSpeedKmPerMin: horizontalKmPerMinute(startIntent),
     lastAreaScanAt: 0,
     scansPerformed: 0,
     emergencyOxygenChargesRemaining: emergencyOxygenMaxCharges(submarine),

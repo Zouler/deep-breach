@@ -2,6 +2,7 @@ import type { CrewMember, DiveSession, ExternalDiscovery, GameEvent, Mission, Su
 
 import { generateExternalDiscovery } from '@/game/discoveries';
 import { createId } from '@/game/ids';
+import { getCommandIntentModifiers } from '@/game/navigationIntent';
 import { depthProgress } from '@/game/pacing';
 import { assignedCrew, crewNavigationBonus, moduleLevel, riskScalar, sonarQuality } from '@/game/submarineStats';
 
@@ -25,7 +26,10 @@ export function areaScanFindChance(
   const sci = assignedCrew(crew).some((c) => c.role === 'scientist') ? 0.08 : 0;
   const depth = depthProgress(dive) * 0.12;
   const lowMissionBonus = rs < 0.82 ? 0.12 : 0;
-  const base = 0.38 + sonar * 0.22 + nav * 0.12 + sci + depth + lowMissionBonus;
+  const intent = getCommandIntentModifiers(dive.currentRoute);
+  const base =
+    (0.38 + sonar * 0.22 + nav * 0.12 + sci + depth + lowMissionBonus) *
+    intent.discoveryChanceMultiplier;
   return Math.min(0.92, Math.max(0.12, base));
 }
 
@@ -52,7 +56,7 @@ export function performAreaScan(
     event: {
       id: createId('evt'),
       type: 'sonar_contact',
-      message: 'No clear contact detected.',
+      message: 'No contacts on current sweep.',
       timestamp: now,
     },
   };

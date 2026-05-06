@@ -16,6 +16,7 @@ import { makePacedCrack, randomRoomId } from '@/game/diveEvents';
 import type { RewardIntent } from '@/game/cargo';
 import { scanNarrativeForDiscovery } from '@/game/cargo';
 import { createId } from '@/game/ids';
+import { getCommandIntentModifiers, type CommandIntentModifiers } from '@/game/navigationIntent';
 import {
   criticalRandomAllowed,
   depthProgress,
@@ -149,6 +150,7 @@ function pickCategory(
   dive: DiveSession,
   inGrace: boolean,
   route: DiveRoute,
+  intent: CommandIntentModifiers,
 ): DiscoveryCategory {
   const roll =
     Math.random() + (depthProgress(dive) * 0.35 + missionProgress(dive) * 0.25) * 0.2;
@@ -174,18 +176,21 @@ function pickCategory(
     return entries[0][0];
   };
 
+  const sal = intent.salvageCategoryWeightMultiplier;
+  const sig = intent.signalCategoryWeightMultiplier;
+
   if (route === 'search_salvage') {
     return pick({
-      salvage: 0.42 + (rs < 1 ? 0.12 : 0),
-      treasure_cache: 0.28,
+      salvage: (0.42 + (rs < 1 ? 0.12 : 0)) * sal,
+      treasure_cache: 0.28 * sal,
       research_signal: 0.18,
       thermal_anomaly: 0.12,
     });
   }
   if (route === 'follow_signal') {
     return pick({
-      research_signal: 0.34,
-      unknown_artifact: 0.26,
+      research_signal: 0.34 * sig,
+      unknown_artifact: 0.26 * sig,
       biological_contact: 0.18 + d * 0.12,
       treasure_cache: 0.12,
       salvage: 0.1,
@@ -210,18 +215,18 @@ function pickCategory(
   if (route === 'push_deeper') {
     if (d > 0.55 && Math.random() < 0.35 + rs * 0.1) {
       return pick({
-        thermal_anomaly: 0.45,
-        volcanic_rock: 0.35,
-        biological_contact: 0.2,
+        thermal_anomaly: 0.45 * intent.hazardChanceMultiplier,
+        volcanic_rock: 0.35 * intent.hazardChanceMultiplier,
+        biological_contact: 0.2 * intent.hazardChanceMultiplier,
       });
     }
     return pick({
-      salvage: 0.22,
-      research_signal: 0.22,
+      salvage: 0.22 * sal,
+      research_signal: 0.22 * sig,
       treasure_cache: 0.2,
-      thermal_anomaly: 0.18,
-      biological_contact: 0.1,
-      volcanic_rock: 0.08,
+      thermal_anomaly: 0.18 * intent.hazardChanceMultiplier,
+      biological_contact: 0.1 * intent.hazardChanceMultiplier,
+      volcanic_rock: 0.08 * intent.hazardChanceMultiplier,
     });
   }
 
@@ -254,9 +259,10 @@ export function generateExternalDiscovery(
   if (dive.pendingDiscovery) return null;
   const inGrace = inEarlyGracePeriod(dive, now);
   const provenance: DiscoveryProvenance = options?.provenance ?? 'passive';
-  const category = pickCategory(mission, dive, inGrace, dive.currentRoute);
+  const intent = getCommandIntentModifiers(dive.currentRoute);
+  const category = pickCategory(mission, dive, inGrace, dive.currentRoute, intent);
   const tpl = TEMPLATES[category];
-  const hazard = calculateDiscoveryRisk(
+  let hazard = calculateDiscoveryRisk(
     {
       id: 'tmp',
       category,
@@ -275,6 +281,7 @@ export function generateExternalDiscovery(
     submarine,
     crew,
   );
+  hazard = Math.min(0.92, Math.max(0.08, hazard * intent.hazardChanceMultiplier));
   const rewardQ = Math.min(0.92, 0.35 + sonarQuality(submarine) * 0.25 + crewResearchBonus(crew));
   return {
     id: createId('disc'),
@@ -329,6 +336,7 @@ function mergeRepairAdds(
 
 export function resolveExternalDiscovery(input: DiscoveryResolveInput): DiscoveryResolvePatch {
   const { choice, discovery, mission, dive, submarine, crew, now } = input;
+  const intent = getCommandIntentModifiers(dive.currentRoute);
   if (choice === 'ignore') {
     return {
       journal: {
@@ -388,18 +396,28 @@ export function resolveExternalDiscovery(input: DiscoveryResolveInput): Discover
 
     if (discovery.category === 'salvage') {
       rewardIntent.scrap = Math.floor(16 + depth * 22 + Math.random() * 14);
-      const pPatch = lowMission || inGrace ? 0.58 : 0.42;
-      const pSeal = lowMission || inGrace ? 0.4 : 0.3;
+      const pPatch = Math.min(
+        0.98,
+        (lowMission || inGrace ? 0.58 : 0.42) * intent.repairSupplyChanceMultiplier,
+      );
+      const pSeal = Math.min(
+        0.98,
+        (lowMission || inGrace ? 0.4 : 0.3) * intent.repairSupplyChanceMultiplier,
+      );
       if (Math.random() < pPatch) pushRepair('patch_kit', Math.random() < 0.2 ? 2 : 1);
       if (Math.random() < pSeal) pushRepair('pressure_sealant', 1);
       if (Math.random() < 0.14) pushRepair('brace_frame', 1);
       if (Math.random() < (lowMission || inGrace ? 0.22 : 0.14)) pushRepair('oxygen_canister', 1);
     } else if (discovery.category === 'research_signal') {
-      rewardIntent.research = Math.floor(6 + depth * 12 + Math.random() * 7);
+      rewardIntent.research = Math.floor(
+        (6 + depth * 12 + Math.random() * 7) * intent.researchRewardMultiplier,
+      );
       rewardIntent.samples = Math.random() < 0.55 ? 1 : 0;
       if (Math.random() < 0.35) rewardIntent.scrap = Math.floor(6 + Math.random() * 10);
     } else if (discovery.category === 'thermal_anomaly') {
-      rewardIntent.research = Math.floor(6 + depth * 10 + Math.random() * 6);
+      rewardIntent.research = Math.floor(
+        (6 + depth * 10 + Math.random() * 6) * intent.researchRewardMultiplier,
+      );
       rewardIntent.samples = Math.random() < 0.45 ? 1 : 0;
     } else if (discovery.category === 'treasure_cache') {
       if (Math.random() < 0.52 + mission.treasureChance * 0.35) {

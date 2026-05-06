@@ -1,3 +1,5 @@
+import type { CommanderProfile, StoryProgress } from './story';
+
 export interface ResourceBalance {
   scrap: number;
   researchData: number;
@@ -86,6 +88,8 @@ export interface Mission {
   researchRewardRange: [number, number];
   treasureChance: number;
   specialEventChance: number;
+  /** Act 1 — Experimental Trials: one-line purpose for mission board / context. */
+  trialPurpose?: string;
 }
 
 export type CrackSeverity = 'hairline' | 'moderate' | 'critical';
@@ -210,6 +214,16 @@ export type DiveRoute =
   | 'avoid_hazards'
   | 'stabilize_systems';
 
+/** Abstract vertical motion for HUD / future map (not manual piloting). */
+export type VerticalMovementState = 'descending' | 'ascending' | 'holding_depth';
+
+/** Abstract horizontal / sweep motion for HUD / future map. */
+export type HorizontalMovementState =
+  | 'advancing'
+  | 'reversing'
+  | 'holding_position'
+  | 'drifting';
+
 export type DiscoveryProvenance = 'passive' | 'scan';
 
 export type DiscoveryCategory =
@@ -252,7 +266,11 @@ export interface DiscoveryJournalEntry {
   source: DiscoveryProvenance;
 }
 
-export type CrewMessageSpeaker = 'Engineer' | 'Navigator' | 'Scientist' | 'System';
+/**
+ * Crew comms speaker token: canonical lead id (`CrewLeadMessageSpeakerId`) or legacy
+ * HUD labels (`Engineer`, `Navigator`, `Scientist`, `System`) from older saves.
+ */
+export type CrewMessageSpeaker = string;
 
 export interface CrewMessage {
   id: string;
@@ -326,6 +344,14 @@ export interface DiveSession {
   currentRoute: DiveRoute;
   /** Cumulative ms spent on each route (for debrief). */
   routeTimeMs: Record<DiveRoute, number>;
+  /** Abstract forward distance travelled this dive (km) — sonar/track space, not a full map yet. */
+  horizontalDistanceKm: number;
+  verticalMovementState: VerticalMovementState;
+  horizontalMovementState: HorizontalMovementState;
+  /** Smoothed descent rate for display (m/min). */
+  descentRateMPerMin: number;
+  /** Smoothed forward / sweep rate for display (km/min, abstract). */
+  horizontalSpeedKmPerMin: number;
   lastAreaScanAt: number;
   scansPerformed: number;
   emergencyOxygenChargesRemaining: number;
@@ -338,6 +364,8 @@ export interface DiveSession {
 
 export interface MissionOutcome {
   success: boolean;
+  /** Emergency / early surface protocol — shown as "trial aborted" in debrief copy. */
+  trialAborted?: boolean;
   missionName: string;
   targetDepthM: number;
   depthReachedM: number;
@@ -380,6 +408,9 @@ export const GAME_STATE_VERSION = 1 as const;
 export interface GameState {
   version: typeof GAME_STATE_VERSION;
   profile: PlayerProfile;
+  /** Narrative commander (Act 1: Phillip Roberts). */
+  commander: CommanderProfile;
+  story: StoryProgress;
   resources: ResourceBalance;
   /** Surface warehouse — canonical economy for scrap/research/loot (mirrored into resources for legacy UI paths). */
   baseStorage: BaseStorage;
@@ -392,3 +423,13 @@ export interface GameState {
   pendingOfflineReport: OfflineReport | null;
   lastMissionOutcome: MissionOutcome | null;
 }
+
+export type {
+  CampaignDef,
+  CampaignId,
+  CampaignStatus,
+  CommanderProfile,
+  StoryProgress,
+} from './story';
+
+export type { CrewLead, CrewLeadMessageSpeakerId, CrewLeadTone } from './crew';

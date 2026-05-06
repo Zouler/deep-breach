@@ -11,6 +11,12 @@ import type {
 
 import { addResearchWithCargoCap, addScrapWithCargoCap, addTreasureWithCargoCap } from '@/game/cargo';
 import { createId } from '@/game/ids';
+import { getCommandIntentModifiers } from '@/game/navigationIntent';
+import {
+  BASE_HORIZONTAL_KM_PER_MS,
+  deriveHorizontalMovementState,
+  deriveVerticalMovementState,
+} from '@/game/navigationVector';
 import { calculateMissionRisk } from '@/game/missionRisk';
 import {
   autoSealStrength,
@@ -182,9 +188,15 @@ export function calculateOfflineProgress(
   const missionWallMin = Math.max(0.5, initialDive.missionDurationMs / 60000);
   const awayMin = effectiveAwayMs / 60000;
   const progressFrac = Math.min(1, awayMin / missionWallMin);
+  const intent = getCommandIntentModifiers(initialDive.currentRoute);
+  let horizontalKm = initialDive.horizontalDistanceKm ?? 0;
   const depthGainTotal = Math.min(
     depthRemainingStart,
-    depthRemainingStart * progressFrac * nav * (0.82 + sonar * 0.22),
+    depthRemainingStart *
+      progressFrac *
+      nav *
+      (0.82 + sonar * 0.22) *
+      intent.depthSpeedMultiplier,
   );
   const depthPerStepBase = depthGainTotal / steps;
 
@@ -224,8 +236,13 @@ export function calculateOfflineProgress(
     );
     depth += depthGainStep;
 
+    horizontalKm += BASE_HORIZONTAL_KM_PER_MS * intent.horizontalSpeedMultiplier * STEP_MS;
+
     const o2Stress = (0.045 + rs * 0.028) * (1.35 - oxyEff * 0.55);
-    const o2Drop = Math.min(6, o2Stress * (STEP_MS / 60000));
+    const o2Drop = Math.min(
+      6,
+      o2Stress * (STEP_MS / 60000) * intent.oxygenDrainMultiplier,
+    );
     oxy = Math.max(0, oxy - o2Drop);
     cumulativeOxy += o2Drop;
 
@@ -233,9 +250,17 @@ export function calculateOfflineProgress(
     let hullLoss = 0;
     if (cycle < 0.9) {
       hullLoss =
-        (0.08 + rs * 0.12) * (1 - mitClamp) * (0.35 + cycle * 0.45) * (STEP_MS / 60000);
+        (0.08 + rs * 0.12) *
+        (1 - mitClamp) *
+        (0.35 + cycle * 0.45) *
+        (STEP_MS / 60000) *
+        (0.55 + 0.45 * intent.crackRiskMultiplier);
     } else {
-      const spike = (0.9 + rs * 1.1) * (1 - mitClamp * 0.92) * (STEP_MS / 60000);
+      const spike =
+        (0.9 + rs * 1.1) *
+        (1 - mitClamp * 0.92) *
+        (STEP_MS / 60000) *
+        (0.65 + 0.35 * intent.hazardChanceMultiplier);
       hullLoss = Math.min(3.2, spike);
     }
     hull = Math.max(0, hull - hullLoss);
@@ -300,7 +325,11 @@ export function calculateOfflineProgress(
     );
 
     const eventRoll = detNoise(seed + 7);
-    const eventChance = mission.specialEventChance * (navEventDampen ? 0.72 : 1);
+    const eventChance =
+      mission.specialEventChance *
+      (navEventDampen ? 0.72 : 1) *
+      intent.ambientChanceMultiplier *
+      intent.discoveryChanceMultiplier;
     if (eventRoll < eventChance * 0.08) {
       newEvents.push({
         id: createId('evt'),
@@ -320,7 +349,10 @@ export function calculateOfflineProgress(
     const treasureRoll = detNoise(seed + 21);
     if (
       treasureRoll <
-      mission.treasureChance * (0.04 + sonar * 0.05 + researchC * 0.06) * nav
+      mission.treasureChance *
+        (0.04 + sonar * 0.05 + researchC * 0.06) *
+        nav *
+        intent.discoveryChanceMultiplier
     ) {
       const pick = MOCK_TREASURES[Math.floor(detNoise(seed + 2) * MOCK_TREASURES.length)];
       const tr = { ...pick, id: createId('tr') };
@@ -401,6 +433,13 @@ export function calculateOfflineProgress(
     missionStatus,
   });
 
+  const simMsForRates = emergency ? simulatedMs : effectiveAwayMs;
+  const minsElapsed = Math.max(0.05, simMsForRates / 60000);
+  const depthDeltaRun = Math.min(initialDive.targetDepthM, depth) - depthStartM;
+  const avgDescentMPerMin = depthDeltaRun / minsElapsed;
+  const horizDeltaKm = horizontalKm - (initialDive.horizontalDistanceKm ?? 0);
+  const avgHorizKmPerMin = horizDeltaKm / minsElapsed;
+
   const nextDive: DiveSession = {
     ...initialDive,
     missionElapsedMs: missionElapsed,
@@ -414,6 +453,11 @@ export function calculateOfflineProgress(
     collectedResearch,
     collectedTreasures,
     eventLog: [...initialDive.eventLog, ...newEvents],
+    horizontalDistanceKm: horizontalKm,
+    verticalMovementState: deriveVerticalMovementState(avgDescentMPerMin, initialDive.currentRoute),
+    horizontalMovementState: deriveHorizontalMovementState(initialDive.currentRoute),
+    descentRateMPerMin: avgDescentMPerMin,
+    horizontalSpeedKmPerMin: avgHorizKmPerMin,
   };
 
   const report: OfflineReport = {

@@ -67,8 +67,12 @@ export function buildMissionOutcome(
   const storageTransferPreview = dive.cargoTransferredToBase
     ? undefined
     : computeCargoTransferSummary(dive, pendingOfflineReport ?? null);
+  const trialAborted = Boolean(
+    dive.offlineEmergencyExtraction || pendingOfflineReport?.emergencyExtraction,
+  );
   return {
     success,
+    trialAborted,
     missionName: dive.missionName,
     targetDepthM: mission.targetDepthM,
     depthReachedM: Math.round(dive.currentDepthM),

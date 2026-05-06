@@ -10,6 +10,7 @@ import 'react-native-reanimated';
 import { NavigationBridge } from '@/components/NavigationBridge';
 import { theme } from '@/constants/theme';
 import { GameProvider } from '@/context/GameContext';
+import { SUBMARINE_IDENTITY } from '@/data/submarine';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -61,10 +62,17 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="base" options={{ title: 'Deep Breach — Base' }} />
+          <Stack.Screen name="assignment-briefing" options={{ title: 'Assignment Order' }} />
+          <Stack.Screen name="intro-sequence" options={{ title: 'Intro', headerShown: false }} />
+          <Stack.Screen name="assignment-memo" options={{ title: 'Assignment memorandum' }} />
+          <Stack.Screen name="campaigns" options={{ title: 'Campaigns / Service Record' }} />
+          <Stack.Screen
+            name="base"
+            options={{ title: `${SUBMARINE_IDENTITY.designation} · Test Facility` }}
+          />
           <Stack.Screen name="base-storage" options={{ title: 'Base Storage' }} />
           <Stack.Screen name="repair-dock" options={{ title: 'Repair Dock' }} />
-          <Stack.Screen name="mission-select" options={{ title: 'Mission Select' }} />
+          <Stack.Screen name="mission-select" options={{ title: 'Trial schedule' }} />
           <Stack.Screen name="dive" options={{ title: 'Active Dive', headerBackVisible: false }} />
           <Stack.Screen name="room/[roomId]" options={{ title: 'Room Detail' }} />
           <Stack.Screen name="inventory" options={{ title: 'Inventory' }} />
@@ -76,7 +84,7 @@ export default function RootLayout() {
           />
           <Stack.Screen
             name="mission-result"
-            options={{ title: 'Mission Result', headerBackVisible: false }}
+            options={{ title: 'Trial Report', headerBackVisible: false }}
           />
           <Stack.Screen name="settings" options={{ title: 'Settings' }} />
         </Stack>

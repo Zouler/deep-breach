@@ -1,5 +1,7 @@
 import type { DiveRoute } from '@/types';
 
+import { getCommandIntentModifiers } from '@/game/navigationIntent';
+
 export const DEFAULT_DIVE_ROUTE: DiveRoute = 'push_deeper';
 
 export function emptyRouteTimeMs(): Record<DiveRoute, number> {
@@ -12,121 +14,67 @@ export function emptyRouteTimeMs(): Record<DiveRoute, number> {
   };
 }
 
-/** Multiplier on depth meters gained per mission clock tick (cumulative depth rate). */
+/** @deprecated prefer getCommandIntentModifiers(route).depthSpeedMultiplier */
 export function depthRateMultiplier(route: DiveRoute): number {
-  switch (route) {
-    case 'push_deeper':
-      return 1.22;
-    case 'search_salvage':
-      return 0.78;
-    case 'follow_signal':
-      return 0.9;
-    case 'avoid_hazards':
-      return 0.82;
-    case 'stabilize_systems':
-      return 0.62;
-    default:
-      return 1;
-  }
+  return getCommandIntentModifiers(route).depthSpeedMultiplier;
 }
 
-/** Multiplies passive oxygen drain (higher = more drain). */
+/** @deprecated prefer getCommandIntentModifiers(route).oxygenDrainMultiplier */
 export function oxygenDrainRouteMultiplier(route: DiveRoute): number {
-  switch (route) {
-    case 'push_deeper':
-      return 1.18;
-    case 'search_salvage':
-      return 1.05;
-    case 'follow_signal':
-      return 1.02;
-    case 'avoid_hazards':
-      return 0.92;
-    case 'stabilize_systems':
-      return 0.68;
-    default:
-      return 1;
-  }
+  return getCommandIntentModifiers(route).oxygenDrainMultiplier;
 }
 
-/** Multiplies random crack spawn roll chance. */
+/** @deprecated prefer getCommandIntentModifiers(route).crackRiskMultiplier */
 export function crackSpawnRouteMultiplier(route: DiveRoute): number {
-  switch (route) {
-    case 'push_deeper':
-      return 1.35;
-    case 'search_salvage':
-      return 1.12;
-    case 'follow_signal':
-      return 1.05;
-    case 'avoid_hazards':
-      return 0.62;
-    case 'stabilize_systems':
-      return 0.55;
-    default:
-      return 1;
-  }
+  return getCommandIntentModifiers(route).crackRiskMultiplier;
 }
 
-/** Multiplies passive external-discovery offer probability. */
+/** @deprecated prefer getCommandIntentModifiers(route).discoveryChanceMultiplier */
 export function passiveDiscoveryRouteMultiplier(route: DiveRoute): number {
-  switch (route) {
-    case 'push_deeper':
-      return 1.05;
-    case 'search_salvage':
-      return 1.35;
-    case 'follow_signal':
-      return 1.28;
-    case 'avoid_hazards':
-      return 0.55;
-    case 'stabilize_systems':
-      return 0.45;
-    default:
-      return 1;
-  }
+  return getCommandIntentModifiers(route).discoveryChanceMultiplier;
 }
 
-/** Ambient narrative event roll multiplier. */
+/** @deprecated prefer getCommandIntentModifiers(route).ambientChanceMultiplier */
 export function ambientRouteMultiplier(route: DiveRoute): number {
-  switch (route) {
-    case 'stabilize_systems':
-      return 0.7;
-    case 'avoid_hazards':
-      return 0.85;
-    case 'push_deeper':
-      return 1.15;
-    default:
-      return 1;
-  }
+  return getCommandIntentModifiers(route).ambientChanceMultiplier;
 }
 
 export const ROUTE_OPTIONS: {
   id: DiveRoute;
   label: string;
   blurb: string;
+  /** Short effect summary for intent picker */
+  effectLine: string;
 }[] = [
   {
     id: 'push_deeper',
     label: 'Push Deeper',
-    blurb: 'Descend faster toward the contract depth. More pressure stress.',
+    blurb: 'Order a fast pressure descent — navigation executes on your intent.',
+    effectLine: 'Fast descent · higher pressure stress',
   },
   {
     id: 'search_salvage',
     label: 'Search for Salvage',
-    blurb: 'Weave debris lanes. Better salvage odds, slower depth.',
+    blurb: 'Slow the vertical leg and sweep debris lanes for recoveries.',
+    effectLine: 'Slower descent · better material contacts',
   },
   {
     id: 'follow_signal',
     label: 'Follow Signal',
-    blurb: 'Track odd returns — research, artifacts, unknown contacts.',
+    blurb: 'Bias sensors toward anomalies and unknown returns.',
+    effectLine: 'Tracks anomalies · higher unknown risk',
   },
   {
     id: 'avoid_hazards',
     label: 'Avoid Hazards',
-    blurb: 'Wider berth around unstable terrain. Fewer contacts.',
+    blurb: 'Plot a wider, evasive corridor — fewer hazards, slower progress.',
+    effectLine: 'Safer route · fewer rewards',
   },
   {
     id: 'stabilize_systems',
     label: 'Stabilize Systems',
-    blurb: 'Slow descent, ease leaks and oxygen load.',
+    blurb: 'Minimize motion so engineering crews can hold the plant stable.',
+    effectLine: 'Slow movement · lower system stress',
   },
 ];
 

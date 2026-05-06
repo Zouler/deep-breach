@@ -14,6 +14,8 @@ export type PacedCrackContext = {
   allowCriticalRandom: boolean;
   /** True when tied to pressure spike / high-risk recovery. */
   forcedSeverity?: Crack['severity'];
+  /** <1 softens severity rolls (stabilize / avoid); >1 worsens. */
+  crackEscalationMultiplier?: number;
 };
 
 export function makePacedCrack(roomId: string, ctx: PacedCrackContext): Crack {
@@ -23,7 +25,9 @@ export function makePacedCrack(roomId: string, ctx: PacedCrackContext): Crack {
     return { id: createId('crack'), roomId, severity: sev, leakRatePerSecond: leak };
   }
 
-  const roll = Math.random();
+  const esc = ctx.crackEscalationMultiplier ?? 1;
+  const soften = 0.5 + 0.5 * Math.min(1.4, Math.max(0.35, esc));
+  let roll = Math.min(0.999, Math.random() * soften);
   let severity: Crack['severity'] = 'hairline';
   let leak = 0.04;
 

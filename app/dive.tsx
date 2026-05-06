@@ -1,27 +1,35 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { DiscoveryOutcomeModal } from '@/components/DiscoveryOutcomeModal';
 import { DiscoveryPromptModal } from '@/components/DiscoveryPromptModal';
-import { DiveEventStrip } from '@/components/DiveEventStrip';
 import { DiveFlashBand } from '@/components/DiveFlashBand';
-import { Gauge } from '@/components/Gauge';
-import { PanelCard } from '@/components/PanelCard';
+import {
+  AlertFeedCompact,
+  CompactRoomRow,
+  EmergencyButton,
+  HudPanel,
+  HudSectionTitle,
+  StatusBarGauge,
+  TacticalButton,
+} from '@/components/hud/HudPrimitives';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { SafeIcon } from '@/components/SafeIcon';
 import { ScreenShell } from '@/components/ScreenShell';
-import { SectionHeader } from '@/components/SectionHeader';
 import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
+import { diveTrialTipsForMission } from '@/data/storyBriefings';
 import { useGame } from '@/context/GameContext';
 import { useDiveFeedback } from '@/hooks/useDiveFeedback';
 import { useDiveTick } from '@/hooks/useDiveTick';
 import { getDiveRoomThreat, type DiveRoomThreat } from '@/game/diveRoomThreat';
 import { scanAvailable } from '@/game/discoveries';
+import { formatCrewMessageDisplayName } from '@/game/crewMessagePresentation';
 import { getOfflineExplorationGuard } from '@/game/offlineGuards';
 import { calculateMissionRisk } from '@/game/missionRisk';
 import { ROUTE_OPTIONS } from '@/game/navigation';
+import { formatHorizontalLabel, formatVerticalLabel } from '@/game/navigationVector';
 import { computeCargoUsed, oxygenCanisterCount } from '@/game/cargo';
 import {
   emergencyOxygenRestorePercent,
@@ -41,6 +49,7 @@ export default function DiveScreen() {
   const router = useRouter();
   const { state, dispatch } = useGame();
   const dive = state.dive;
+  const [routePickerOpen, setRoutePickerOpen] = useState(false);
 
   useDiveTick();
   const flashKind = useDiveFeedback(dive);
@@ -63,7 +72,6 @@ export default function DiveScreen() {
   const offlineGuard = getOfflineExplorationGuard(dive);
   const offlineOk = offlineGuard.canEnable;
   const riskScore = calculateMissionRisk(mission);
-  const showTutorial = mission.id === 'shallow_descent' || dive.missionElapsedMs < 55_000;
   const scanReady = canPerformAreaScan(dive, Date.now());
   const scanCooldownLeftMs = Math.max(
     0,
@@ -85,20 +93,39 @@ export default function DiveScreen() {
   );
   const leakSeverity = criticalLeak ? 'CRITICAL LEAK' : leaks > 0 ? 'ACTIVE LEAKS' : 'DRY BILGE';
 
-  const roomAccent = (t: DiveRoomThreat) => {
+  const delegationModeLabel = dive.continueExplorationWhileAway ? 'XO Command' : 'Captain Control';
+  const delegationShort = dive.continueExplorationWhileAway
+    ? 'Command delegation accepted. I’ll keep the crew on standing orders.'
+    : 'Dive pauses while the captain is away.';
+  const delegationBlockReason =
+    offlineOk || dive.continueExplorationWhileAway
+      ? null
+      : 'Stabilize hull, oxygen, and critical leaks before handing me command.';
+
+  const roomAccentColor = (t: DiveRoomThreat) => {
     switch (t) {
       case 'safe':
-        return styles.roomSafe;
+        return '#15803d';
       case 'warning':
-        return styles.roomWarn;
+        return '#ca8a04';
       case 'danger':
-        return styles.roomDanger;
+        return '#ea580c';
       case 'critical':
-        return styles.roomCrit;
+        return '#e11d48';
       default:
-        return null;
+        return '#38bdf8';
     }
   };
+
+  const alertLines = (dive.crewMessages ?? [])
+    .slice(-3)
+    .reverse()
+    .map((m) => ({
+      id: m.id,
+      speaker: formatCrewMessageDisplayName(m.speaker),
+      severity: m.severity === 'danger' ? 'danger' : m.severity === 'warning' ? 'warning' : 'info',
+      text: m.text,
+    })) as Array<{ id: string; speaker: string; severity: 'info' | 'warning' | 'danger'; text: string }>;
 
   return (
     <View style={styles.wrapper}>
@@ -108,181 +135,145 @@ export default function DiveScreen() {
         backgroundImage={GAME_ASSETS.diveScreenBg}
         backgroundScrimOpacity={0.68}
       >
-        <SectionHeader
-          title={dive.missionName}
-          subtitle={`Contract ${dive.targetDepthM}m · mission risk ${riskScore}%`}
-        />
-        <View style={styles.cargoBar}>
-          <Text style={styles.cargoText}>
-            Cargo {cargoUsed} / {cargoCap}
-          </Text>
-          <PrimaryButton
-            title="Inventory / cargo"
-            variant="ghost"
-            onPress={() => router.push('/inventory')}
-          />
-        </View>
-        <View
-          style={[
-            styles.alertBar,
-            criticalLeak ? styles.alertCrit : leaks > 0 ? styles.alertWarn : styles.alertOk,
-          ]}
-        >
-          <View style={styles.alertHead}>
-            {leaks > 0 ? (
-              <SafeIcon source={GAME_ASSETS.icons.crack} size={26} style={styles.alertIcon} />
-            ) : null}
+        <HudPanel>
+          <View style={styles.topRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.alertText}>{leakSeverity}</Text>
-              <Text style={styles.alertMeta}>{leaks} crack(s) across compartments</Text>
+              <Text style={styles.topTitle}>{dive.missionName}</Text>
+              <Text style={styles.topMeta}>
+                Trial depth {dive.targetDepthM}m · risk {riskScore}% · cargo {cargoUsed}/{cargoCap}
+              </Text>
+            </View>
+            <PrimaryButton title="Inventory" variant="ghost" onPress={() => router.push('/inventory')} />
+          </View>
+        </HudPanel>
+
+        <HudPanel>
+          <HudSectionTitle>TRIAL DIRECTIVE</HudSectionTitle>
+          {mission.trialPurpose ? <Text style={styles.small}>{mission.trialPurpose}</Text> : null}
+          {diveTrialTipsForMission(mission.id).map((line) => (
+            <Text key={line} style={styles.tipLine}>
+              • {line}
+            </Text>
+          ))}
+        </HudPanel>
+
+        <HudPanel>
+          <HudSectionTitle
+            right={
+              <View
+                style={[
+                  styles.conditionBadge,
+                  criticalLeak ? styles.badgeCrit : leaks > 0 ? styles.badgeWarn : styles.badgeOk,
+                ]}
+              >
+                {leaks > 0 ? (
+                  <SafeIcon source={GAME_ASSETS.icons.crack} size={18} style={{ marginRight: 6 }} />
+                ) : null}
+                <Text style={styles.conditionText}>{leakSeverity}</Text>
+              </View>
+            }
+          >
+            MAIN STATUS
+          </HudSectionTitle>
+
+          <Text style={styles.label}>Current depth</Text>
+          <Text style={styles.depthHero}>{Math.round(dive.currentDepthM)} m</Text>
+
+          <View style={styles.threatRow}>
+            <View style={[styles.pill, hullThreat === 'critical' && styles.pillCrit]}>
+              <Text style={styles.pillLabel}>Hull</Text>
+              <Text style={styles.pillValue}>{formatThreatLabel(hullThreat)}</Text>
+            </View>
+            <View style={[styles.pill, oxyThreat === 'critical' && styles.pillCrit]}>
+              <Text style={styles.pillLabel}>O₂</Text>
+              <Text style={styles.pillValue}>{formatThreatLabel(oxyThreat)}</Text>
+            </View>
+            <View style={[styles.pill, waterThreat === 'critical' && styles.pillCrit]}>
+              <Text style={styles.pillLabel}>Water</Text>
+              <Text style={styles.pillValue}>{formatThreatLabel(waterThreat)}</Text>
             </View>
           </View>
-        </View>
-        <View style={styles.threatRow}>
-          <View style={[styles.pill, hullThreat === 'critical' && styles.pillCrit]}>
-            <Text style={styles.pillLabel}>Hull</Text>
-            <Text style={styles.pillValue}>{formatThreatLabel(hullThreat)}</Text>
-          </View>
-          <View style={[styles.pill, oxyThreat === 'critical' && styles.pillCrit]}>
-            <Text style={styles.pillLabel}>O₂</Text>
-            <Text style={styles.pillValue}>{formatThreatLabel(oxyThreat)}</Text>
-          </View>
-          <View style={[styles.pill, waterThreat === 'critical' && styles.pillCrit]}>
-            <Text style={styles.pillLabel}>Water</Text>
-            <Text style={styles.pillValue}>{formatThreatLabel(waterThreat)}</Text>
-          </View>
-        </View>
-        <PanelCard style={styles.consoleCard}>
-          <Text style={styles.label}>Current depth</Text>
-          <Text style={styles.hero}>{Math.round(dive.currentDepthM)} m</Text>
-          <Gauge
-            label="Hull integrity"
-            value={dive.hullIntegrityPercent}
-            tone={threatToGaugeTone(hullThreat)}
-          />
-          <View style={{ height: 10 }} />
-          <Gauge
-            label="Oxygen reserves"
-            value={dive.oxygenPercent}
-            tone={threatToGaugeTone(oxyThreat)}
-          />
-          <View style={{ height: 10 }} />
-          <Gauge
-            label="Water intrusion"
-            value={dive.waterLevelPercent}
-            tone={threatToGaugeTone(waterThreat)}
-          />
-        </PanelCard>
-        <PanelCard>
-          <Text style={styles.cardTitle}>Navigation intent</Text>
-          <Text style={styles.meta}>
-            Active route: {dive.currentRoute.replace(/_/g, ' ')} — set how we descend and explore.
+
+          <StatusBarGauge label="Hull integrity" value={dive.hullIntegrityPercent} tone={threatToGaugeTone(hullThreat)} />
+          <StatusBarGauge label="Oxygen reserves" value={dive.oxygenPercent} tone={threatToGaugeTone(oxyThreat)} />
+          <StatusBarGauge label="Water intrusion" value={dive.waterLevelPercent} tone={threatToGaugeTone(waterThreat)} />
+          <Text style={styles.small}>{leaks} crack(s) across compartments</Text>
+        </HudPanel>
+
+        <HudPanel>
+          <HudSectionTitle>NAV VECTOR</HudSectionTitle>
+          <Text style={styles.navLine}>
+            {formatVerticalLabel(dive.verticalMovementState ?? 'descending')}
           </Text>
-          {ROUTE_OPTIONS.map((r) => (
-            <PrimaryButton
-              key={r.id}
-              title={`${r.label}${dive.currentRoute === r.id ? ' · active' : ''}`}
-              variant={dive.currentRoute === r.id ? 'primary' : 'ghost'}
-              onPress={() => dispatch({ type: 'SET_DIVE_ROUTE', route: r.id as DiveRoute })}
-            />
-          ))}
-        </PanelCard>
-        <PanelCard style={styles.consoleCard}>
-          <Text style={styles.cardTitle}>Sensors & life support</Text>
-          <PrimaryButton
-            title={
-              scanReady
-                ? 'Scan area'
-                : `Scan cooling (${Math.max(1, Math.ceil(scanCooldownLeftMs / 1000))}s)`
+          <Text style={styles.navLine}>
+            {formatHorizontalLabel(dive.horizontalMovementState ?? 'advancing')}
+          </Text>
+          <Text style={styles.navMeta}>
+            Descent ~{Math.max(0, Math.round(dive.descentRateMPerMin ?? 0))} m/min · Forward ~{' '}
+            {(dive.horizontalSpeedKmPerMin ?? 0).toFixed(2)} km/min
+          </Text>
+          <Text style={styles.navMeta}>
+            Range: {(dive.horizontalDistanceKm ?? 0).toFixed(1)} km
+          </Text>
+          <Text style={styles.navIntent}>
+            Intent: {ROUTE_OPTIONS.find((r) => r.id === dive.currentRoute)?.label ?? '—'}
+          </Text>
+        </HudPanel>
+
+        <HudPanel variant="emergency">
+          <HudSectionTitle>EMERGENCY OXYGEN</HudSectionTitle>
+          <EmergencyButton
+            title="Use Emergency Oxygen"
+            subtitle={
+              canUseO2
+                ? `Restore ~+${o2Canisters > 0 ? canisterRestore : o2RestoreHint}% · ${
+                    o2Canisters > 0
+                      ? `${o2Canisters} canister(s)`
+                      : `${dive.emergencyOxygenChargesRemaining} reserve charge(s)`
+                  }`
+                : 'UNAVAILABLE — no canisters or reserve charges'
             }
-            iconLeft={GAME_ASSETS.icons.scanArea}
-            iconLeftSize={26}
-            disabled={!scanReady || !!dive.pendingDiscovery}
-            onPress={() => dispatch({ type: 'SCAN_AREA', now: Date.now() })}
-          />
-          <PrimaryButton
-            title={
-              o2Canisters > 0
-                ? `Use oxygen canister (~+${canisterRestore}%) · ${o2Canisters} on board`
-                : `Emergency oxygen reserve (~+${o2RestoreHint}%) · ${dive.emergencyOxygenChargesRemaining} charge(s)`
-            }
-            variant="ghost"
             disabled={!canUseO2}
             onPress={() => dispatch({ type: 'USE_EMERGENCY_OXYGEN' })}
           />
-          <Text style={styles.small}>
-            Scan requests a sonar sweep for outside contacts. Bottled canisters are spent first;
-            built-in emergency charges scale with your O₂ plant upgrades.
-          </Text>
-        </PanelCard>
-        <PanelCard>
-          <Text style={styles.cardTitle}>Crew comms</Text>
-          {(dive.crewMessages ?? []).length === 0 ? (
-            <Text style={styles.muted}>Quiet channel — standing by.</Text>
-          ) : (
-            (dive.crewMessages ?? [])
-              .slice(-4)
-              .reverse()
-              .map((m) => (
-                <Text key={m.id} style={styles.crewLine}>
-                  <Text
-                    style={
-                      m.severity === 'danger'
-                        ? styles.crewDanger
-                        : m.severity === 'warning'
-                          ? styles.crewWarn
-                          : styles.crewSpeaker
-                    }
-                  >
-                    {m.speaker}:{' '}
-                  </Text>
-                  {m.text}
-                </Text>
-              ))
-          )}
-        </PanelCard>
-        <PanelCard>
-          <Text style={styles.cardTitle}>Mission clock</Text>
-          <Text style={styles.meta}>
-            Elapsed: {Math.floor(dive.missionElapsedMs / 1000)}s /{' '}
-            {Math.floor(dive.missionDurationMs / 1000)}s
-          </Text>
-          <Text style={styles.modeLabel}>
-            {dive.continueExplorationWhileAway
-              ? 'Mode: Offline Exploration (crew continues while away)'
-              : 'Mode: Safe Pause (dive frozen while away)'}
-          </Text>
-          <Text style={styles.meta}>
-            Safe Pause: depth, oxygen, hull, events, and rewards do not advance while the app is
-            backgrounded. Offline Exploration simulates up to 4h away time using mission risk, depth,
-            modules, and assigned crew — higher yield with real margin risk; emergency extraction can
-            cut a run short with partial salvage.
-          </Text>
-        </PanelCard>
-        {showTutorial ? (
-          <PanelCard>
-            <Text style={styles.tutorialTitle}>Briefing</Text>
-            <Text style={styles.tutorialLine}>• Repair cracks before they worsen.</Text>
-            <Text style={styles.tutorialLine}>
-              • External contacts can bring rewards, but may damage the hull.
-            </Text>
-            <Text style={styles.tutorialLine}>• Scan before recovery to reduce risk.</Text>
-            <Text style={styles.tutorialLine}>
-              • Offline exploration requires a stable submarine.
-            </Text>
-          </PanelCard>
-        ) : null}
-        <PanelCard>
-          <DiveEventStrip events={dive.eventLog} />
-        </PanelCard>
-        <PanelCard>
+          {!canUseO2 ? <Text style={styles.small}>Resupply at Repair Dock or upgrade O₂ plant.</Text> : null}
+        </HudPanel>
+
+        <HudPanel>
+          <HudSectionTitle>TACTICAL ACTIONS</HudSectionTitle>
+          <View style={styles.tacticalRow}>
+            <View style={{ flex: 1 }}>
+              <TacticalButton
+                title={scanReady ? 'Scan Area' : 'Scan Cooling'}
+                subtitle={
+                  scanReady
+                    ? 'Sweep for outside contacts.'
+                    : `Cooling ${Math.max(1, Math.ceil(scanCooldownLeftMs / 1000))}s`
+                }
+                icon={GAME_ASSETS.icons.scanArea}
+                disabled={!scanReady || !!dive.pendingDiscovery}
+                onPress={() => dispatch({ type: 'SCAN_AREA', now: Date.now() })}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <TacticalButton
+                title="Change Command Intent"
+                subtitle={`Current: ${
+                  ROUTE_OPTIONS.find((r) => r.id === dive.currentRoute)?.label ?? 'Unknown'
+                }`}
+                disabled={false}
+                onPress={() => setRoutePickerOpen(true)}
+              />
+            </View>
+          </View>
+        </HudPanel>
+
+        <HudPanel>
+          <HudSectionTitle>COMMAND DELEGATION</HudSectionTitle>
           <View style={styles.rowBetween}>
             <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={styles.cardTitle}>Continue Exploration While Away</Text>
-              <Text style={styles.small}>
-                Offline resolution uses mission risk, module levels, assigned crew, depth, hull, sonar
-                and cargo capacity. Unfair hull breaches are clamped while away.
-              </Text>
+              <Text style={styles.modeLabel}>{delegationModeLabel}</Text>
+              <Text style={styles.small}>{delegationShort}</Text>
             </View>
             <Switch
               value={dive.continueExplorationWhileAway}
@@ -292,57 +283,73 @@ export default function DiveScreen() {
               trackColor={{ false: '#1e293b', true: '#155e75' }}
             />
           </View>
-          {!offlineOk && !dive.continueExplorationWhileAway ? (
-            <Text style={styles.warn}>{offlineGuard.userMessage}</Text>
-          ) : null}
-          {__DEV__ ? (
-            <Text style={styles.debug}>DEV: {offlineGuard.debugDetails}</Text>
-          ) : null}
-        </PanelCard>
-        <PanelCard>
-          <Text style={styles.cardTitle}>Rooms</Text>
+          {delegationBlockReason ? <Text style={styles.warn}>{delegationBlockReason}</Text> : null}
+          {__DEV__ ? <Text style={styles.debug}>DEV: {offlineGuard.debugDetails}</Text> : null}
+        </HudPanel>
+
+        <HudPanel>
+          <HudSectionTitle>SUBMARINE COMPARTMENTS</HudSectionTitle>
           {dive.rooms.map((room) => {
             const tier = getDiveRoomThreat(room);
+            const staged = room.loot.filter(
+              (l) =>
+                !l.collected && (l.kind === 'repair_supply' || l.kind === 'emergency_supply'),
+            ).length;
+            const accent = roomAccentColor(tier);
             return (
-              <Pressable
+              <CompactRoomRow
                 key={room.id}
+                title={room.name}
+                subtitle={`${tier.toUpperCase()} · ${room.cracks.length} crack(s) · ${staged} staged`}
+                leftIcon={room.cracks.length > 0 ? GAME_ASSETS.icons.crack : undefined}
+                accentColor={accent}
                 onPress={() => router.push(`/room/${room.id}`)}
-                style={[styles.roomRow, roomAccent(tier)]}
-              >
-                {room.cracks.length > 0 ? (
-                  <SafeIcon source={GAME_ASSETS.icons.crack} size={22} style={styles.roomCrackIcon} />
-                ) : (
-                  <View style={{ width: 22 }} />
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.roomName}>{room.name}</Text>
-                  <Text style={styles.meta}>
-                    {tier.toUpperCase()} · {room.cracks.length} crack(s) ·{' '}
-                    {
-                      room.loot.filter(
-                        (l) =>
-                          !l.collected &&
-                          (l.kind === 'repair_supply' || l.kind === 'emergency_supply'),
-                      ).length
-                    }{' '}
-                    staged supply
-                  </Text>
-                </View>
-                <Text style={styles.chev}>›</Text>
-              </Pressable>
+              />
             );
           })}
-        </PanelCard>
-        <PrimaryButton
-          title="Return to Base (abort)"
-          variant="danger"
-          onPress={() => {
-            dispatch({ type: 'RETURN_TO_BASE' });
-            router.replace('/base');
-          }}
-        />
+        </HudPanel>
+
+        <HudPanel>
+          <HudSectionTitle>ALERT FEED</HudSectionTitle>
+          <AlertFeedCompact lines={alertLines} />
+        </HudPanel>
+
+        <View style={styles.returnRow}>
+          <PrimaryButton
+            title="Return to Base (Abort)"
+            variant="danger"
+            onPress={() => {
+              dispatch({ type: 'RETURN_TO_BASE' });
+              router.replace('/base');
+            }}
+          />
+        </View>
       </ScreenShell>
       <DiveFlashBand kind={flashKind} />
+      <Modal visible={routePickerOpen} transparent animationType="fade" onRequestClose={() => setRoutePickerOpen(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setRoutePickerOpen(false)}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>Command Intent</Text>
+            <Text style={styles.modalSubtitle}>
+              Issue orders; department leads execute the intent. Tap to switch.
+            </Text>
+            {ROUTE_OPTIONS.map((r) => (
+              <View key={r.id} style={styles.intentRow}>
+                <PrimaryButton
+                  title={`${r.label}${dive.currentRoute === r.id ? ' · active' : ''}`}
+                  variant={dive.currentRoute === r.id ? 'primary' : 'ghost'}
+                  onPress={() => {
+                    dispatch({ type: 'SET_DIVE_ROUTE', route: r.id as DiveRoute });
+                    setRoutePickerOpen(false);
+                  }}
+                />
+                <Text style={styles.intentEffect}>{r.effectLine}</Text>
+              </View>
+            ))}
+            <PrimaryButton title="Close" variant="ghost" onPress={() => setRoutePickerOpen(false)} />
+          </View>
+        </Pressable>
+      </Modal>
       {dive.pendingDiscovery ? (
         <DiscoveryPromptModal
           visible
@@ -364,54 +371,40 @@ export default function DiveScreen() {
 
 const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: theme.bg },
-  scrollPad: { paddingTop: 6 },
+  scrollPad: { paddingTop: 6, paddingBottom: 14 },
   hero: { color: theme.accent, fontSize: 40, fontWeight: '800', marginBottom: 8 },
+  depthHero: { color: theme.accent, fontSize: 44, fontWeight: '900', marginBottom: 4 },
   label: { color: theme.textMuted, marginBottom: 4 },
-  cardTitle: { color: theme.text, fontWeight: '700', marginBottom: 6 },
   meta: { color: theme.textMuted, marginBottom: 2 },
   small: { color: theme.textMuted, fontSize: 12, lineHeight: 18 },
-  roomRow: {
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.border,
+  tipLine: { color: theme.textMuted, fontSize: 12, lineHeight: 18, marginTop: 4 },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  topTitle: { color: theme.text, fontWeight: '900', letterSpacing: 0.5 },
+  topMeta: { color: theme.textMuted, marginTop: 4, fontSize: 12 },
+  conditionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    borderLeftWidth: 3,
-    paddingLeft: 8,
-    gap: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  roomCrackIcon: { marginRight: 2 },
-  roomSafe: { borderLeftColor: '#15803d' },
-  roomWarn: { borderLeftColor: '#ca8a04' },
-  roomDanger: { borderLeftColor: '#ea580c' },
-  roomCrit: { borderLeftColor: '#e11d48' },
-  roomName: { color: theme.text, fontWeight: '600' },
-  chev: { color: theme.textMuted, fontSize: 22 },
+  conditionText: { color: theme.text, fontWeight: '900', fontSize: 12, letterSpacing: 0.6 },
+  badgeOk: { borderColor: '#14532d55', backgroundColor: '#052e1644' },
+  badgeWarn: { borderColor: '#b4530944', backgroundColor: '#451a0344' },
+  badgeCrit: { borderColor: '#e11d48aa', backgroundColor: '#450a0a66' },
+  tacticalRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  modeLabel: { color: theme.text, fontWeight: '900', marginBottom: 2, marginTop: 8 },
+  rowBetween: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   warn: { color: theme.warning, marginTop: 8, fontSize: 12 },
   muted: { color: theme.textMuted, marginBottom: 12 },
-  modeLabel: { color: theme.text, fontWeight: '700', marginBottom: 6, marginTop: 4 },
-  rowBetween: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  alertBar: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 12,
-    marginBottom: 8,
-  },
-  alertOk: { borderColor: '#14532d55', backgroundColor: '#052e1644' },
-  alertWarn: { borderColor: '#b4530944', backgroundColor: '#451a0344' },
-  alertCrit: { borderColor: '#e11d48aa', backgroundColor: '#450a0a66' },
-  alertHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  alertIcon: {},
-  alertText: { color: theme.text, fontWeight: '800', letterSpacing: 1 },
-  alertMeta: { color: theme.textMuted, marginTop: 4, fontSize: 12 },
   threatRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   pill: {
     flex: 1,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.surface,
+    borderColor: '#38bdf822',
+    backgroundColor: '#020617aa',
     paddingVertical: 8,
     paddingHorizontal: 8,
   },
@@ -419,38 +412,28 @@ const styles = StyleSheet.create({
     borderColor: '#fb7185',
     backgroundColor: '#450a0a44',
   },
-  consoleCard: {
-    borderColor: '#38bdf855',
-    backgroundColor: '#020617cc',
-  },
   pillLabel: { color: theme.textMuted, fontSize: 11, textTransform: 'uppercase' },
   pillValue: { color: theme.text, fontWeight: '700', marginTop: 4, fontSize: 12 },
-  tutorialTitle: {
-    color: theme.accent,
-    fontWeight: '800',
-    marginBottom: 6,
-    fontSize: 12,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  tutorialLine: { color: theme.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 4 },
   debug: { color: theme.textMuted, fontSize: 11, marginTop: 6 },
-  crewLine: { color: theme.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 6 },
-  crewSpeaker: { color: theme.accent, fontWeight: '700' },
-  crewWarn: { color: theme.warning, fontWeight: '700' },
-  crewDanger: { color: theme.danger, fontWeight: '700' },
-  cargoBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginBottom: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.surface,
+  returnRow: { marginTop: 4, marginBottom: 8 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.68)',
+    justifyContent: 'flex-end',
   },
-  cargoText: { color: theme.text, fontWeight: '700' },
+  modalSheet: {
+    padding: 14,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    borderWidth: 1,
+    borderColor: '#38bdf833',
+    backgroundColor: '#020617f2',
+  },
+  modalTitle: { color: theme.text, fontWeight: '900', fontSize: 16, marginBottom: 4 },
+  modalSubtitle: { color: theme.textMuted, marginBottom: 10, fontSize: 12 },
+  navLine: { color: theme.text, fontWeight: '700', fontSize: 13, marginTop: 2 },
+  navMeta: { color: theme.textMuted, fontSize: 12, marginTop: 4 },
+  navIntent: { color: theme.accent, fontSize: 12, fontWeight: '800', marginTop: 6 },
+  intentRow: { marginBottom: 10 },
+  intentEffect: { color: theme.textMuted, fontSize: 11, lineHeight: 15, marginTop: 4, marginLeft: 2 },
 });

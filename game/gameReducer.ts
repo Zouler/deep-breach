@@ -38,6 +38,7 @@ import {
   withSyncedLegacyEconomy,
 } from '@/game/baseStorage';
 import { buildMissionOutcome } from '@/game/missionOutcome';
+import { deriveHorizontalMovementState } from '@/game/navigationVector';
 import { calculateOfflineProgress, canEnableOfflineExploration } from '@/game/offlineProgress';
 import {
   computeRepairSuccessChance,
@@ -59,6 +60,11 @@ import {
 export type GameAction =
   | { type: 'HYDRATE'; state: GameState }
   | { type: 'NEW_GAME' }
+  | { type: 'STORY_MARK_ASSIGNMENT_BRIEFING_SEEN' }
+  | { type: 'STORY_ACCEPT_ASSIGNMENT' }
+  | { type: 'STORY_SKIP_ASSIGNMENT_BRIEFING' }
+  | { type: 'STORY_INTRO_SEQUENCE_COMPLETE' }
+  | { type: 'STORY_INTRO_SEQUENCE_SKIP' }
   | { type: 'START_MISSION'; missionId: string }
   | { type: 'TICK_DIVE'; deltaMs: number; now: number }
   | { type: 'SET_OFFLINE_EXPLORATION'; value: boolean }
@@ -159,6 +165,41 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       return action.state;
     case 'NEW_GAME':
       return touch(createInitialGameState());
+    case 'STORY_MARK_ASSIGNMENT_BRIEFING_SEEN':
+      return touch({
+        ...state,
+        story: { ...state.story, assignmentBriefingSeen: true },
+      });
+    case 'STORY_ACCEPT_ASSIGNMENT':
+      return touch({
+        ...state,
+        story: {
+          ...state.story,
+          assignmentBriefingAccepted: true,
+          assignmentBriefingSeen: true,
+          assignmentBriefingSkipped: false,
+        },
+      });
+    case 'STORY_SKIP_ASSIGNMENT_BRIEFING':
+      return touch({
+        ...state,
+        story: {
+          ...state.story,
+          assignmentBriefingSkipped: true,
+          assignmentBriefingSeen: true,
+          assignmentBriefingAccepted: false,
+        },
+      });
+    case 'STORY_INTRO_SEQUENCE_COMPLETE':
+      return touch({
+        ...state,
+        story: { ...state.story, introSequenceCompleted: true },
+      });
+    case 'STORY_INTRO_SEQUENCE_SKIP':
+      return touch({
+        ...state,
+        story: { ...state.story, introSequenceSkipped: true },
+      });
     case 'START_MISSION': {
       if (state.dive) return state;
       const mission = findMission(state, action.missionId);
@@ -393,7 +434,11 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
     case 'SET_DIVE_ROUTE': {
       if (!state.dive || state.dive.status !== 'active') return state;
       if (state.dive.currentRoute === action.route) return state;
-      let d = { ...state.dive, currentRoute: action.route };
+      let d = {
+        ...state.dive,
+        currentRoute: action.route,
+        horizontalMovementState: deriveHorizontalMovementState(action.route),
+      };
       d = crewMessageForRouteChange(d, state.crew, action.route);
       return touch({ ...state, dive: d });
     }

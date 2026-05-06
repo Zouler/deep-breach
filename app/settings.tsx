@@ -80,6 +80,11 @@ export default function SettingsScreen() {
         </View>
       </PanelCard>
       <PanelCard>
+        <Text style={styles.label}>Story</Text>
+        <Text style={styles.small}>Campaign overview and future acts (visual only in MVP).</Text>
+        <PrimaryButton title="Campaigns / Service Record" variant="ghost" onPress={() => router.push('/campaigns' as never)} />
+      </PanelCard>
+      <PanelCard>
         <Text style={styles.label}>Danger zone</Text>
         <Text style={styles.small}>
           Clears AsyncStorage save and resets the profile. No cloud, no accounts — local wipe only.

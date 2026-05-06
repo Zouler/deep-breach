@@ -1,6 +1,6 @@
 import type { DiveRoute, Mission } from '@/types';
 
-import { oxygenDrainRouteMultiplier } from '@/game/navigation';
+import { getCommandIntentModifiers } from '@/game/navigationIntent';
 import { moduleLevel, riskScalar } from '@/game/submarineStats';
 import type { Submarine } from '@/types';
 
@@ -16,6 +16,8 @@ export type OxygenTickContext = {
   submarine: Submarine;
   waterLevelPercent: number;
   route: DiveRoute;
+  /** When set (e.g. from dive tick), skips a second lookup — keeps intent in sync. */
+  oxygenIntentMultiplier?: number;
 };
 
 /**
@@ -30,7 +32,8 @@ export function computeOxygenDrainPercent(deltaMs: number, ctx: OxygenTickContex
   /** Stronger plant = lower drain; level 1 ≈ 0.65 eff, level 6 ≈ 1.05 */
   const eff = 0.55 + oxyLv * 0.1;
   const efficiencyMitigation = Math.max(0.18, 1.05 - eff * 0.72);
-  const routeMul = oxygenDrainRouteMultiplier(ctx.route);
+  const routeMul =
+    ctx.oxygenIntentMultiplier ?? getCommandIntentModifiers(ctx.route).oxygenDrainMultiplier;
   const drain =
     OXYGEN_BASE_DRAIN_PER_SEC *
     dtSec *

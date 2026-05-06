@@ -1,4 +1,5 @@
 import type { CrewMember, CrewMessage, DiveRoute, DiveSession } from '@/types';
+import type { CrewLeadMessageSpeakerId } from '@/types/crew';
 
 import { createId } from '@/game/ids';
 import { assignedCrew } from '@/game/submarineStats';
@@ -23,17 +24,24 @@ export function pushCrewMessage(
   };
 }
 
-function pickSpeaker(
-  crew: CrewMember[],
-  role: 'engineer' | 'navigator' | 'scientist',
-): CrewMessage['speaker'] {
-  const a = assignedCrew(crew).find((c) => c.role === role);
-  if (a) {
-    if (role === 'engineer') return 'Engineer';
-    if (role === 'navigator') return 'Navigator';
-    return 'Scientist';
-  }
-  return 'System';
+function voiceEngineering(crew: CrewMember[]): CrewLeadMessageSpeakerId {
+  return assignedCrew(crew).some((c) => c.role === 'engineer') ? 'chief_engineer' : 'system';
+}
+
+function voiceNavigation(crew: CrewMember[]): CrewLeadMessageSpeakerId {
+  return assignedCrew(crew).some((c) => c.role === 'navigator') ? 'navigation_officer' : 'system';
+}
+
+function voiceSensors(crew: CrewMember[]): CrewLeadMessageSpeakerId {
+  return assignedCrew(crew).some((c) => c.role === 'scientist') ? 'sensor_officer' : 'system';
+}
+
+function voiceResearch(crew: CrewMember[]): CrewLeadMessageSpeakerId {
+  return assignedCrew(crew).some((c) => c.role === 'scientist') ? 'research_lead' : 'system';
+}
+
+function voiceLogistics(crew: CrewMember[]): CrewLeadMessageSpeakerId {
+  return assignedCrew(crew).length > 0 ? 'logistics_officer' : 'system';
 }
 
 export function crewMessageForRouteChange(
@@ -41,34 +49,36 @@ export function crewMessageForRouteChange(
   crew: CrewMember[],
   route: DiveRoute,
 ): DiveSession {
-  const lines: Record<DiveRoute, { speaker: CrewMessage['speaker']; text: string; severity: CrewMessage['severity'] }> =
-    {
-      push_deeper: {
-        speaker: pickSpeaker(crew, 'navigator'),
-        text: 'Taking a fast descent corridor — expect heavier pressure cycles.',
-        severity: 'warning',
-      },
-      search_salvage: {
-        speaker: pickSpeaker(crew, 'navigator'),
-        text: 'Plotting a debris weave — slower depth, more contacts likely.',
-        severity: 'info',
-      },
-      follow_signal: {
-        speaker: pickSpeaker(crew, 'scientist'),
-        text: 'Locking passive trackers on that anomaly — following your signal order.',
-        severity: 'info',
-      },
-      avoid_hazards: {
-        speaker: pickSpeaker(crew, 'navigator'),
-        text: 'Routing wide around unstable terrain — safer, fewer outside pings.',
-        severity: 'info',
-      },
-      stabilize_systems: {
-        speaker: pickSpeaker(crew, 'engineer'),
-        text: 'Slowing descent to stabilize stacks — oxygen and leaks should ease.',
-        severity: 'info',
-      },
-    };
+  const lines: Record<
+    DiveRoute,
+    { speaker: CrewLeadMessageSpeakerId; text: string; severity: CrewMessage['severity'] }
+  > = {
+    push_deeper: {
+      speaker: voiceNavigation(crew),
+      text: 'Pushing descent rate. Hull margins will narrow.',
+      severity: 'warning',
+    },
+    search_salvage: {
+      speaker: voiceLogistics(crew),
+      text: 'Slowing descent. Recovery crews are watching for salvage contacts.',
+      severity: 'info',
+    },
+    follow_signal: {
+      speaker: voiceSensors(crew),
+      text: 'Adjusting course to track the signal source.',
+      severity: 'info',
+    },
+    avoid_hazards: {
+      speaker: voiceNavigation(crew),
+      text: 'Safer route plotted. We’ll lose time, but reduce exposure.',
+      severity: 'info',
+    },
+    stabilize_systems: {
+      speaker: voiceEngineering(crew),
+      text: 'Slowing operations. Repair crews can keep systems stable.',
+      severity: 'info',
+    },
+  };
   const line = lines[route];
   return pushCrewMessage(dive, line);
 }
@@ -76,22 +86,22 @@ export function crewMessageForRouteChange(
 export function crewMessageForScan(dive: DiveSession, crew: CrewMember[], found: boolean): DiveSession {
   if (found) {
     return pushCrewMessage(dive, {
-      speaker: pickSpeaker(crew, 'scientist'),
-      text: 'Contact resolved on active sweep — awaiting your call, Captain.',
+      speaker: voiceSensors(crew),
+      text: 'Scanner sweep complete. One external contact detected.',
       severity: 'info',
     });
   }
   return pushCrewMessage(dive, {
-    speaker: pickSpeaker(crew, 'scientist'),
-    text: 'Active sweep clean — no firm contact this pass.',
+    speaker: voiceSensors(crew),
+    text: 'No contacts on current sweep.',
     severity: 'info',
   });
 }
 
 export function crewMessageForEmergencyOxygen(dive: DiveSession, crew: CrewMember[]): DiveSession {
   return pushCrewMessage(dive, {
-    speaker: pickSpeaker(crew, 'engineer'),
-    text: 'Emergency oxygen bled into the stack — reserves bumped.',
+    speaker: voiceEngineering(crew),
+    text: 'Emergency oxygen routed to the stack — reserves bumped.',
     severity: 'info',
   });
 }
@@ -105,21 +115,21 @@ export function crewMessageForDiscoveryResolution(
 ): DiveSession {
   if (patch.journal.choice === 'ignored') {
     return pushCrewMessage(dive, {
-      speaker: pickSpeaker(crew, 'navigator'),
-      text: 'Contact ignored — standing by on your current route.',
+      speaker: voiceNavigation(crew),
+      text: 'Contact dropped — standing by on your current route.',
       severity: 'info',
     });
   }
   if (patch.journal.hazardTriggered) {
     return pushCrewMessage(dive, {
-      speaker: pickSpeaker(crew, 'engineer'),
-      text: 'Bad news, Captain — that recovery attempt stressed the hull.',
+      speaker: voiceEngineering(crew),
+      text: 'That recovery attempt stressed the hull — engineering is on it.',
       severity: 'danger',
     });
   }
   return pushCrewMessage(dive, {
-    speaker: pickSpeaker(crew, 'engineer'),
-    text: 'Recovery confirmed — I stowed supplies in expedition cargo.',
+    speaker: voiceLogistics(crew),
+    text: 'Recovered materials secured in expedition cargo.',
     severity: 'info',
   });
 }
@@ -131,13 +141,13 @@ export function crewMessageForRepair(
 ): DiveSession {
   if (ok) {
     return pushCrewMessage(dive, {
-      speaker: pickSpeaker(crew, 'engineer'),
-      text: 'Patch took — compartment reading cleaner.',
+      speaker: voiceEngineering(crew),
+      text: 'Pressure sealant took hold — leak stabilized for now.',
       severity: 'info',
     });
   }
   return pushCrewMessage(dive, {
-    speaker: pickSpeaker(crew, 'engineer'),
+    speaker: voiceEngineering(crew),
     text: 'Field patch slipped — pressure won that cycle.',
     severity: 'warning',
   });
@@ -159,7 +169,7 @@ export function tickAmbientCrewChatter(
 export function maybeReactiveCrewMessage(
   dive: DiveSession,
   crew: CrewMember[],
-  now: number,
+  _now: number,
 ): DiveSession {
   if (dive.status !== 'active') return dive;
   const o2 = dive.oxygenPercent;
@@ -168,35 +178,35 @@ export function maybeReactiveCrewMessage(
 
   if (o2 < 28) {
     return pushCrewMessage(dive, {
-      speaker: pickSpeaker(crew, 'engineer'),
-      text: 'Oxygen reserves are dropping faster than I like — consider stabilizing.',
+      speaker: voiceEngineering(crew),
+      text: 'Oxygen reserves are falling faster than I like — recommend stabilizing operations.',
       severity: 'warning',
     });
   }
   if (hull < 38) {
     return pushCrewMessage(dive, {
-      speaker: pickSpeaker(crew, 'engineer'),
-      text: 'Hull stress is climbing — recommend repairs before we push luck.',
+      speaker: voiceEngineering(crew),
+      text: 'Hull stress is climbing — my crews need time on repairs before we push luck.',
       severity: 'warning',
     });
   }
   if (cracks > 0 && dive.rooms.some((r) => r.cracks.some((c) => c.severity !== 'hairline'))) {
     return pushCrewMessage(dive, {
-      speaker: pickSpeaker(crew, 'engineer'),
-      text: 'We have working leaks — bilge is responding.',
+      speaker: voiceEngineering(crew),
+      text: 'Working leaks in the stack — repair crews are moving to the worst compartments.',
       severity: 'warning',
     });
   }
   if (dive.pendingDiscovery) {
     return pushCrewMessage(dive, {
-      speaker: pickSpeaker(crew, 'scientist'),
-      text: 'Outside contact needs a captain’s decision on recovery.',
+      speaker: voiceSensors(crew),
+      text: 'Contact signature is unstable — recommend a dedicated scan before recovery.',
       severity: 'info',
     });
   }
   return pushCrewMessage(dive, {
-    speaker: pickSpeaker(crew, 'navigator'),
-    text: 'Drift nominal — standing by on your next navigation order.',
+    speaker: voiceNavigation(crew),
+    text: 'Drift nominal — navigation team standing by for your next intent.',
     severity: 'info',
   });
 }
