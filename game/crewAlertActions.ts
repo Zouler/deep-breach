@@ -201,17 +201,38 @@ export function filterCrewAlertActionsForState(
       out.push(a);
       continue;
     }
+    // Do not surface actions while report/offline flow owns the UI.
+    if (state.lastMissionOutcome || state.pendingOfflineReport) {
+      // allow only navigation to Captain's Log / base-storage from base flows if explicitly provided
+      const safePassive =
+        (a.type === 'open_map' || a.type === 'open_sonar' || a.type === 'open_inventory' || a.type === 'open_cargo') &&
+        a.payload?.targetRoute &&
+        isSafeTargetRoute(a.payload.targetRoute);
+      if (!safePassive) continue;
+    }
     if (a.type === 'use_emergency_oxygen') {
       if (!dive || dive.status !== 'active') continue;
       if (!canUseEmergencyOxygen(dive, state.submarine)) continue;
     }
     if (a.type === 'open_room' || a.type === 'open_repairs') {
       if (!dive || dive.status !== 'active') continue;
-      if (a.payload?.roomId && !dive.rooms.some((r) => r.id === a.payload!.roomId)) continue;
+      // if no active cracks at all, hide
+      if (!dive.rooms.some((r) => r.cracks.length > 0)) continue;
+      if (a.payload?.roomId) {
+        const room = dive.rooms.find((r) => r.id === a.payload!.roomId);
+        if (!room) continue;
+        // if the target room no longer needs attention, hide
+        if (room.cracks.length === 0) continue;
+      }
     }
     if (a.type === 'set_command_intent' || a.type === 'change_command_intent') {
       if (!dive || dive.status !== 'active') continue;
-      if (a.type === 'set_command_intent' && !isDiveRoute(a.payload?.commandIntent)) continue;
+      if (a.type === 'set_command_intent') {
+        const intent = a.payload?.commandIntent;
+        if (!isDiveRoute(intent)) continue;
+        // Hide redundant intent buttons (already active).
+        if (dive.currentRoute === intent) continue;
+      }
     }
     if (
       a.type === 'open_inventory' ||

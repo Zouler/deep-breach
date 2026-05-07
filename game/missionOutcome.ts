@@ -12,6 +12,7 @@ import { missionCompletionBonusScrap } from '@/game/economy';
 import { dominantRoute } from '@/game/navigation';
 import { countHullRepairUnitsInExpedition } from '@/game/repairResourceStatus';
 import { cargoCapacityUnits } from '@/game/submarineStats';
+import { buildFailurePresentation } from '@/game/failurePresentation';
 
 function buildFallbackItemsSummary(dive: DiveSession): string[] {
   const lines: string[] = [];
@@ -75,12 +76,21 @@ export function buildMissionOutcome(
   const storageTransferPreview = dive.cargoTransferredToBase
     ? undefined
     : computeCargoTransferSummary(dive, pendingOfflineReport ?? null);
-  const trialAborted = Boolean(
+  const emergencyExtraction = Boolean(
     dive.offlineEmergencyExtraction || pendingOfflineReport?.emergencyExtraction,
   );
+  const trialAborted = Boolean(emergencyExtraction);
+  const failure = buildFailurePresentation({
+    dive,
+    mission,
+    emergencyExtraction,
+    commanderName: 'Phillip Roberts',
+  });
   return {
     success,
     trialAborted,
+    emergencyExtraction,
+    ...failure,
     missionId: mission.id,
     missionName: dive.missionName,
     targetDepthM: mission.targetDepthM,

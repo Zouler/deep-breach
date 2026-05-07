@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { IconLabelRow } from '@/components/IconLabelRow';
 import { PanelCard } from '@/components/PanelCard';
@@ -56,13 +56,50 @@ export default function MissionResultScreen() {
 
   const { text: headlineText, color: headlineColor } = trialHeadline(outcome);
   const sec = tr.sections;
+  const catastrophic = Boolean(outcome.catastrophicFailure);
 
   return (
     <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.74}>
       <Text style={styles.docTitle}>{tr.docTitle}</Text>
-      <Text style={[styles.title, { color: headlineColor }]}>{headlineText}</Text>
+      <Text style={[styles.title, { color: catastrophic ? theme.danger : headlineColor }]}>
+        {catastrophic ? 'VESSEL LOST' : headlineText}
+      </Text>
       <Text style={styles.sub}>{outcome.missionName}</Text>
       <Text style={styles.vesselMeta}>{tr.vesselLine}</Text>
+
+      {catastrophic ? (
+        <PanelCard style={[styles.consoleCard, styles.failureCard]}>
+          <Text style={styles.failureKicker}>{outcome.failureTitle ?? 'DBX-07 LOST'}</Text>
+          <Text style={styles.failureBody}>
+            {outcome.causeSummary ??
+              'DBX-07 failed to recover from catastrophic structural damage. The vessel was lost beneath operational depth.'}
+          </Text>
+          <View style={styles.failureStatsRow}>
+            <Text style={styles.failureStat}>Final depth: {outcome.finalDepth ?? outcome.depthReachedM}m</Text>
+            <Text style={styles.failureStat}>Hull: {outcome.finalHull ?? '—'}%</Text>
+            <Text style={styles.failureStat}>O₂: {outcome.finalOxygen ?? '—'}%</Text>
+          </View>
+          <View style={styles.signalLostBox}>
+            <Text style={styles.signalLostTitle}>SIGNAL LOST</Text>
+            <Text style={styles.signalLostLine}>No recovery beacon detected.</Text>
+            <Text style={styles.signalLostLine}>No surface telemetry received.</Text>
+          </View>
+        </PanelCard>
+      ) : null}
+
+      {catastrophic ? (
+        <PanelCard style={[styles.consoleCard, styles.memorialCard]}>
+          <Text style={styles.memorialTitle}>In Memoriam</Text>
+          <Text style={styles.memorialName}>Commander Phillip Roberts</Text>
+          <Text style={styles.memorialRole}>Commanding Officer, DBX-07 “Deep Breach”</Text>
+          <Text style={styles.memorialLine}>
+            Fell in the line of duty during DBX Experimental Trials.
+          </Text>
+          <Text style={styles.memorialNotice}>
+            Official notice delivered under DBX Program Command authority.
+          </Text>
+        </PanelCard>
+      ) : null}
 
       {outcome.trialDebrief &&
       outcome.missionId &&
@@ -271,12 +308,29 @@ export default function MissionResultScreen() {
       </PanelCard>
 
       <PrimaryButton
-        title="Return to Base"
+        title={catastrophic ? 'Return to Base / Command Hub' : 'Return to Base'}
         onPress={() => {
           dispatch({ type: 'RETURN_TO_BASE' });
           router.replace('/base');
         }}
       />
+      {catastrophic && outcome.missionId ? (
+        <PrimaryButton
+          title="Retry Trial"
+          variant="danger"
+          onPress={() => {
+            dispatch({ type: 'RETRY_TRIAL', missionId: outcome.missionId! });
+            router.replace('/dive');
+          }}
+        />
+      ) : null}
+      {catastrophic ? (
+        <PrimaryButton
+          title="Review Captain’s Log"
+          variant="ghost"
+          onPress={() => router.push('/captains-log')}
+        />
+      ) : null}
       <PrimaryButton
         title="Open trial schedule"
         variant="ghost"
@@ -293,6 +347,60 @@ const styles = StyleSheet.create({
   consoleCard: {
     borderColor: '#38bdf855',
     backgroundColor: '#020617cc',
+  },
+  failureCard: {
+    borderColor: 'rgba(248, 113, 113, 0.45)',
+    backgroundColor: 'rgba(2, 6, 23, 0.92)',
+  },
+  failureKicker: {
+    color: theme.danger,
+    fontWeight: '900',
+    fontSize: 12,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  failureBody: { color: theme.text, fontSize: 14, lineHeight: 22 },
+  failureStatsRow: { marginTop: 10, gap: 4 },
+  failureStat: { color: theme.textMuted, fontSize: 12, fontFamily: theme.fontMono },
+  signalLostBox: {
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(248, 113, 113, 0.35)',
+    backgroundColor: 'rgba(127, 29, 29, 0.14)',
+    padding: 12,
+  },
+  signalLostTitle: {
+    color: theme.danger,
+    fontWeight: '900',
+    fontSize: 11,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  signalLostLine: { color: theme.textMuted, fontSize: 12, lineHeight: 18 },
+  memorialCard: {
+    borderColor: 'rgba(248, 113, 113, 0.22)',
+    backgroundColor: 'rgba(0, 5, 14, 0.94)',
+  },
+  memorialTitle: {
+    color: theme.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  },
+  memorialName: { color: theme.text, fontSize: 18, fontWeight: '900' },
+  memorialRole: { color: theme.textMuted, marginTop: 4, fontFamily: theme.fontMono, fontSize: 12 },
+  memorialLine: { color: theme.text, marginTop: 10, fontSize: 13, lineHeight: 20 },
+  memorialNotice: {
+    color: theme.textMuted,
+    marginTop: 10,
+    fontSize: 12,
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
   docTitle: {
     color: theme.textMuted,

@@ -104,6 +104,7 @@ export type GameAction =
   | { type: 'STORY_INTRO_SEQUENCE_COMPLETE' }
   | { type: 'STORY_INTRO_SEQUENCE_SKIP' }
   | { type: 'START_MISSION'; missionId: string }
+  | { type: 'RETRY_TRIAL'; missionId: string }
   | { type: 'TICK_DIVE'; deltaMs: number; now: number }
   | { type: 'SET_OFFLINE_EXPLORATION'; value: boolean }
   | { type: 'MARK_DIVER_BACKGROUND'; now: number }
@@ -141,6 +142,36 @@ function findMission(state: GameState, id: string): Mission | undefined {
   return state.missions.find((m) => m.id === id);
 }
 
+function startMissionFromBase(state: GameState, missionId: string): GameState {
+  if (state.dive) return state;
+  const mission = findMission(state, missionId);
+  if (!mission) return state;
+  if (!canStartExperimentalTrial(state, mission.id)) return state;
+  const dive = createDiveSessionForMission(mission, state.submarine);
+  let started = withStoryBeat(
+    onStartExperimentalTrial(
+      {
+        ...state,
+        dive,
+        pendingOfflineReport: null,
+        lastMissionOutcome: null,
+      },
+      mission.id,
+    ),
+    {
+      type: 'mission_start',
+      importance: 'medium',
+      title: `Trial underway — ${mission.name}`,
+      summaryText: missionStartSummary(mission.name, state.commander.name),
+      speakerId: 'xo',
+      missionId: mission.id,
+      diveStartedAt: dive.startedAt,
+    },
+  );
+  started = enqueueCutIn(started, 'first_scan_available');
+  return started;
+}
+
 function appendTerminalStoryBeat(
   state: GameState,
   dive: DiveSession,
@@ -170,6 +201,18 @@ function appendTerminalStoryBeat(
       title: `Trial complete — ${mission.name}`,
       summaryText: missionCompleteSummary(mission.name, dive.currentDepthM),
       speakerId: 'xo',
+      missionId: mission.id,
+      diveStartedAt: dive.startedAt,
+    });
+  }
+  if (dive.status === 'failed' && !trialAborted) {
+    return withStoryBeat(state, {
+      type: 'mission_failed',
+      importance: 'high',
+      title: 'DBX-07 Lost',
+      summaryText:
+        'DBX-07 was lost during the operation. Commander Phillip Roberts was declared killed in the line of duty.',
+      speakerId: 'program_command',
       missionId: mission.id,
       diveStartedAt: dive.startedAt,
     });
@@ -325,33 +368,19 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         story: { ...state.story, introSequenceSkipped: true },
       });
     case 'START_MISSION': {
-      if (state.dive) return state;
-      const mission = findMission(state, action.missionId);
-      if (!mission) return state;
-      if (!canStartExperimentalTrial(state, mission.id)) return state;
-      const dive = createDiveSessionForMission(mission, state.submarine);
-      let started = withStoryBeat(
-        onStartExperimentalTrial(
-          {
-            ...state,
-            dive,
-            pendingOfflineReport: null,
-            lastMissionOutcome: null,
-          },
-          mission.id,
-        ),
-        {
-          type: 'mission_start',
-          importance: 'medium',
-          title: `Trial underway — ${mission.name}`,
-          summaryText: missionStartSummary(mission.name, state.commander.name),
-          speakerId: 'xo',
-          missionId: mission.id,
-          diveStartedAt: dive.startedAt,
-        },
-      );
-      started = enqueueCutIn(started, 'first_scan_available');
-      return touch(started);
+      return touch(startMissionFromBase(state, action.missionId));
+    }
+    case 'RETRY_TRIAL': {
+      // Clean attempt reset: keep base progress, wipe dive-attempt state, restore vessel health.
+      const reset: GameState = touch({
+        ...state,
+        submarine: { ...state.submarine, hullIntegrityPercent: 100 },
+        dive: null,
+        pendingOfflineReport: null,
+        lastMissionOutcome: null,
+        pendingNarrativeCutInIds: [],
+      });
+      return touch(startMissionFromBase(reset, action.missionId));
     }
     case 'TICK_DIVE': {
       if (!state.dive || state.dive.status !== 'active') return state;

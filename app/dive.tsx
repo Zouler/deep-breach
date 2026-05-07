@@ -72,6 +72,23 @@ export default function DiveScreen() {
 
   const diveActive = dive?.status === 'active';
 
+  // Keep hook order stable across mission transitions (active → terminal).
+  const priorityComm = useMemo(() => {
+    const msgs = dive?.crewMessages ?? [];
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const m = msgs[i]!;
+      if (m.actions?.length) return m;
+    }
+    return null;
+  }, [dive?.crewMessages]);
+
+  const priorityActions = useMemo(() => {
+    if (!priorityComm?.actions?.length) return [];
+    return filterCrewAlertActionsForState(state, priorityComm.actions).filter(
+      (a) => a.type !== 'acknowledge',
+    );
+  }, [priorityComm, state]);
+
   useEffect(() => {
     if (diveActive) return;
     setRoutePickerOpen(false);
@@ -156,22 +173,6 @@ export default function DiveScreen() {
         return '#38bdf8';
     }
   };
-
-  const priorityComm = useMemo(() => {
-    const msgs = dive.crewMessages ?? [];
-    for (let i = msgs.length - 1; i >= 0; i--) {
-      const m = msgs[i]!;
-      if (m.actions?.length) return m;
-    }
-    return null;
-  }, [dive.crewMessages]);
-
-  const priorityActions = useMemo(() => {
-    if (!priorityComm?.actions?.length) return [];
-    return filterCrewAlertActionsForState(state, priorityComm.actions).filter(
-      (a) => a.type !== 'acknowledge',
-    );
-  }, [priorityComm, state]);
 
   const alertLines = (dive.crewMessages ?? [])
     .filter((m) => (priorityComm ? m.id !== priorityComm.id : true))

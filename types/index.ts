@@ -389,6 +389,25 @@ export interface MissionOutcome {
   success: boolean;
   /** Emergency / early surface protocol — shown as "trial aborted" in debrief copy. */
   trialAborted?: boolean;
+  /** True when a mission ended via emergency extraction (survivable). */
+  emergencyExtraction?: boolean;
+  /** True when the vessel is considered lost/destroyed (presentation only). */
+  catastrophicFailure?: boolean;
+  failureType?:
+    | 'submarine_lost'
+    | 'oxygen_depletion'
+    | 'hull_collapse'
+    | 'emergency_extraction_failed'
+    | 'unknown_catastrophe';
+  failureTitle?: string;
+  failureSummary?: string;
+  commanderStatus?: string;
+  vesselStatus?: string;
+  crewStatus?: string;
+  causeSummary?: string;
+  finalDepth?: number;
+  finalHull?: number;
+  finalOxygen?: number;
   /** Mission id for progression / UI (matches `Mission.id`). */
   missionId?: string;
   missionName: string;
