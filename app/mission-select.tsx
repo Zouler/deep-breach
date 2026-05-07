@@ -5,9 +5,53 @@ import { PanelCard } from '@/components/PanelCard';
 import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
 import { theme } from '@/constants/theme';
+import {
+  EXPERIMENTAL_TRIAL_MISSION_IDS,
+  EXPERIMENTAL_TRIAL_SET,
+  unlockRequirementCopy,
+} from '@/data/experimentalTrials';
 import { NARRATIVE_UI } from '@/data/storyBriefings';
 import { useGame } from '@/context/GameContext';
 import { FIRST_TRIAL_MISSION_ID } from '@/game/storyNavigation';
+import { getFirstClearBundle } from '@/game/trialRewards';
+import {
+  experimentalTrialsCompletedCount,
+  getEffectiveTrialStatus,
+} from '@/game/trialProgression';
+import type { TrialStatus } from '@/types';
+
+function statusBadgeLabel(status: TrialStatus): { text: string; style: object } {
+  switch (status) {
+    case 'locked':
+      return { text: 'Locked', style: styles.badgeLocked };
+    case 'available':
+      return { text: 'Available', style: styles.badgeAvailable };
+    case 'in_progress':
+      return { text: 'In progress', style: styles.badgeProgress };
+    case 'completed':
+      return { text: 'Completed', style: styles.badgeDone };
+    case 'failed_retry_available':
+      return { text: 'Retry available', style: styles.badgeRetry };
+    default:
+      return { text: 'Available', style: styles.badgeAvailable };
+  }
+}
+
+function actionLabel(status: TrialStatus, isExperimental: boolean): string {
+  if (!isExperimental) return 'Start Trial';
+  switch (status) {
+    case 'locked':
+      return 'Locked';
+    case 'completed':
+      return 'Replay Trial';
+    case 'failed_retry_available':
+      return 'Retry Trial';
+    case 'in_progress':
+      return 'In progress';
+    default:
+      return 'Start Trial';
+  }
+}
 
 export default function MissionSelectScreen() {
   const router = useRouter();
@@ -16,38 +60,89 @@ export default function MissionSelectScreen() {
   const { state, dispatch } = useGame();
 
   const ms = NARRATIVE_UI.missionSelect;
+  const totalTrials = EXPERIMENTAL_TRIAL_MISSION_IDS.length;
+  const done = experimentalTrialsCompletedCount(state);
+  const nextTrialId = EXPERIMENTAL_TRIAL_MISSION_IDS.find((id) => {
+    const st = getEffectiveTrialStatus(state, id);
+    return st === 'available' || st === 'failed_retry_available';
+  });
+  const nextMission = nextTrialId ? state.missions.find((x) => x.id === nextTrialId) : undefined;
 
   return (
     <ScreenShell scroll>
       <SectionHeader title={ms.title} subtitle={ms.subtitle} />
+      <Text style={styles.progressLine}>
+        Experimental Trials: {done} / {totalTrials} completed
+        {nextMission ? ` · Next: ${nextMission.name}` : ''}
+      </Text>
       {highlight === FIRST_TRIAL_MISSION_ID ? (
         <Text style={styles.highlightBanner}>Next step: Pressure Trial I — launch when ready.</Text>
       ) : null}
-      {state.missions.map((m) => (
-        <Pressable
-          key={m.id}
-          onPress={() => {
-            if (state.dive?.status === 'active') return;
-            if (state.dive) {
-              router.push('/mission-result');
-              return;
-            }
-            dispatch({ type: 'START_MISSION', missionId: m.id });
-            router.push('/dive');
-          }}
-        >
-          <PanelCard
-            style={[styles.card, highlight === m.id ? styles.cardHighlight : null]}
+      {state.missions.map((m) => {
+        const isExperimental = EXPERIMENTAL_TRIAL_SET.has(m.id);
+        const status = isExperimental ? getEffectiveTrialStatus(state, m.id) : 'available';
+        const badge = statusBadgeLabel(status);
+        const locked = status === 'locked';
+        const inProg = status === 'in_progress';
+        const debriefBlocking = Boolean(state.dive && state.dive.status !== 'active');
+        const activeBlocking = state.dive?.status === 'active';
+        const firstClear = getFirstClearBundle(m.id);
+        const req = isExperimental ? unlockRequirementCopy(m.id, state.missions) : null;
+        const action = actionLabel(status, isExperimental);
+        const canPress = !locked && !activeBlocking && !debriefBlocking && !inProg;
+
+        return (
+          <Pressable
+            key={m.id}
+            onPress={() => {
+              if (!canPress) return;
+              dispatch({ type: 'START_MISSION', missionId: m.id });
+              router.push('/dive');
+            }}
           >
-            <Text style={styles.name}>{m.name}</Text>
-            {m.trialPurpose ? <Text style={styles.purpose}>{m.trialPurpose}</Text> : null}
-            <Text style={styles.meta}>Target depth: {m.targetDepthM}m</Text>
-            <Text style={styles.meta}>Est. duration: {m.durationMinutes} min (active)</Text>
-            <Text style={styles.meta}>Risk: {m.risk}</Text>
-            <Text style={styles.reward}>Expected: {m.expectedRewardsText}</Text>
-          </PanelCard>
-        </Pressable>
-      ))}
+            <PanelCard
+              style={[styles.card, highlight === m.id ? styles.cardHighlight : null]}
+            >
+              <View style={styles.rowTop}>
+                <Text style={styles.name}>{m.name}</Text>
+                {isExperimental ? (
+                  <Text style={[styles.badge, badge.style]}>{badge.text}</Text>
+                ) : null}
+              </View>
+              {m.trialPurpose ? <Text style={styles.purpose}>{m.trialPurpose}</Text> : null}
+              <Text style={styles.meta}>Target depth: {m.targetDepthM}m</Text>
+              <Text style={styles.meta}>Est. duration: {m.durationMinutes} min (active)</Text>
+              <Text style={styles.meta}>Risk: {m.risk}</Text>
+              <Text style={styles.reward}>Expected: {m.expectedRewardsText}</Text>
+              {isExperimental && firstClear && (status === 'available' || status === 'locked') ? (
+                <Text style={styles.rewardPreview}>
+                  First-clear rewards: +{firstClear.scrap} Scrap, +{firstClear.researchData}{' '}
+                  Research Data, +{firstClear.hullPatchKits} Hull Patch Kit
+                  {firstClear.hullPatchKits === 1 ? '' : 's'}, +{firstClear.pressureSealant}{' '}
+                  Pressure Sealant
+                </Text>
+              ) : null}
+              {isExperimental && locked && req ? (
+                <Text style={styles.requirement}>{req}</Text>
+              ) : null}
+              <Text
+                style={[
+                  styles.actionHint,
+                  locked || inProg || activeBlocking || debriefBlocking
+                    ? styles.actionMuted
+                    : styles.actionAccent,
+                ]}
+              >
+                {activeBlocking
+                  ? 'Active trial dive in progress — surface or complete the run first.'
+                  : debriefBlocking
+                    ? ms.debriefPending
+                    : action}
+              </Text>
+            </PanelCard>
+          </Pressable>
+        );
+      })}
       {state.dive?.status === 'active' ? (
         <Text style={styles.warn}>
           Active trial dive in progress — surface or complete the run first.
@@ -61,6 +156,13 @@ export default function MissionSelectScreen() {
 }
 
 const styles = StyleSheet.create({
+  progressLine: {
+    color: theme.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 10,
+    fontWeight: '600',
+  },
   highlightBanner: {
     color: theme.accent,
     fontWeight: '800',
@@ -74,9 +176,27 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     backgroundColor: '#082f4966',
   },
-  name: { color: theme.text, fontSize: 18, fontWeight: '700', marginBottom: 6 },
+  rowTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 6,
+  },
+  name: { color: theme.text, fontSize: 18, fontWeight: '700', flex: 1 },
+  badge: { fontSize: 11, fontWeight: '900', letterSpacing: 0.5, textTransform: 'uppercase' },
+  badgeLocked: { color: theme.textMuted },
+  badgeAvailable: { color: theme.accent },
+  badgeProgress: { color: theme.warning },
+  badgeDone: { color: theme.ok },
+  badgeRetry: { color: theme.warning },
   purpose: { color: theme.textMuted, fontSize: 13, lineHeight: 18, marginBottom: 8 },
   meta: { color: theme.textMuted, marginBottom: 2 },
   reward: { color: theme.accent, marginTop: 6 },
+  rewardPreview: { color: theme.textMuted, fontSize: 12, lineHeight: 17, marginTop: 6 },
+  requirement: { color: theme.warning, fontSize: 12, marginTop: 8, lineHeight: 17 },
+  actionHint: { marginTop: 10, fontSize: 13, fontWeight: '800' },
+  actionAccent: { color: theme.accent },
+  actionMuted: { color: theme.textMuted },
   warn: { color: theme.warning },
 });

@@ -1,6 +1,24 @@
-import type { DiveRoute, GameState, Mission, RepairItem, SubmarineModuleType } from '@/types';
+import type { DiveRoute, DiveSession, GameState, Mission, RepairItem, SubmarineModuleType } from '@/types';
 
 import { repairTemplateById } from '@/data/repairItems';
+import {
+  artifactRecoverySummary,
+  breachReportSummary,
+  cargoCapacityWarningSummary,
+  discoveryContactSummary,
+  missionAbortedEarlySummary,
+  missionCompleteSummary,
+  missionFailedSummary,
+  missionStartSummary,
+  offlineStandingOrdersSummary,
+  oxygenEmergencySummary,
+  repairStabilizedSummary,
+  salvageRecoverySummary,
+  emergencyExtractionSummary,
+  xoCommandBlockedSummary,
+  xoCommandDisabledSummary,
+  xoCommandEnabledSummary,
+} from '@/data/storyRecapTemplates';
 import {
   addRepairChargesToExpedition,
   applyRewardIntent,
@@ -12,6 +30,7 @@ import {
   crewMessageForDiscoveryResolution,
   crewMessageForEmergencyOxygen,
   crewMessageForRepair,
+  crewMessageForRepairSuppliesRecovered,
   crewMessageForRouteChange,
   crewMessageForScan,
 } from '@/game/crewMessages';
@@ -56,10 +75,29 @@ import {
   diveHullBumpAfterRepair,
   roomAfterRepair,
 } from '@/game/repairLogic';
+import { applyCutInDismiss, enqueueCutIn } from '@/game/cutInQueue';
+import { maybeQueueInternalCrewEvent, resolveInternalCrewEventChoice } from '@/game/internalCrewEvents';
+import { findNewSeriousBreach, withStoryBeat } from '@/game/storyBeats';
+import {
+  applyExperimentalTrialActiveAbort,
+  applyExperimentalTrialResolution,
+  canStartExperimentalTrial,
+  onStartExperimentalTrial,
+} from '@/game/trialProgression';
+import { EXPERIMENTAL_TRIAL_SET } from '@/data/experimentalTrials';
+import { applyActionableCrewAlertEmissions } from '@/game/actionableCrewAlertEmissions';
+import { stripTransientDiveOverlays } from '@/game/diveTransientState';
+import { getRepairStockStatus } from '@/game/repairResourceStatus';
+import { withRepairStockCrewAwareness } from '@/game/repairResourceAlerts';
 
 export type GameAction =
   | { type: 'HYDRATE'; state: GameState }
   | { type: 'NEW_GAME' }
+  | { type: 'REQUEST_NARRATIVE_CUT_IN'; id: string }
+  | { type: 'DISMISS_NARRATIVE_CUT_IN'; id: string }
+  | { type: 'NARRATIVE_APP_BACKGROUND'; now: number }
+  | { type: 'NARRATIVE_APP_FOREGROUND'; now: number }
+  | { type: 'NARRATIVE_DISMISS_XO_BRIEFING'; fingerprint: string; now: number }
   | { type: 'STORY_MARK_ASSIGNMENT_BRIEFING_SEEN' }
   | { type: 'STORY_ACCEPT_ASSIGNMENT' }
   | { type: 'STORY_SKIP_ASSIGNMENT_BRIEFING' }
@@ -78,6 +116,8 @@ export type GameAction =
   | { type: 'USE_EMERGENCY_OXYGEN' }
   | { type: 'SCAN_AREA'; now: number }
   | { type: 'DISMISS_DISCOVERY_OUTCOME' }
+  /** Clears active-dive overlays (discovery prompt, outcome banner) and pending cut-in queue. Safe no-op layers. */
+  | { type: 'CLEAR_ACTIVE_DIVE_OVERLAYS' }
   | { type: 'UPGRADE_MODULE'; moduleType: SubmarineModuleType; currency?: UpgradeCurrency }
   | { type: 'HIRE_CREW'; crewId: string }
   | { type: 'TOGGLE_CREW_ASSIGN'; crewId: string }
@@ -87,7 +127,8 @@ export type GameAction =
   | { type: 'REPAIR_DOCK_RESTOCK_BASIC' }
   | { type: 'SALVAGE_TREASURES'; rarity: 'common' | 'rare'; count?: number }
   | { type: 'ANALYZE_ARTIFACTS'; count?: number }
-  | { type: 'ANALYZE_SAMPLES'; count?: number };
+  | { type: 'ANALYZE_SAMPLES'; count?: number }
+  | { type: 'RESOLVE_INTERNAL_CREW_EVENT'; eventId: string; optionId: string };
 
 function touch(state: GameState): GameState {
   return {
@@ -100,6 +141,50 @@ function findMission(state: GameState, id: string): Mission | undefined {
   return state.missions.find((m) => m.id === id);
 }
 
+function appendTerminalStoryBeat(
+  state: GameState,
+  dive: DiveSession,
+  mission: Mission,
+): GameState {
+  const trialAborted = Boolean(
+    dive.offlineEmergencyExtraction || state.pendingOfflineReport?.emergencyExtraction,
+  );
+  if (trialAborted) {
+    return enqueueCutIn(
+      withStoryBeat(state, {
+        type: 'emergency_extraction',
+        importance: 'high',
+        title: 'Emergency extraction',
+        summaryText: emergencyExtractionSummary(mission, dive.currentDepthM),
+        speakerId: 'xo',
+        missionId: mission.id,
+        diveStartedAt: dive.startedAt,
+      }),
+      'emergency_extraction_triggered',
+    );
+  }
+  if (dive.status === 'success') {
+    return withStoryBeat(state, {
+      type: 'mission_complete',
+      importance: 'high',
+      title: `Trial complete — ${mission.name}`,
+      summaryText: missionCompleteSummary(mission.name, dive.currentDepthM),
+      speakerId: 'xo',
+      missionId: mission.id,
+      diveStartedAt: dive.startedAt,
+    });
+  }
+  return withStoryBeat(state, {
+    type: 'mission_failed',
+    importance: 'high',
+    title: `Trial failure — ${mission.name}`,
+    summaryText: missionFailedSummary(mission.name),
+    speakerId: 'xo',
+    missionId: mission.id,
+    diveStartedAt: dive.startedAt,
+  });
+}
+
 function recordTerminal(state: GameState, dive: NonNullable<GameState['dive']>): GameState {
   if (dive.status === 'active' || dive.outcomeRecorded) return state;
   const mission = findMission(state, dive.missionId);
@@ -110,17 +195,21 @@ function recordTerminal(state: GameState, dive: NonNullable<GameState['dive']>):
     bonus > 0 && !dive.missionCompletionBonusScrap
       ? { ...dive, missionCompletionBonusScrap: bonus }
       : dive;
+  const diveForOutcome = stripTransientDiveOverlays(diveWithBonus);
   const lastMissionOutcome = buildMissionOutcome(
-    { ...diveWithBonus, outcomeRecorded: true },
+    { ...diveForOutcome, outcomeRecorded: true },
     mission,
     state.submarine,
     state.pendingOfflineReport,
   );
-  return {
+  let next: GameState = {
     ...state,
-    dive: { ...diveWithBonus, outcomeRecorded: true },
+    dive: { ...diveForOutcome, outcomeRecorded: true },
     lastMissionOutcome,
   };
+  next = applyExperimentalTrialResolution(next, mission, diveForOutcome);
+  next = appendTerminalStoryBeat(next, diveForOutcome, mission);
+  return next;
 }
 
 function flushDiveToBase(state: GameState): GameState {
@@ -163,6 +252,41 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'HYDRATE':
       return action.state;
+    case 'REQUEST_NARRATIVE_CUT_IN':
+      return touch(enqueueCutIn(state, action.id));
+    case 'DISMISS_NARRATIVE_CUT_IN':
+      return touch(applyCutInDismiss(state, action.id));
+    case 'NARRATIVE_APP_BACKGROUND':
+      return touch({
+        ...state,
+        narrativeRecap: {
+          ...state.narrativeRecap,
+          lastGlobalBackgroundAt: action.now,
+        },
+      });
+    case 'NARRATIVE_APP_FOREGROUND': {
+      const bg = state.narrativeRecap.lastGlobalBackgroundAt;
+      if (!bg) return state;
+      const away = action.now - bg;
+      const fifteen = 15 * 60 * 1000;
+      if (away < fifteen) {
+        return touch({
+          ...state,
+          narrativeRecap: { ...state.narrativeRecap, lastGlobalBackgroundAt: null },
+        });
+      }
+      return state;
+    }
+    case 'NARRATIVE_DISMISS_XO_BRIEFING':
+      return touch({
+        ...state,
+        narrativeRecap: {
+          ...state.narrativeRecap,
+          lastXOBriefingDismissedFingerprint: action.fingerprint,
+          lastXOBriefingDismissedAt: action.now,
+          lastGlobalBackgroundAt: null,
+        },
+      });
     case 'NEW_GAME':
       return touch(createInitialGameState());
     case 'STORY_MARK_ASSIGNMENT_BRIEFING_SEEN':
@@ -204,18 +328,37 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       if (state.dive) return state;
       const mission = findMission(state, action.missionId);
       if (!mission) return state;
+      if (!canStartExperimentalTrial(state, mission.id)) return state;
       const dive = createDiveSessionForMission(mission, state.submarine);
-      return touch({
-        ...state,
-        dive,
-        pendingOfflineReport: null,
-        lastMissionOutcome: null,
-      });
+      let started = withStoryBeat(
+        onStartExperimentalTrial(
+          {
+            ...state,
+            dive,
+            pendingOfflineReport: null,
+            lastMissionOutcome: null,
+          },
+          mission.id,
+        ),
+        {
+          type: 'mission_start',
+          importance: 'medium',
+          title: `Trial underway — ${mission.name}`,
+          summaryText: missionStartSummary(mission.name, state.commander.name),
+          speakerId: 'xo',
+          missionId: mission.id,
+          diveStartedAt: dive.startedAt,
+        },
+      );
+      started = enqueueCutIn(started, 'first_scan_available');
+      return touch(started);
     }
     case 'TICK_DIVE': {
       if (!state.dive || state.dive.status !== 'active') return state;
       const mission = findMission(state, state.dive.missionId);
       if (!mission) return state;
+      const prevDive = state.dive;
+      const hadPending = !!prevDive.pendingDiscovery;
       const nextDive = tickActiveDive({
         dive: state.dive,
         mission,
@@ -225,22 +368,99 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         now: action.now,
       });
       let next: GameState = { ...state, dive: nextDive };
-      next = recordTerminal(next, nextDive);
+      if (!hadPending && nextDive.pendingDiscovery) {
+        next = enqueueCutIn(next, 'first_discovery_detected');
+      }
+      const breach = findNewSeriousBreach(prevDive, nextDive);
+      const prevStock = getRepairStockStatus(prevDive);
+      const nextStock = getRepairStockStatus(nextDive);
+      const criticalStockTransition =
+        nextStock === 'critical_empty' && prevStock !== 'critical_empty';
+      if (breach) {
+        next = withStoryBeat(next, {
+          type: 'breach',
+          importance: breach.severity === 'critical' ? 'high' : 'medium',
+          title: `Hull alert — ${breach.roomName}`,
+          summaryText: breachReportSummary(breach.roomName, breach.severity),
+          speakerId: 'chief_engineer',
+          missionId: nextDive.missionId,
+          diveStartedAt: nextDive.startedAt,
+        });
+        if (breach.severity === 'moderate') {
+          next = enqueueCutIn(next, 'first_moderate_breach');
+        }
+      }
+      next = withRepairStockCrewAwareness(next, prevDive, next.dive!, action.now, {
+        suppressCriticalEmptyCrewLine: Boolean(breach && criticalStockTransition),
+      });
+      next = applyActionableCrewAlertEmissions(
+        next,
+        prevDive,
+        next.dive!,
+        mission,
+        breach,
+        action.now,
+      );
+      next = recordTerminal(next, next.dive!);
       return touch(next);
     }
     case 'SET_OFFLINE_EXPLORATION': {
       if (!state.dive || state.dive.status !== 'active') return state;
       if (!action.value) {
-        return touch({
-          ...state,
-          dive: { ...state.dive, continueExplorationWhileAway: false, backgroundedAt: null },
-        });
+        return touch(
+          withStoryBeat(
+            {
+              ...state,
+              dive: { ...state.dive, continueExplorationWhileAway: false, backgroundedAt: null },
+            },
+            {
+              type: 'xo_command',
+              importance: 'low',
+              title: 'Captain control',
+              summaryText: xoCommandDisabledSummary(),
+              speakerId: 'xo',
+              missionId: state.dive.missionId,
+              diveStartedAt: state.dive.startedAt,
+            },
+          ),
+        );
       }
-      if (!canEnableOfflineExploration(state.dive)) return state;
-      return touch({
-        ...state,
-        dive: { ...state.dive, continueExplorationWhileAway: true },
-      });
+      if (!canEnableOfflineExploration(state.dive)) {
+        return touch(
+          enqueueCutIn(
+            withStoryBeat(state, {
+              type: 'xo_command',
+              importance: 'medium',
+              title: 'Delegation refused',
+              summaryText: xoCommandBlockedSummary(),
+              speakerId: 'xo',
+              missionId: state.dive.missionId,
+              diveStartedAt: state.dive.startedAt,
+            }),
+            'first_xo_command_blocked',
+          ),
+        );
+      }
+      return touch(
+        enqueueCutIn(
+          withStoryBeat(
+            {
+              ...state,
+              dive: { ...state.dive, continueExplorationWhileAway: true },
+            },
+            {
+              type: 'xo_command',
+              importance: 'high',
+              title: 'XO command',
+              summaryText: xoCommandEnabledSummary(),
+              speakerId: 'xo',
+              missionId: state.dive.missionId,
+              diveStartedAt: state.dive.startedAt,
+            },
+          ),
+          'first_xo_command_enabled',
+        ),
+      );
     }
     case 'MARK_DIVER_BACKGROUND': {
       if (!state.dive || state.dive.status !== 'active') return state;
@@ -280,10 +500,22 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         pendingOfflineReport: report,
       };
       next = recordTerminal(next, nextDive);
+      if (nextDive.status === 'active' && report && !report.emergencyExtraction) {
+        next = withStoryBeat(next, {
+          type: 'system',
+          importance: 'medium',
+          title: 'Standing orders interval',
+          summaryText: offlineStandingOrdersSummary(report, mission),
+          speakerId: 'xo',
+          missionId: mission.id,
+          diveStartedAt: nextDive.startedAt,
+        });
+      }
       return touch(next);
     }
     case 'REPAIR_CRACK': {
       if (!state.dive || state.dive.status !== 'active') return state;
+      const prevDiveRepair = state.dive;
       const room = state.dive.rooms.find((r) => r.id === action.roomId);
       if (!room) return state;
       const crack = room.cracks.find((c) => c.id === action.crackId);
@@ -293,7 +525,12 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       if (itemIndex < 0) return state;
       const item = exp[itemIndex];
       const pre = validateRepairPreconditions(crack, item);
-      if (!pre.ok) return state;
+      if (!pre.ok) {
+        if (item.quantity <= 0) {
+          return touch(enqueueCutIn(state, 'first_no_repair_supplies'));
+        }
+        return state;
+      }
       const ctx = { submarine: state.submarine, crew: state.crew };
       const chance = computeRepairSuccessChance(crack, item, ctx);
       if (Math.random() > chance) {
@@ -350,10 +587,21 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         ],
       };
       dive = crewMessageForRepair(dive, state.crew, true);
-      return touch({
-        ...state,
-        dive,
-      });
+      const kitName = item.name;
+      let repaired = withStoryBeat(
+        { ...state, dive },
+        {
+          type: 'repair',
+          importance: 'medium',
+          title: `Repair — ${room.name}`,
+          summaryText: repairStabilizedSummary(room.name, kitName),
+          speakerId: 'chief_engineer',
+          missionId: dive.missionId,
+          diveStartedAt: dive.startedAt,
+        },
+      );
+      repaired = withRepairStockCrewAwareness(repaired, prevDiveRepair, repaired.dive!, Date.now());
+      return touch(repaired);
     }
     case 'SCAN_PENDING_DISCOVERY': {
       if (!state.dive?.pendingDiscovery || state.dive.status !== 'active') return state;
@@ -366,15 +614,30 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         state.submarine,
         state.crew,
       );
-      return touch({
-        ...state,
-        dive: { ...state.dive, pendingDiscovery },
-      });
+      return touch(
+        withStoryBeat(
+          {
+            ...state,
+            dive: { ...state.dive, pendingDiscovery },
+          },
+          {
+            type: 'discovery',
+            importance: 'low',
+            title: 'Active scan',
+            summaryText: discoveryContactSummary(pendingDiscovery.title, true),
+            speakerId: 'sensor_officer',
+            missionId: state.dive.missionId,
+            diveStartedAt: state.dive.startedAt,
+          },
+        ),
+      );
     }
     case 'RESOLVE_PENDING_DISCOVERY': {
       if (!state.dive?.pendingDiscovery || state.dive.status !== 'active') return state;
       const mission = findMission(state, state.dive.missionId);
       if (!mission) return state;
+      const prevDiveDiscovery = state.dive;
+      const pendingTitle = state.dive.pendingDiscovery.title;
       const patch = resolveExternalDiscovery({
         choice: action.choice === 'attempt' ? 'attempt' : 'ignore',
         discovery: state.dive.pendingDiscovery,
@@ -386,7 +649,7 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       });
       let rooms = patch.rooms ?? state.dive.rooms;
       rooms = syncRoomStatuses(rooms);
-      let dive = {
+      let dive: DiveSession = {
         ...state.dive,
         pendingDiscovery: null,
         discoveryJournal: [...state.dive.discoveryJournal, patch.journal],
@@ -427,8 +690,61 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         ...crewMessageForDiscoveryResolution(dive, state.crew, patch),
         pendingDiscovery: null,
       };
+      if (applied.result.recoveredRepairUnits > 0) {
+        dive = crewMessageForRepairSuppliesRecovered(dive, state.crew);
+      }
       let next: GameState = { ...state, dive };
-      next = recordTerminal(next, dive);
+      if (patch.journal.choice === 'ignored') {
+        next = withStoryBeat(next, {
+          type: 'discovery',
+          importance: 'low',
+          title: 'Contact dropped',
+          summaryText: `Navigation closed the lane on ${pendingTitle} without recovery.`,
+          speakerId: 'navigation_officer',
+          missionId: mission.id,
+          diveStartedAt: dive.startedAt,
+        });
+      } else if (!patch.journal.hazardTriggered) {
+        next = withStoryBeat(next, {
+          type: 'discovery',
+          importance: 'medium',
+          title: `External contact — ${pendingTitle}`,
+          summaryText: discoveryContactSummary(pendingTitle, true),
+          speakerId: 'sensor_officer',
+          missionId: mission.id,
+          diveStartedAt: dive.startedAt,
+        });
+        const ri = patch.rewardIntent;
+        const meaningfulSalvage =
+          (ri.scrap ?? 0) > 4 ||
+          (ri.research ?? 0) > 0 ||
+          (ri.treasures?.length ?? 0) > 0 ||
+          (ri.repairAdds?.length ?? 0) > 0;
+        if (meaningfulSalvage) {
+          next = withStoryBeat(next, {
+            type: 'salvage',
+            importance: 'medium',
+            title: 'Recovery secured',
+            summaryText: salvageRecoverySummary(),
+            speakerId: 'logistics_officer',
+            missionId: mission.id,
+            diveStartedAt: dive.startedAt,
+          });
+        }
+        if ((ri.artifacts ?? 0) > 0) {
+          next = withStoryBeat(next, {
+            type: 'artifact',
+            importance: 'high',
+            title: 'Artifact recovered',
+            summaryText: artifactRecoverySummary(),
+            speakerId: 'research_lead',
+            missionId: mission.id,
+            diveStartedAt: dive.startedAt,
+          });
+        }
+      }
+      next = withRepairStockCrewAwareness(next, prevDiveDiscovery, next.dive!, Date.now());
+      next = recordTerminal(next, next.dive!);
       return touch(next);
     }
     case 'SET_DIVE_ROUTE': {
@@ -465,6 +781,15 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         d = crewMessageForEmergencyOxygen(d, state.crew);
         let next: GameState = { ...state, dive: d };
         next = recordTerminal(next, d);
+        next = withStoryBeat(next, {
+          type: 'oxygen',
+          importance: 'medium',
+          title: 'Emergency oxygen',
+          summaryText: oxygenEmergencySummary(),
+          speakerId: 'chief_engineer',
+          missionId: d.missionId,
+          diveStartedAt: d.startedAt,
+        });
         return touch(next);
       }
       if (state.dive.emergencyOxygenChargesRemaining <= 0) return state;
@@ -487,6 +812,15 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       d = crewMessageForEmergencyOxygen(d, state.crew);
       let next: GameState = { ...state, dive: d };
       next = recordTerminal(next, d);
+      next = withStoryBeat(next, {
+        type: 'oxygen',
+        importance: 'medium',
+        title: 'Emergency oxygen',
+        summaryText: oxygenEmergencySummary(),
+        speakerId: 'chief_engineer',
+        missionId: d.missionId,
+        diveStartedAt: d.startedAt,
+      });
       return touch(next);
     }
     case 'SCAN_AREA': {
@@ -518,6 +852,19 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
           ],
         };
         nextDive = crewMessageForScan(nextDive, state.crew, true);
+        let next: GameState = { ...state, dive: nextDive };
+        next = recordTerminal(next, nextDive);
+        next = withStoryBeat(next, {
+          type: 'discovery',
+          importance: 'medium',
+          title: 'Sensor contact',
+          summaryText: discoveryContactSummary(result.discovery.title, false),
+          speakerId: 'sensor_officer',
+          missionId: nextDive.missionId,
+          diveStartedAt: nextDive.startedAt,
+        });
+        next = enqueueCutIn(next, 'first_discovery_detected');
+        return touch(next);
       } else {
         nextDive = {
           ...nextDive,
@@ -531,6 +878,7 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
     }
     case 'COLLECT_LOOT': {
       if (!state.dive || state.dive.status !== 'active') return state;
+      const prevDiveLoot = state.dive;
       const targetRoom = state.dive.rooms.find((r) => r.id === action.roomId);
       const target = targetRoom?.loot.find((l) => l.id === action.lootId);
       if (!target || target.collected) return state;
@@ -577,7 +925,7 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         };
       });
 
-      return touch({
+      let next: GameState = {
         ...state,
         dive: {
           ...dive,
@@ -594,7 +942,20 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
             },
           ],
         },
-      });
+      };
+      if (supplyLog.some((l) => l.includes('Cargo tight'))) {
+        next = withStoryBeat(next, {
+          type: 'system',
+          importance: 'medium',
+          title: 'Cargo headroom',
+          summaryText: cargoCapacityWarningSummary(),
+          speakerId: 'logistics_officer',
+          missionId: dive.missionId,
+          diveStartedAt: dive.startedAt,
+        });
+      }
+      next = withRepairStockCrewAwareness(next, prevDiveLoot, next.dive!, Date.now());
+      return touch(next);
     }
     case 'DISMISS_DISCOVERY_OUTCOME': {
       if (!state.dive) return state;
@@ -602,6 +963,14 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         ...state,
         dive: { ...state.dive, discoveryOutcomeBanner: null },
       });
+    }
+    case 'CLEAR_ACTIVE_DIVE_OVERLAYS': {
+      let next = state;
+      if (next.dive) {
+        next = { ...next, dive: stripTransientDiveOverlays(next.dive) };
+      }
+      next = { ...next, pendingNarrativeCutInIds: [] };
+      return touch(next);
     }
     case 'UPGRADE_MODULE': {
       const currency: UpgradeCurrency = action.currency ?? 'scrap';
@@ -660,8 +1029,39 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
     }
     case 'CLEAR_OFFLINE_REPORT':
       return touch({ ...state, pendingOfflineReport: null });
-    case 'RETURN_TO_BASE':
-      return touch(flushDiveToBase(state));
+    case 'RETURN_TO_BASE': {
+      let s = state;
+      const diveBefore = s.dive;
+      if (s.dive?.status === 'active') {
+        const activeDive = s.dive;
+        const m = findMission(s, activeDive.missionId);
+        if (m && EXPERIMENTAL_TRIAL_SET.has(m.id)) {
+          s = applyExperimentalTrialActiveAbort(s, activeDive);
+        }
+        s = withStoryBeat(s, {
+          type: 'mission_aborted',
+          importance: 'medium',
+          title: 'Trial aborted — surface return',
+          summaryText: missionAbortedEarlySummary(m?.name ?? 'the active trial'),
+          speakerId: 'xo',
+          missionId: activeDive.missionId,
+          diveStartedAt: activeDive.startedAt,
+        });
+      }
+      let next = flushDiveToBase(s);
+      if (diveBefore?.outcomeRecorded) {
+        next = {
+          ...next,
+          completedTrialReturnsCount: (next.completedTrialReturnsCount ?? 0) + 1,
+        };
+        if ((next.completedTrialReturnsCount ?? 0) >= 2) {
+          next = maybeQueueInternalCrewEvent(next);
+        }
+      }
+      return touch(next);
+    }
+    case 'RESOLVE_INTERNAL_CREW_EVENT':
+      return touch(resolveInternalCrewEventChoice(state, action.eventId, action.optionId));
     case 'REPAIR_DOCK_HULL': {
       const target =
         action.mode === 'full'

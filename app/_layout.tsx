@@ -7,9 +7,11 @@ import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
+import { InternalCrewEventHost } from '@/components/InternalCrewEventModal';
 import { NavigationBridge } from '@/components/NavigationBridge';
 import { theme } from '@/constants/theme';
 import { GameProvider } from '@/context/GameContext';
+import { NarrativeCutInProvider } from '@/context/NarrativeCutInContext';
 import { SUBMARINE_IDENTITY } from '@/data/submarine';
 
 export { ErrorBoundary } from 'expo-router';
@@ -38,6 +40,8 @@ export default function RootLayout() {
 
   return (
     <GameProvider>
+      <NarrativeCutInProvider>
+        <InternalCrewEventHost />
       <ThemeProvider
         value={{
           ...DarkTheme,
@@ -74,10 +78,13 @@ export default function RootLayout() {
           <Stack.Screen name="repair-dock" options={{ title: 'Repair Dock' }} />
           <Stack.Screen name="mission-select" options={{ title: 'Trial schedule' }} />
           <Stack.Screen name="dive" options={{ title: 'Active Dive', headerBackVisible: false }} />
+          <Stack.Screen name="nav-map" options={{ title: 'Strategic Map' }} />
+          <Stack.Screen name="tactical-sonar" options={{ title: 'Tactical Sonar' }} />
           <Stack.Screen name="room/[roomId]" options={{ title: 'Room Detail' }} />
           <Stack.Screen name="inventory" options={{ title: 'Inventory' }} />
           <Stack.Screen name="upgrades" options={{ title: 'Upgrades' }} />
           <Stack.Screen name="crew" options={{ title: 'Crew' }} />
+          <Stack.Screen name="command-briefings" options={{ title: 'Command Briefings' }} />
           <Stack.Screen
             name="expedition-report"
             options={{ title: 'Expedition Report', headerBackVisible: false }}
@@ -87,8 +94,10 @@ export default function RootLayout() {
             options={{ title: 'Trial Report', headerBackVisible: false }}
           />
           <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+          <Stack.Screen name="captains-log" options={{ title: 'Captain’s Log' }} />
         </Stack>
       </ThemeProvider>
+      </NarrativeCutInProvider>
     </GameProvider>
   );
 }

@@ -85,6 +85,11 @@ export default function SettingsScreen() {
         <PrimaryButton title="Campaigns / Service Record" variant="ghost" onPress={() => router.push('/campaigns' as never)} />
       </PanelCard>
       <PanelCard>
+        <Text style={styles.label}>Narrative</Text>
+        <Text style={styles.small}>Review XO-style operational summaries without raw event dumps.</Text>
+        <PrimaryButton title="Captain’s Log" variant="ghost" onPress={() => router.push('/captains-log')} />
+      </PanelCard>
+      <PanelCard>
         <Text style={styles.label}>Danger zone</Text>
         <Text style={styles.small}>
           Clears AsyncStorage save and resets the profile. No cloud, no accounts — local wipe only.

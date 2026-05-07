@@ -9,11 +9,30 @@ import { DBX_FUTURE_ACT_VARIANTS, DBX_PROTOTYPE_LORE } from '@/data/dbxProgramLo
 import { SUBMARINE_IDENTITY } from '@/data/submarine';
 import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
+import { EXPERIMENTAL_TRIAL_MISSION_IDS } from '@/data/experimentalTrials';
+import {
+  experimentalTrialsCompletedCount,
+  getEffectiveTrialStatus,
+} from '@/game/trialProgression';
 
 export default function CampaignsScreen() {
   const router = useRouter();
   const { state } = useGame();
   const id = SUBMARINE_IDENTITY;
+  const trialsDone = experimentalTrialsCompletedCount(state);
+  const trialsTotal = EXPERIMENTAL_TRIAL_MISSION_IDS.length;
+  const completedNames = EXPERIMENTAL_TRIAL_MISSION_IDS.filter(
+    (tid) => state.trialProgressByMissionId?.[tid]?.status === 'completed',
+  )
+    .map((tid) => state.missions.find((m) => m.id === tid)?.name ?? tid)
+    .filter(Boolean);
+  const nextTrialId = EXPERIMENTAL_TRIAL_MISSION_IDS.find((tid) => {
+    const st = getEffectiveTrialStatus(state, tid);
+    return st === 'available' || st === 'failed_retry_available';
+  });
+  const nextTrialName = nextTrialId
+    ? state.missions.find((m) => m.id === nextTrialId)?.name
+    : undefined;
 
   return (
     <ScreenShell scroll>
@@ -35,6 +54,28 @@ export default function CampaignsScreen() {
         variant="ghost"
         onPress={() => router.push('/assignment-memo' as never)}
       />
+      <PanelCard style={styles.card}>
+        <Text style={styles.name}>Experimental Trials (Act 1)</Text>
+        <Text style={styles.desc}>
+          Certification progress: {trialsDone} / {trialsTotal} trials complete.
+        </Text>
+        {completedNames.length > 0 ? (
+          <Text style={styles.desc}>
+            Completed: {completedNames.join(', ')}.
+          </Text>
+        ) : (
+          <Text style={styles.desc}>No trials certified yet.</Text>
+        )}
+        {trialsDone >= trialsTotal ? (
+          <Text style={styles.desc}>
+            Experimental certification track complete for the current trial set.
+          </Text>
+        ) : nextTrialName ? (
+          <Text style={styles.desc}>Next trial: {nextTrialName}.</Text>
+        ) : (
+          <Text style={styles.desc}>Continue trials from the Trial schedule screen.</Text>
+        )}
+      </PanelCard>
       {CAMPAIGNS.map((c) => (
         <PanelCard key={c.id} style={styles.card}>
           <View style={styles.row}>

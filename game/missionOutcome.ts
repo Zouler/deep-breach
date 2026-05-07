@@ -10,6 +10,7 @@ import { computeCargoUsed } from '@/game/cargo';
 import { computeCargoTransferSummary } from '@/game/cargoTransfer';
 import { missionCompletionBonusScrap } from '@/game/economy';
 import { dominantRoute } from '@/game/navigation';
+import { countHullRepairUnitsInExpedition } from '@/game/repairResourceStatus';
 import { cargoCapacityUnits } from '@/game/submarineStats';
 
 function buildFallbackItemsSummary(dive: DiveSession): string[] {
@@ -57,8 +58,15 @@ export function buildMissionOutcome(
   };
   const approxHull =
     100 - dive.hullIntegrityPercent + Math.round(dive.waterLevelPercent * 0.15);
-  const itemsCollectedSummary =
-    dive.supplyLog.length > 0 ? [...dive.supplyLog] : buildFallbackItemsSummary(dive);
+  const hullKitUnitsEnd = countHullRepairUnitsInExpedition(dive.expeditionRepairInventory);
+  const itemsCollectedSummary = (() => {
+    const base =
+      dive.supplyLog.length > 0 ? [...dive.supplyLog] : buildFallbackItemsSummary(dive);
+    return [
+      ...base,
+      `Expedition hull repair stock at end: ${hullKitUnitsEnd} unit(s) (patch / sealant / brace).`,
+    ];
+  })();
   const journal = dive.discoveryJournal ?? [];
   const routeTime = dive.routeTimeMs ?? ({} as DiveSession['routeTimeMs']);
   const cargoLimit = cargoCapacityUnits(submarine);
@@ -73,9 +81,11 @@ export function buildMissionOutcome(
   return {
     success,
     trialAborted,
+    missionId: mission.id,
     missionName: dive.missionName,
     targetDepthM: mission.targetDepthM,
     depthReachedM: Math.round(dive.currentDepthM),
+    oxygenRemainingPercent: Math.round(dive.oxygenPercent),
     rewards,
     missionCompletionBonusScrap: completionBonus,
     treasures: dive.collectedTreasures,

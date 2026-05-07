@@ -90,7 +90,21 @@ export default function BaseScreen() {
         </Text>
       </PanelCard>
       <PanelCard>
+        <Text style={styles.cardTitle}>Captain’s Log</Text>
+        <Text style={styles.meta}>XO narrative summaries of recent trials and standing orders.</Text>
+        <PrimaryButton
+          title="Open Captain’s Log"
+          variant="ghost"
+          onPress={() => router.push('/captains-log' as never)}
+        />
+      </PanelCard>
+      <PanelCard>
         <Text style={styles.cardTitle}>Crew status</Text>
+        <Text style={styles.meta}>
+          Condition · morale {Math.round(state.crewState.morale)} · stress{' '}
+          {Math.round(state.crewState.stress)} · discipline {Math.round(state.crewState.discipline)} ·
+          readiness {Math.round(state.crewState.readiness)}
+        </Text>
         {hired.length === 0 ? (
           <Text style={styles.muted}>No hired crew — open Crew to recruit.</Text>
         ) : (
@@ -108,6 +122,11 @@ export default function BaseScreen() {
       </PanelCard>
       <Text style={styles.navLabel}>Operations</Text>
       <PrimaryButton title="Repair Dock" onPress={() => router.push('/repair-dock' as never)} />
+      <PrimaryButton
+        title="Command Briefings"
+        variant="ghost"
+        onPress={() => router.push('/command-briefings' as never)}
+      />
       <PrimaryButton
         title="Campaigns / Service Record"
         variant="ghost"

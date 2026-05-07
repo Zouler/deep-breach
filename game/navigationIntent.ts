@@ -47,7 +47,7 @@ const COMMAND_INTENT_MODIFIERS: Record<DiveRoute, CommandIntentModifiers> = {
     ambientChanceMultiplier: 1.05,
     salvageCategoryWeightMultiplier: 1.45,
     signalCategoryWeightMultiplier: 1,
-    repairSupplyChanceMultiplier: 1.25,
+    repairSupplyChanceMultiplier: 1.42,
     researchRewardMultiplier: 1,
   },
   follow_signal: {
@@ -75,7 +75,7 @@ const COMMAND_INTENT_MODIFIERS: Record<DiveRoute, CommandIntentModifiers> = {
     ambientChanceMultiplier: 0.75,
     salvageCategoryWeightMultiplier: 1,
     signalCategoryWeightMultiplier: 1,
-    repairSupplyChanceMultiplier: 1,
+    repairSupplyChanceMultiplier: 0.9,
     researchRewardMultiplier: 1,
   },
   stabilize_systems: {
@@ -89,7 +89,7 @@ const COMMAND_INTENT_MODIFIERS: Record<DiveRoute, CommandIntentModifiers> = {
     ambientChanceMultiplier: 0.7,
     salvageCategoryWeightMultiplier: 1,
     signalCategoryWeightMultiplier: 1,
-    repairSupplyChanceMultiplier: 1,
+    repairSupplyChanceMultiplier: 0.92,
     researchRewardMultiplier: 1,
   },
 };

@@ -16,6 +16,8 @@ export function pushCrewMessage(
     text: msg.text,
     severity: msg.severity,
     timestamp: msg.timestamp ?? Date.now(),
+    ...(msg.department ? { department: msg.department } : {}),
+    ...(msg.actions?.length ? { actions: msg.actions } : {}),
   };
   const next = [...(dive.crewMessages ?? []), entry];
   return {
@@ -164,6 +166,20 @@ export function tickAmbientCrewChatter(
   if (Math.random() > 0.38) return { ...dive, lastReactiveCrewAt: now };
   const next = maybeReactiveCrewMessage(dive, crew, now);
   return { ...next, lastReactiveCrewAt: now };
+}
+
+/** After external recovery adds hull repair items to expedition cargo. */
+export function crewMessageForRepairSuppliesRecovered(dive: DiveSession, crew: CrewMember[]): DiveSession {
+  if (dive.status !== 'active') return dive;
+  const speaker = voiceLogistics(crew);
+  const useChief = Math.random() < 0.35;
+  return pushCrewMessage(dive, {
+    speaker: useChief ? voiceEngineering(crew) : speaker,
+    text: useChief
+      ? 'That kit will keep us alive if the hull opens again — log it to expedition cargo.'
+      : 'Recovered emergency repair stock secured in expedition cargo.',
+    severity: 'info',
+  });
 }
 
 export function maybeReactiveCrewMessage(

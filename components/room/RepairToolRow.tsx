@@ -36,14 +36,20 @@ export function RepairToolRow({
             ) : null}
           </View>
           <Text style={styles.purpose}>{purpose}</Text>
-          <Text style={styles.stock}>Stock: {stock}</Text>
+          <Text style={[styles.stock, stock <= 0 ? styles.stockEmpty : null]}>
+            {stock <= 0 ? 'No stock' : `Stock: ${stock}`}
+          </Text>
         </View>
       </View>
       {!available ? (
         <Text style={styles.blocked}>{unavailableReason ?? 'Unavailable'}</Text>
       ) : (
-        <Pressable onPress={onApply} style={({ pressed }) => [styles.btn, pressed ? styles.btnPressed : null]}>
-          <Text style={styles.btnText}>Apply</Text>
+        <Pressable
+          onPress={onApply}
+          disabled={stock <= 0}
+          style={({ pressed }) => [styles.btn, pressed ? styles.btnPressed : null, stock <= 0 ? styles.btnDisabled : null]}
+        >
+          <Text style={[styles.btnText, stock <= 0 ? styles.btnTextDisabled : null]}>Apply</Text>
         </Pressable>
       )}
     </View>
@@ -76,6 +82,7 @@ const styles = StyleSheet.create({
   recText: { color: '#67e8f9', fontWeight: '900', fontSize: 10, letterSpacing: 1 },
   purpose: { color: theme.textMuted, fontSize: 12, marginTop: 4, lineHeight: 16 },
   stock: { color: theme.textMuted, fontSize: 12, marginTop: 6, fontWeight: '700' },
+  stockEmpty: { color: theme.warning, fontWeight: '900' },
   blocked: { color: theme.textMuted, marginTop: 10, fontSize: 12, fontStyle: 'italic' },
   btn: {
     marginTop: 10,
@@ -88,5 +95,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   btnPressed: { backgroundColor: '#155e75' },
+  btnDisabled: { opacity: 0.45 },
   btnText: { color: theme.text, fontWeight: '900', letterSpacing: 0.5 },
+  btnTextDisabled: { color: theme.textMuted },
 });

@@ -27,6 +27,7 @@ const IMMEDIATE_SAVE = new Set<GameAction['type']>([
   'USE_EMERGENCY_OXYGEN',
   'SCAN_AREA',
   'DISMISS_DISCOVERY_OUTCOME',
+  'CLEAR_ACTIVE_DIVE_OVERLAYS',
   'REPAIR_CRACK',
   'COLLECT_LOOT',
   'RETURN_TO_BASE',
@@ -43,6 +44,9 @@ const IMMEDIATE_SAVE = new Set<GameAction['type']>([
   'CLEAR_OFFLINE_REPORT',
   'HIRE_CREW',
   'TOGGLE_CREW_ASSIGN',
+  'NARRATIVE_DISMISS_XO_BRIEFING',
+  'DISMISS_NARRATIVE_CUT_IN',
+  'RESOLVE_INTERNAL_CREW_EVENT',
 ]);
 import type { GameState } from '@/types';
 import { loadGameState, saveGameState } from '@/storage/gameStorage';
@@ -139,6 +143,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setAppForeground(next === 'active');
       if (next === 'inactive' || next === 'background') {
         void gameAudio.pauseAmbienceForBackground();
+        dispatch({ type: 'NARRATIVE_APP_BACKGROUND', now: Date.now() });
         const dive = stateRef.current.dive;
         if (
           dive &&
@@ -150,7 +155,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         }
       }
       if (next === 'active' && (prev === 'background' || prev === 'inactive')) {
-        dispatch({ type: 'APPLY_OFFLINE_RESOLUTION', now: Date.now() });
+        const now = Date.now();
+        dispatch({ type: 'NARRATIVE_APP_FOREGROUND', now });
+        dispatch({ type: 'APPLY_OFFLINE_RESOLUTION', now });
       }
     };
     const sub = AppState.addEventListener('change', onChange);

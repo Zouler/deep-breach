@@ -7,6 +7,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
 import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
+import { EXPERIMENTAL_TRIAL_SET } from '@/data/experimentalTrials';
 import { NARRATIVE_UI } from '@/data/storyBriefings';
 import { useGame } from '@/context/GameContext';
 import type { CargoTransferSummary } from '@/types';
@@ -63,6 +64,42 @@ export default function MissionResultScreen() {
       <Text style={styles.sub}>{outcome.missionName}</Text>
       <Text style={styles.vesselMeta}>{tr.vesselLine}</Text>
 
+      {outcome.trialDebrief &&
+      outcome.missionId &&
+      EXPERIMENTAL_TRIAL_SET.has(outcome.missionId) ? (
+        <PanelCard style={styles.consoleCard}>
+          <Text style={styles.cardTitle}>{tr.sections.certification}</Text>
+          {outcome.trialDebrief.certificationLine ? (
+            <Text style={styles.line}>{outcome.trialDebrief.certificationLine}</Text>
+          ) : (
+            <Text style={styles.line}>DBX Certification progress updated.</Text>
+          )}
+          {outcome.trialDebrief.firstClearRewards ? (
+            <>
+              <Text style={[styles.line, styles.rewardHead]}>Rewards (first clear)</Text>
+              <Text style={styles.line}>
+                +{outcome.trialDebrief.firstClearRewards.scrap} Scrap
+              </Text>
+              <Text style={styles.line}>
+                +{outcome.trialDebrief.firstClearRewards.researchData} Research Data
+              </Text>
+              <Text style={styles.line}>
+                +{outcome.trialDebrief.firstClearRewards.hullPatchKits} Hull Patch Kit
+                {outcome.trialDebrief.firstClearRewards.hullPatchKits === 1 ? '' : 's'}
+              </Text>
+              <Text style={styles.line}>
+                +{outcome.trialDebrief.firstClearRewards.pressureSealant} Pressure Sealant
+              </Text>
+            </>
+          ) : null}
+          {outcome.trialDebrief.unlockedTrialName ? (
+            <Text style={[styles.line, styles.unlockLine]}>
+              Unlocked: {outcome.trialDebrief.unlockedTrialName}
+            </Text>
+          ) : null}
+        </PanelCard>
+      ) : null}
+
       <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>{sec.pressure}</Text>
         <Text style={styles.line}>
@@ -71,6 +108,9 @@ export default function MissionResultScreen() {
         <Text style={styles.line}>
           Dominant route: {outcome.dominantRoute.replace(/_/g, ' ')}
         </Text>
+        {typeof outcome.oxygenRemainingPercent === 'number' ? (
+          <Text style={styles.line}>Oxygen remaining: {outcome.oxygenRemainingPercent}%</Text>
+        ) : null}
       </PanelCard>
 
       <PanelCard style={styles.consoleCard}>
@@ -271,6 +311,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardTitle: { color: theme.text, fontWeight: '700', marginBottom: 6 },
+  rewardHead: { color: theme.accent, fontWeight: '700', marginTop: 8 },
+  unlockLine: { color: theme.ok, fontWeight: '700', marginTop: 8 },
   line: { color: theme.textMuted, marginBottom: 4 },
   event: { color: theme.text, marginBottom: 4 },
   muted: { color: theme.textMuted, fontStyle: 'italic' },

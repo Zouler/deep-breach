@@ -23,7 +23,12 @@ export function DiscoveryPromptModal({
   onAttempt,
 }: Props) {
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onIgnore}
+    >
       <View style={styles.backdrop}>
         <View style={styles.card}>
           <Text style={styles.kicker}>External contact</Text>

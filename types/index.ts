@@ -1,4 +1,7 @@
-import type { CommanderProfile, StoryProgress } from './story';
+import type { CrewAlertAction } from './crewAlerts';
+import type { CommanderProfile, NarrativeRecapState, StoryBeat, StoryProgress } from './story';
+import type { CrewConditionState } from './internalCrewEvents';
+import type { TrialDebriefAttachment, TrialProgress } from './trials';
 
 export interface ResourceBalance {
   scrap: number;
@@ -278,6 +281,10 @@ export interface CrewMessage {
   text: string;
   timestamp: number;
   severity: 'info' | 'warning' | 'danger';
+  /** Optional department line (e.g. Engineering) for richer HUD. */
+  department?: string;
+  /** Contextual shortcuts — only on important alerts. */
+  actions?: CrewAlertAction[];
 }
 
 /** Shown after resolving an external contact (attempt / ignore). */
@@ -360,15 +367,35 @@ export interface DiveSession {
   lastReactiveCrewAt: number;
   /** Prevents double-transfer when returning to base multiple times. */
   cargoTransferredToBase?: boolean;
+  /** Throttle Chief Engineer repair-stock depletion warnings. */
+  lastRepairStockCrewWarningAt?: number;
+  /** Last repair stock band we briefed (hull kits only; excludes O₂). */
+  lastRepairStockBriefStatus?: 'healthy' | 'low' | 'empty' | 'critical_empty';
+  /** Throttle actionable low-O₂ comms (HUD). */
+  lastLowOxygenActionableAt?: number;
+  /** Last oxygen band we used for actionable alert (crossing thresholds). */
+  lastLowOxygenActionableBand?: 'warn' | 'crit';
+  /** Throttle cargo-at-capacity actionable comms. */
+  lastCargoFullActionableAt?: number;
+  /** Throttle tac sonar hazard advisory. */
+  lastSonarHazardAdvisoryAt?: number;
+  /** Throttle tac sonar off-path signal advisory. */
+  lastSonarSignalAdvisoryAt?: number;
+  /** Dedupe breach room for repeated actionable breach lines. */
+  lastActionableBreachSignature?: string;
 }
 
 export interface MissionOutcome {
   success: boolean;
   /** Emergency / early surface protocol — shown as "trial aborted" in debrief copy. */
   trialAborted?: boolean;
+  /** Mission id for progression / UI (matches `Mission.id`). */
+  missionId?: string;
   missionName: string;
   targetDepthM: number;
   depthReachedM: number;
+  /** Oxygen at end of dive (trial report). */
+  oxygenRemainingPercent?: number;
   rewards: ResourceBalance;
   /** Paid on success, separate from salvage/loot recovered during the dive. */
   missionCompletionBonusScrap?: number;
@@ -401,6 +428,8 @@ export interface MissionOutcome {
   discoveriesResolvedPassive: number;
   /** Preview of what will move into Base Storage on return (same math as transfer). */
   storageTransferPreview?: CargoTransferSummary;
+  /** Experimental trial certification / unlock summary (Act 1). */
+  trialDebrief?: TrialDebriefAttachment;
 }
 
 export const GAME_STATE_VERSION = 1 as const;
@@ -422,6 +451,28 @@ export interface GameState {
   dive: DiveSession | null;
   pendingOfflineReport: OfflineReport | null;
   lastMissionOutcome: MissionOutcome | null;
+  /** Narrative operational beats for Captain's Log and XO briefings. */
+  storyBeats: StoryBeat[];
+  narrativeRecap: NarrativeRecapState;
+  /** One-shot cut-in ids waiting for the NarrativeCutIn provider. */
+  pendingNarrativeCutInIds: string[];
+  /** Cut-in ids already shown (non-repeating). */
+  seenCutInIds: string[];
+  /** Crew morale / stress / discipline aggregate (foundation; lightly surfaced in UI). */
+  crewState: CrewConditionState;
+  /** Internal leadership event awaiting commander decision at base. */
+  pendingInternalCrewEventId: string | null;
+  /** One-shot internal crew events already resolved (when canRepeat is false). */
+  resolvedInternalCrewEventIds: string[];
+  /** Count of trial returns after `outcomeRecorded` (completed debrief pipeline). */
+  completedTrialReturnsCount: number;
+  /** Returns since last internal crew event check threshold (spacing). */
+  internalCrewReturnsSinceLastEvent: number;
+  /** Target spacing: fire roll when `internalCrewReturnsSinceLastEvent` reaches this (3–5). */
+  internalCrewNextEventAtReturns: number;
+  lastInternalCrewEventAt: number | null;
+  /** Experimental Trials progression (mission id → progress). */
+  trialProgressByMissionId: Record<string, TrialProgress>;
 }
 
 export type {
@@ -429,7 +480,46 @@ export type {
   CampaignId,
   CampaignStatus,
   CommanderProfile,
+  NarrativeRecapState,
+  StoryBeat,
+  StoryBeatImportance,
+  StoryBeatType,
   StoryProgress,
 } from './story';
 
 export type { CrewLead, CrewLeadMessageSpeakerId, CrewLeadTone } from './crew';
+
+export type {
+  CutInDismissMode,
+  CutInNavAction,
+  CutInNavActionId,
+  CutInPriority,
+  CutInTone,
+  CutInType,
+  NarrativeCutIn,
+} from './cutins';
+
+export type { CrewAlertAction, CrewAlertActionStyle, CrewAlertActionType } from './crewAlerts';
+
+export type {
+  DepartmentBriefing,
+  DepartmentLeadId,
+  DepartmentStatus,
+  DepartmentStatusTone,
+} from './departmentBriefings';
+
+export type {
+  CrewConditionState,
+  InternalCrewEvent,
+  InternalCrewEventCategory,
+  InternalCrewEventEffects,
+  InternalCrewEventImportance,
+  InternalCrewEventOption,
+  InternalCrewEventTone,
+} from './internalCrewEvents';
+
+export { defaultCrewConditionState } from './internalCrewEvents';
+
+export type { SonarContact, SonarContactSource, SonarContactType } from './navigationMap';
+
+export type { TrialDebriefAttachment, TrialLastOutcome, TrialProgress, TrialStatus } from './trials';

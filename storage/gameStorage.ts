@@ -11,6 +11,7 @@ import {
   withSyncedLegacyEconomy,
 } from '@/game/baseStorage';
 import { DEFAULT_DIVE_ROUTE, emptyRouteTimeMs } from '@/game/navigation';
+import { stripTransientDiveOverlays } from '@/game/diveTransientState';
 import { emergencyOxygenMaxCharges } from '@/game/oxygen';
 import type {
   BaseStorage,
@@ -19,6 +20,7 @@ import type {
   OfflineReport,
   RepairItem,
 } from '@/types';
+import { defaultCrewConditionState } from '@/types/internalCrewEvents';
 import type { CommanderProfile, StoryProgress } from '@/types/story';
 
 const STORAGE_KEY = '@deep_breach/game_state_v1';
@@ -96,9 +98,29 @@ function migrateBaseStorage(state: GameState): BaseStorage {
   return bs;
 }
 
+/** Normalize legacy narrative cut-in ids so saves stay valid across content revisions. */
+function migrateCutInIdList(ids: string[] | undefined): string[] {
+  const renames: Record<string, string> = {
+    trial_completed: 'first_trial_completed',
+  };
+  const removed = new Set([
+    'first_trial_start',
+    'first_critical_breach',
+    'first_repair_success',
+  ]);
+  const raw = ids ?? [];
+  const out: string[] = [];
+  for (const id of raw) {
+    if (removed.has(id)) continue;
+    const next = renames[id] ?? id;
+    if (!out.includes(next)) out.push(next);
+  }
+  return out;
+}
+
 function migrate(state: GameState): GameState {
   const baseStorage = migrateBaseStorage(state);
-  const dive = state.dive
+  const diveBase = state.dive
     ? {
         ...state.dive,
         outcomeRecorded: state.dive.outcomeRecorded ?? false,
@@ -149,6 +171,10 @@ function migrate(state: GameState): GameState {
         horizontalSpeedKmPerMin: state.dive.horizontalSpeedKmPerMin ?? 0,
       }
     : null;
+  const dive =
+    diveBase && diveBase.status !== 'active'
+      ? stripTransientDiveOverlays(diveBase)
+      : diveBase;
   const pendingOfflineReport = state.pendingOfflineReport
     ? migrateOfflineReport(state.pendingOfflineReport)
     : null;
@@ -188,6 +214,9 @@ function migrate(state: GameState): GameState {
         discoveriesResolvedPassive:
           state.lastMissionOutcome.discoveriesResolvedPassive ?? 0,
         trialAborted: state.lastMissionOutcome.trialAborted ?? false,
+        missionId: state.lastMissionOutcome.missionId,
+        oxygenRemainingPercent: state.lastMissionOutcome.oxygenRemainingPercent,
+        trialDebrief: state.lastMissionOutcome.trialDebrief,
         storageTransferPreview: state.lastMissionOutcome.storageTransferPreview,
       }
     : null;
@@ -208,6 +237,11 @@ function migrate(state: GameState): GameState {
     introSequenceSkipped: s.introSequenceSkipped ?? false,
   };
 
+  const narrativeRecap = state.narrativeRecap ?? {
+    lastGlobalBackgroundAt: null,
+    lastXOBriefingDismissedFingerprint: null,
+    lastXOBriefingDismissedAt: null,
+  };
   const merged: GameState = {
     ...state,
     commander,
@@ -217,6 +251,23 @@ function migrate(state: GameState): GameState {
     dive,
     pendingOfflineReport,
     lastMissionOutcome,
+    storyBeats: state.storyBeats ?? [],
+    narrativeRecap: {
+      lastGlobalBackgroundAt: narrativeRecap.lastGlobalBackgroundAt ?? null,
+      lastXOBriefingDismissedFingerprint:
+        narrativeRecap.lastXOBriefingDismissedFingerprint ?? null,
+      lastXOBriefingDismissedAt: narrativeRecap.lastXOBriefingDismissedAt ?? null,
+    },
+    pendingNarrativeCutInIds: migrateCutInIdList(state.pendingNarrativeCutInIds),
+    seenCutInIds: migrateCutInIdList(state.seenCutInIds),
+    crewState: (state as GameState).crewState ?? defaultCrewConditionState(),
+    pendingInternalCrewEventId: (state as GameState).pendingInternalCrewEventId ?? null,
+    resolvedInternalCrewEventIds: (state as GameState).resolvedInternalCrewEventIds ?? [],
+    completedTrialReturnsCount: (state as GameState).completedTrialReturnsCount ?? 0,
+    internalCrewReturnsSinceLastEvent: (state as GameState).internalCrewReturnsSinceLastEvent ?? 0,
+    internalCrewNextEventAtReturns: (state as GameState).internalCrewNextEventAtReturns ?? 4,
+    lastInternalCrewEventAt: (state as GameState).lastInternalCrewEventAt ?? null,
+    trialProgressByMissionId: (state as GameState).trialProgressByMissionId ?? {},
   };
   return withSyncedLegacyEconomy(merged);
 }

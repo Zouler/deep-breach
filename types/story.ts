@@ -69,3 +69,46 @@ export interface IntroSceneDefinition {
   panelBackdropOpacity?: number;
   safeZone?: IntroSceneSafeZoneHint;
 }
+
+/** Narrative recap / Captain's Log entries (not raw event logs). */
+export type StoryBeatType =
+  | 'mission_start'
+  | 'mission_complete'
+  | 'mission_failed'
+  | 'mission_aborted'
+  | 'discovery'
+  | 'artifact'
+  | 'salvage'
+  | 'breach'
+  | 'repair'
+  | 'oxygen'
+  | 'xo_command'
+  | 'emergency_extraction'
+  | 'trial_progress'
+  | 'system'
+  | 'internal_crew_event';
+
+export type StoryBeatImportance = 'low' | 'medium' | 'high';
+
+export interface StoryBeat {
+  id: string;
+  timestamp: number;
+  missionId?: string;
+  /** Dive session `startedAt` when available, for grouping. */
+  diveStartedAt?: number;
+  type: StoryBeatType;
+  importance: StoryBeatImportance;
+  title: string;
+  summaryText: string;
+  /** Canonical crew lead id (e.g. `xo`) when a department speaks. */
+  speakerId?: string;
+}
+
+/** Session / recap UI persistence (mobile return flow). */
+export interface NarrativeRecapState {
+  /** Last time the app went to background (wall clock). */
+  lastGlobalBackgroundAt: number | null;
+  /** Fingerprint of the last dismissed XO briefing (avoid duplicate recap). */
+  lastXOBriefingDismissedFingerprint: string | null;
+  lastXOBriefingDismissedAt: number | null;
+}

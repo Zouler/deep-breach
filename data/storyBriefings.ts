@@ -92,11 +92,12 @@ export const NARRATIVE_UI = {
   trialReport: {
     docTitle: 'Trial Report',
     noReport: 'No trial report available.',
-    completed: 'Trial completed',
-    failed: 'Trial failed',
-    aborted: 'Trial aborted',
+    completed: 'Trial Complete',
+    failed: 'Trial Failed',
+    aborted: 'Trial Aborted',
     vesselLine: id.displayName,
     sections: {
+      certification: 'DBX certification',
       pressure: 'Pressure performance',
       hull: 'Hull damage',
       materials: 'Recovered materials',

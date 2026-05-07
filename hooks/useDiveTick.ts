@@ -12,7 +12,6 @@ export function useDiveTick() {
   useEffect(() => {
     if (!state.dive || state.dive.status !== 'active') return;
     if (state.pendingOfflineReport) return;
-    if (state.dive.pendingDiscovery) return;
     if (!appForeground || !isFocused) return;
 
     const id = setInterval(() => {
@@ -20,13 +19,5 @@ export function useDiveTick() {
     }, TICK_MS);
 
     return () => clearInterval(id);
-  }, [
-    appForeground,
-    dispatch,
-    isFocused,
-    state.dive,
-    state.pendingOfflineReport,
-    state.dive?.status,
-    state.dive?.pendingDiscovery,
-  ]);
+  }, [appForeground, dispatch, isFocused, state.dive, state.pendingOfflineReport, state.dive?.status]);
 }

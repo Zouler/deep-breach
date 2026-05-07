@@ -21,7 +21,7 @@ export function DiscoveryOutcomeModal({ visible, banner, onDismiss }: Props) {
         ? styles.metaWarn
         : styles.metaOk;
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
           <Text style={styles.kicker}>Discovery result</Text>

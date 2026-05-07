@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { ActionableCrewAlert } from '@/components/ActionableCrewAlert';
 import { DiscoveryOutcomeModal } from '@/components/DiscoveryOutcomeModal';
 import { DiscoveryPromptModal } from '@/components/DiscoveryPromptModal';
 import { DiveFlashBand } from '@/components/DiveFlashBand';
@@ -21,6 +22,8 @@ import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import { diveTrialTipsForMission } from '@/data/storyBriefings';
 import { useGame } from '@/context/GameContext';
+import { filterCrewAlertActionsForState } from '@/game/crewAlertActions';
+import { useCrewAlertActions } from '@/hooks/useCrewAlertActions';
 import { useDiveFeedback } from '@/hooks/useDiveFeedback';
 import { useDiveTick } from '@/hooks/useDiveTick';
 import { getDiveRoomThreat, type DiveRoomThreat } from '@/game/diveRoomThreat';
@@ -36,6 +39,12 @@ import {
   oxygenCanisterRestorePercent,
 } from '@/game/oxygen';
 import { canPerformAreaScan, SCAN_AREA_COOLDOWN_MS } from '@/game/scanArea';
+import {
+  countActiveCracks,
+  countHullRepairUnitsInExpedition,
+  getRepairStockStatus,
+  repairStockHudLine,
+} from '@/game/repairResourceStatus';
 import { cargoCapacityUnits } from '@/game/submarineStats';
 import type { DiveRoute } from '@/types';
 import {
@@ -50,6 +59,8 @@ export default function DiveScreen() {
   const { state, dispatch } = useGame();
   const dive = state.dive;
   const [routePickerOpen, setRoutePickerOpen] = useState(false);
+  const openIntentPicker = useCallback(() => setRoutePickerOpen(true), []);
+  const runCrewAlertAction = useCrewAlertActions({ openCommandIntentPicker: openIntentPicker });
 
   useDiveTick();
   const flashKind = useDiveFeedback(dive);
@@ -59,11 +70,35 @@ export default function DiveScreen() {
     [dive?.missionId, state.missions],
   );
 
+  const diveActive = dive?.status === 'active';
+
+  useEffect(() => {
+    if (diveActive) return;
+    setRoutePickerOpen(false);
+  }, [diveActive]);
+
   if (!dive || !mission) {
     return (
       <ScreenShell>
         <Text style={styles.muted}>No active dive. Launch from Mission Select.</Text>
         <PrimaryButton title="Back to Base" onPress={() => router.replace('/base')} />
+      </ScreenShell>
+    );
+  }
+
+  if (!diveActive) {
+    return (
+      <ScreenShell>
+        <Text style={styles.muted}>
+          This trial has ended. If the report does not open automatically, continue manually.
+        </Text>
+        <PrimaryButton
+          title="Open Trial Report"
+          onPress={() =>
+            router.replace(state.lastMissionOutcome ? '/mission-result' : '/base')
+          }
+        />
+        <PrimaryButton title="Back to Base" variant="ghost" onPress={() => router.replace('/base')} />
       </ScreenShell>
     );
   }
@@ -87,6 +122,11 @@ export default function DiveScreen() {
   const hullThreat = threatForHigherIsBetter(dive.hullIntegrityPercent);
   const oxyThreat = threatForHigherIsBetter(dive.oxygenPercent);
   const waterThreat = threatForLowerIsBetter(dive.waterLevelPercent);
+
+  const hullRepairUnits = countHullRepairUnitsInExpedition(dive.expeditionRepairInventory);
+  const repairStockStatus = getRepairStockStatus(dive);
+  const repairStockLine = repairStockHudLine(repairStockStatus, hullRepairUnits);
+  const breachCount = countActiveCracks(dive);
 
   const criticalLeak = dive.rooms.some((r) =>
     r.cracks.some((c) => c.severity === 'critical'),
@@ -117,7 +157,24 @@ export default function DiveScreen() {
     }
   };
 
+  const priorityComm = useMemo(() => {
+    const msgs = dive.crewMessages ?? [];
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const m = msgs[i]!;
+      if (m.actions?.length) return m;
+    }
+    return null;
+  }, [dive.crewMessages]);
+
+  const priorityActions = useMemo(() => {
+    if (!priorityComm?.actions?.length) return [];
+    return filterCrewAlertActionsForState(state, priorityComm.actions).filter(
+      (a) => a.type !== 'acknowledge',
+    );
+  }, [priorityComm, state]);
+
   const alertLines = (dive.crewMessages ?? [])
+    .filter((m) => (priorityComm ? m.id !== priorityComm.id : true))
     .slice(-3)
     .reverse()
     .map((m) => ({
@@ -143,7 +200,18 @@ export default function DiveScreen() {
                 Trial depth {dive.targetDepthM}m · risk {riskScore}% · cargo {cargoUsed}/{cargoCap}
               </Text>
             </View>
-            <PrimaryButton title="Inventory" variant="ghost" onPress={() => router.push('/inventory')} />
+            <View style={{ gap: 8 }}>
+              <PrimaryButton
+                title="Briefings"
+                variant="ghost"
+                onPress={() => router.push('/command-briefings')}
+              />
+              <PrimaryButton
+                title="Inventory"
+                variant="ghost"
+                onPress={() => router.push('/inventory')}
+              />
+            </View>
           </View>
         </HudPanel>
 
@@ -218,6 +286,20 @@ export default function DiveScreen() {
           <Text style={styles.navIntent}>
             Intent: {ROUTE_OPTIONS.find((r) => r.id === dive.currentRoute)?.label ?? '—'}
           </Text>
+          <View style={styles.navMapRow}>
+            <PrimaryButton
+              style={styles.navMapBtn}
+              title="Nav Map"
+              variant="ghost"
+              onPress={() => router.push('/nav-map')}
+            />
+            <PrimaryButton
+              style={styles.navMapBtn}
+              title="Tac Sonar"
+              variant="ghost"
+              onPress={() => router.push('/tactical-sonar')}
+            />
+          </View>
         </HudPanel>
 
         <HudPanel variant="emergency">
@@ -233,10 +315,60 @@ export default function DiveScreen() {
                   }`
                 : 'UNAVAILABLE — no canisters or reserve charges'
             }
-            disabled={!canUseO2}
-            onPress={() => dispatch({ type: 'USE_EMERGENCY_OXYGEN' })}
+            disabled={!diveActive || !canUseO2}
+            onPress={() => {
+              if (!diveActive) return;
+              dispatch({ type: 'USE_EMERGENCY_OXYGEN' });
+            }}
           />
           {!canUseO2 ? <Text style={styles.small}>Resupply at Repair Dock or upgrade O₂ plant.</Text> : null}
+        </HudPanel>
+
+        <HudPanel>
+          <HudSectionTitle>REPAIR STOCK (HULL KITS)</HudSectionTitle>
+          <Text
+            style={[
+              styles.repairStockLine,
+              repairStockStatus === 'critical_empty'
+                ? styles.repairStockCrit
+                : repairStockStatus === 'empty'
+                  ? styles.repairStockEmpty
+                  : repairStockStatus === 'low'
+                    ? styles.repairStockLow
+                    : styles.repairStockOk,
+            ]}
+          >
+            {repairStockLine}
+          </Text>
+          <Text style={styles.small}>
+            Hull Patch / Sealant / Brace only. Oxygen canisters are tracked separately for O₂
+            actions.
+          </Text>
+          {repairStockStatus === 'empty' || repairStockStatus === 'critical_empty' ? (
+            <>
+              <Text style={[styles.small, styles.repairHint]}>
+                {breachCount > 0
+                  ? 'Search for Salvage improves odds of repair supplies in recoveries. Stabilize Systems slows new damage. Return to Base (below) if you cannot manage the hull.'
+                  : 'You have no hull repair kits left. Search for Salvage before the next breach. Stabilize Systems reduces crack risk.'}
+              </Text>
+              <View style={styles.intentSuggestCol}>
+                <PrimaryButton
+                  title="Set intent: Search for Salvage"
+                  variant="ghost"
+                  disabled={dive.currentRoute === 'search_salvage'}
+                  onPress={() => dispatch({ type: 'SET_DIVE_ROUTE', route: 'search_salvage' })}
+                />
+                <PrimaryButton
+                  title="Set intent: Stabilize Systems"
+                  variant="ghost"
+                  disabled={dive.currentRoute === 'stabilize_systems'}
+                  onPress={() =>
+                    dispatch({ type: 'SET_DIVE_ROUTE', route: 'stabilize_systems' })
+                  }
+                />
+              </View>
+            </>
+          ) : null}
         </HudPanel>
 
         <HudPanel>
@@ -251,8 +383,11 @@ export default function DiveScreen() {
                     : `Cooling ${Math.max(1, Math.ceil(scanCooldownLeftMs / 1000))}s`
                 }
                 icon={GAME_ASSETS.icons.scanArea}
-                disabled={!scanReady || !!dive.pendingDiscovery}
-                onPress={() => dispatch({ type: 'SCAN_AREA', now: Date.now() })}
+                disabled={!diveActive || !scanReady || !!dive.pendingDiscovery}
+                onPress={() => {
+                  if (!diveActive) return;
+                  dispatch({ type: 'SCAN_AREA', now: Date.now() });
+                }}
               />
             </View>
             <View style={{ flex: 1 }}>
@@ -261,8 +396,11 @@ export default function DiveScreen() {
                 subtitle={`Current: ${
                   ROUTE_OPTIONS.find((r) => r.id === dive.currentRoute)?.label ?? 'Unknown'
                 }`}
-                disabled={false}
-                onPress={() => setRoutePickerOpen(true)}
+                disabled={!diveActive}
+                onPress={() => {
+                  if (!diveActive) return;
+                  setRoutePickerOpen(true);
+                }}
               />
             </View>
           </View>
@@ -311,6 +449,13 @@ export default function DiveScreen() {
 
         <HudPanel>
           <HudSectionTitle>ALERT FEED</HudSectionTitle>
+          {priorityComm && priorityActions.length > 0 ? (
+            <ActionableCrewAlert
+              message={priorityComm}
+              actions={priorityActions}
+              onAction={runCrewAlertAction}
+            />
+          ) : null}
           <AlertFeedCompact lines={alertLines} />
         </HudPanel>
 
@@ -326,7 +471,12 @@ export default function DiveScreen() {
         </View>
       </ScreenShell>
       <DiveFlashBand kind={flashKind} />
-      <Modal visible={routePickerOpen} transparent animationType="fade" onRequestClose={() => setRoutePickerOpen(false)}>
+      <Modal
+        visible={routePickerOpen && diveActive}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRoutePickerOpen(false)}
+      >
         <Pressable style={styles.modalBackdrop} onPress={() => setRoutePickerOpen(false)}>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Command Intent</Text>
@@ -339,6 +489,7 @@ export default function DiveScreen() {
                   title={`${r.label}${dive.currentRoute === r.id ? ' · active' : ''}`}
                   variant={dive.currentRoute === r.id ? 'primary' : 'ghost'}
                   onPress={() => {
+                    if (!diveActive) return;
                     dispatch({ type: 'SET_DIVE_ROUTE', route: r.id as DiveRoute });
                     setRoutePickerOpen(false);
                   }}
@@ -350,20 +501,32 @@ export default function DiveScreen() {
           </View>
         </Pressable>
       </Modal>
-      {dive.pendingDiscovery ? (
+      {diveActive && dive.pendingDiscovery ? (
         <DiscoveryPromptModal
           visible
           discovery={dive.pendingDiscovery}
           scanAvailable={scanAvailable(state.submarine, state.crew)}
-          onScan={() => dispatch({ type: 'SCAN_PENDING_DISCOVERY' })}
-          onIgnore={() => dispatch({ type: 'RESOLVE_PENDING_DISCOVERY', choice: 'ignore' })}
-          onAttempt={() => dispatch({ type: 'RESOLVE_PENDING_DISCOVERY', choice: 'attempt' })}
+          onScan={() => {
+            if (!diveActive) return;
+            dispatch({ type: 'SCAN_PENDING_DISCOVERY' });
+          }}
+          onIgnore={() => {
+            if (!diveActive) return;
+            dispatch({ type: 'RESOLVE_PENDING_DISCOVERY', choice: 'ignore' });
+          }}
+          onAttempt={() => {
+            if (!diveActive) return;
+            dispatch({ type: 'RESOLVE_PENDING_DISCOVERY', choice: 'attempt' });
+          }}
         />
       ) : null}
       <DiscoveryOutcomeModal
-        visible={Boolean(dive.discoveryOutcomeBanner)}
+        visible={diveActive && Boolean(dive.discoveryOutcomeBanner)}
         banner={dive.discoveryOutcomeBanner}
-        onDismiss={() => dispatch({ type: 'DISMISS_DISCOVERY_OUTCOME' })}
+        onDismiss={() => {
+          if (!diveActive) return;
+          dispatch({ type: 'DISMISS_DISCOVERY_OUTCOME' });
+        }}
       />
     </View>
   );
@@ -416,6 +579,8 @@ const styles = StyleSheet.create({
   pillValue: { color: theme.text, fontWeight: '700', marginTop: 4, fontSize: 12 },
   debug: { color: theme.textMuted, fontSize: 11, marginTop: 6 },
   returnRow: { marginTop: 4, marginBottom: 8 },
+  navMapRow: { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' },
+  navMapBtn: { flex: 1, minWidth: 120 },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.68)',
@@ -436,4 +601,11 @@ const styles = StyleSheet.create({
   navIntent: { color: theme.accent, fontSize: 12, fontWeight: '800', marginTop: 6 },
   intentRow: { marginBottom: 10 },
   intentEffect: { color: theme.textMuted, fontSize: 11, lineHeight: 15, marginTop: 4, marginLeft: 2 },
+  repairStockLine: { fontSize: 14, fontWeight: '900', marginTop: 4 },
+  repairStockOk: { color: theme.ok },
+  repairStockLow: { color: theme.warning },
+  repairStockEmpty: { color: theme.warning },
+  repairStockCrit: { color: theme.danger },
+  repairHint: { marginTop: 8, lineHeight: 18 },
+  intentSuggestCol: { marginTop: 10, gap: 8 },
 });

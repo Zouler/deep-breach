@@ -15,6 +15,10 @@ import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
 import { validateRepairPreconditions } from '@/game/repairOutcome';
 import {
+  countActiveCracks,
+  countHullRepairUnitsInExpedition,
+} from '@/game/repairResourceStatus';
+import {
   getRoomDamageBadge,
   getTotalLeakRate,
 } from '@/game/roomDetailHelpers';
@@ -86,15 +90,33 @@ export default function RoomDetailScreen() {
     );
   }
 
+  if (dive.status !== 'active') {
+    return (
+      <ScreenShell>
+        <Text style={styles.muted}>
+          This compartment view is closed — the trial has ended. Open the Trial Report or return to base.
+        </Text>
+        <PrimaryButton
+          title="Trial Report"
+          onPress={() => router.replace('/mission-result')}
+        />
+        <PrimaryButton title="Back to Base" variant="ghost" onPress={() => router.replace('/base')} />
+      </ScreenShell>
+    );
+  }
+
   const badge = getRoomDamageBadge(room);
   const totalLeak = getTotalLeakRate(room);
   const inventory = dive.expeditionRepairInventory ?? [];
+  const hullKits = countHullRepairUnitsInExpedition(inventory);
+  const breachesActive = countActiveCracks(dive);
   const stagedSupplies = room.loot.filter(
     (l) =>
       !l.collected && (l.kind === 'repair_supply' || l.kind === 'emergency_supply'),
   );
 
   const attemptRepair = (crackId: string, crack: (typeof room.cracks)[number], item: RepairItem) => {
+    if (dive.status !== 'active') return;
     const pre = validateRepairPreconditions(crack, item);
     if (!pre.ok) {
       setTopBanner({ tone: 'err', text: pre.reason });
@@ -115,6 +137,15 @@ export default function RoomDetailScreen() {
   return (
     <ScreenShell scroll backgroundImage={GAME_ASSETS.diveScreenBg} backgroundScrimOpacity={0.74}>
       {topBanner ? <RepairFeedbackBanner tone={topBanner.tone} text={topBanner.text} /> : null}
+      {hullKits <= 0 && breachesActive > 0 ? (
+        <HudPanel>
+          <HudSectionTitle>HULL REPAIR STOCK</HudSectionTitle>
+          <Text style={styles.warnBlock}>
+            No repair supplies available for hull breaches. Search for salvage (command intent),
+            stabilize systems, or return to base.
+          </Text>
+        </HudPanel>
+      ) : null}
 
       <RoomDamageHeader
         roomName={room.name}
@@ -151,6 +182,7 @@ export default function RoomDetailScreen() {
       <StagedSuppliesPanel
         staged={stagedSupplies}
         onCollect={(lootId) => {
+          if (dive.status !== 'active') return;
           dispatch({ type: 'COLLECT_LOOT', roomId: room.id, lootId });
           setTopBanner({ tone: 'ok', text: 'Supplies secured into expedition cargo.' });
         }}
@@ -163,6 +195,18 @@ export default function RoomDetailScreen() {
 
 const styles = StyleSheet.create({
   muted: { color: theme.textMuted, marginBottom: 12 },
+  warnBlock: {
+    color: theme.warning,
+    fontWeight: '700',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#fbbf2444',
+    backgroundColor: '#451a0344',
+  },
   successLine: { color: '#86efac', fontWeight: '900', fontSize: 15, marginTop: 8 },
   successSub: { color: theme.textMuted, marginTop: 6, fontSize: 13 },
 });

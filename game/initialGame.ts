@@ -16,6 +16,7 @@ import { initializePacingGaps } from '@/game/pacing';
 import { createEmptyRooms } from '@/game/rooms';
 import type { DiveSession, GameState, Mission, PlayerProfile, Submarine } from '@/types';
 import { GAME_STATE_VERSION } from '@/types';
+import { defaultCrewConditionState } from '@/types/internalCrewEvents';
 
 function defaultSubmarine(): Submarine {
   return {
@@ -71,6 +72,22 @@ export function createInitialGameState(): GameState {
     dive: null,
     pendingOfflineReport: null,
     lastMissionOutcome: null,
+    storyBeats: [],
+    narrativeRecap: {
+      lastGlobalBackgroundAt: null,
+      lastXOBriefingDismissedFingerprint: null,
+      lastXOBriefingDismissedAt: null,
+    },
+    pendingNarrativeCutInIds: [],
+    seenCutInIds: [],
+    crewState: defaultCrewConditionState(),
+    pendingInternalCrewEventId: null,
+    resolvedInternalCrewEventIds: [],
+    completedTrialReturnsCount: 0,
+    internalCrewReturnsSinceLastEvent: 0,
+    internalCrewNextEventAtReturns: 4,
+    lastInternalCrewEventAt: null,
+    trialProgressByMissionId: {},
   };
   return withSyncedLegacyEconomy(raw);
 }

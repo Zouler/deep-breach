@@ -12,6 +12,7 @@ import type {
   Treasure,
 } from '@/types';
 
+import { repairTemplateById } from '@/data/repairItems';
 import { makePacedCrack, randomRoomId } from '@/game/diveEvents';
 import type { RewardIntent } from '@/game/cargo';
 import { scanNarrativeForDiscovery } from '@/game/cargo';
@@ -30,6 +31,25 @@ import {
   riskScalar,
   sonarQuality,
 } from '@/game/submarineStats';
+
+/** Modest extra repair-supply odds on early Experimental Trials. */
+function experimentalTrialRepairSupplyBias(missionId: string): number {
+  if (missionId === 'shallow_descent') return 1.18;
+  if (missionId === 'wreck_survey') return 1.1;
+  if (missionId === 'signal_below') return 1.05;
+  return 1;
+}
+
+function repairSupplyOutcomePreamble(intent: RewardIntent): string[] {
+  const adds = intent.repairAdds ?? [];
+  if (!adds.length) return [];
+  const lines = ['Recovered repair supplies:'];
+  for (const add of adds) {
+    const nm = repairTemplateById(add.templateId)?.name ?? add.templateId;
+    lines.push(`+${add.quantity} ${nm}`);
+  }
+  return lines;
+}
 
 const RUNTIME_TREASURES: Treasure[] = [
   {
@@ -388,6 +408,8 @@ export function resolveExternalDiscovery(input: DiscoveryResolveInput): Discover
   const depth = depthProgress(dive);
   const inGrace = inEarlyGracePeriod(dive, now);
   const lowMission = mission.risk === 'low';
+  const trialBias = experimentalTrialRepairSupplyBias(mission.id);
+  const repairRoll = intent.repairSupplyChanceMultiplier * trialBias;
 
   if (!hazard) {
     const pushRepair = (id: string, q: number) => {
@@ -396,24 +418,23 @@ export function resolveExternalDiscovery(input: DiscoveryResolveInput): Discover
 
     if (discovery.category === 'salvage') {
       rewardIntent.scrap = Math.floor(16 + depth * 22 + Math.random() * 14);
-      const pPatch = Math.min(
-        0.98,
-        (lowMission || inGrace ? 0.58 : 0.42) * intent.repairSupplyChanceMultiplier,
-      );
-      const pSeal = Math.min(
-        0.98,
-        (lowMission || inGrace ? 0.4 : 0.3) * intent.repairSupplyChanceMultiplier,
-      );
-      if (Math.random() < pPatch) pushRepair('patch_kit', Math.random() < 0.2 ? 2 : 1);
+      const pPatch = Math.min(0.98, (lowMission || inGrace ? 0.66 : 0.52) * repairRoll);
+      const pSeal = Math.min(0.98, (lowMission || inGrace ? 0.48 : 0.36) * repairRoll);
+      const pBrace = Math.min(0.98, (lowMission || inGrace ? 0.24 : 0.18) * repairRoll);
+      if (Math.random() < pPatch) pushRepair('patch_kit', Math.random() < 0.22 ? 2 : 1);
       if (Math.random() < pSeal) pushRepair('pressure_sealant', 1);
-      if (Math.random() < 0.14) pushRepair('brace_frame', 1);
-      if (Math.random() < (lowMission || inGrace ? 0.22 : 0.14)) pushRepair('oxygen_canister', 1);
+      if (Math.random() < pBrace) pushRepair('brace_frame', 1);
+      if (Math.random() < (lowMission || inGrace ? 0.26 : 0.18) * Math.min(1.15, repairRoll)) {
+        pushRepair('oxygen_canister', 1);
+      }
     } else if (discovery.category === 'research_signal') {
       rewardIntent.research = Math.floor(
         (6 + depth * 12 + Math.random() * 7) * intent.researchRewardMultiplier,
       );
       rewardIntent.samples = Math.random() < 0.55 ? 1 : 0;
       if (Math.random() < 0.35) rewardIntent.scrap = Math.floor(6 + Math.random() * 10);
+      if (Math.random() < 0.16 * repairRoll) pushRepair('oxygen_canister', 1);
+      if (Math.random() < 0.12 * repairRoll) pushRepair('patch_kit', 1);
     } else if (discovery.category === 'thermal_anomaly') {
       rewardIntent.research = Math.floor(
         (6 + depth * 10 + Math.random() * 6) * intent.researchRewardMultiplier,
@@ -430,8 +451,9 @@ export function resolveExternalDiscovery(input: DiscoveryResolveInput): Discover
         rewardIntent.scrap = Math.floor(20 + Math.random() * 16);
       }
       rewardIntent.research = Math.floor(3 + Math.random() * 6);
-      if (Math.random() < 0.22) pushRepair('brace_frame', 1);
-      if (Math.random() < 0.18) pushRepair('patch_kit', 1);
+      if (Math.random() < 0.32 * repairRoll) pushRepair('brace_frame', 1);
+      if (Math.random() < 0.28 * repairRoll) pushRepair('patch_kit', 1);
+      if (Math.random() < 0.12 * repairRoll) pushRepair('pressure_sealant', 1);
     } else if (discovery.category === 'unknown_artifact') {
       rewardIntent.research = Math.floor(6 + Math.random() * 9);
       rewardIntent.artifacts = Math.random() < 0.65 ? 1 : 0;
@@ -477,6 +499,12 @@ export function resolveExternalDiscovery(input: DiscoveryResolveInput): Discover
     });
 
     const oxyCost = 1.5 + Math.random() * 2.2;
+    const repairPre = repairSupplyOutcomePreamble(rewardIntent);
+    const basePreamble = [
+      'Recovery successful.',
+      `Teams report secured materials from: ${discovery.title}.`,
+      `Oxygen used during EVA: ~${oxyCost.toFixed(1)}%.`,
+    ];
     return {
       journal: {
         id: createId('dj'),
@@ -497,11 +525,7 @@ export function resolveExternalDiscovery(input: DiscoveryResolveInput): Discover
       supplyLog,
       outcomeTitle: 'Recovery complete',
       outcomeSeverity: 'info',
-      outcomePreamble: [
-        'Recovery successful.',
-        `Teams report secured materials from: ${discovery.title}.`,
-        `Oxygen used during EVA: ~${oxyCost.toFixed(1)}%.`,
-      ],
+      outcomePreamble: [...repairPre, ...(repairPre.length ? [''] : []), ...basePreamble],
     };
   }
 

@@ -17,6 +17,10 @@ import {
   describeBasicRestock,
   getSubmarineConditionLabel,
 } from '@/game/repairDock';
+import {
+  countHullRepairUnitsInBaseStorage,
+  getBaseRepairStockStatus,
+} from '@/game/repairResourceStatus';
 import { BASIC_RESTOCK_SCRAP_COST, PARTIAL_HULL_REPAIR_PERCENT } from '@/game/economy';
 
 export default function RepairDockScreen() {
@@ -33,6 +37,8 @@ export default function RepairDockScreen() {
   );
   const fullCost = useMemo(() => calculateHullRepairCost(hull, 100), [hull]);
   const restock = describeBasicRestock(state);
+  const baseHullKits = countHullRepairUnitsInBaseStorage(bs);
+  const baseRepairBand = getBaseRepairStockStatus(bs);
 
   const rd = NARRATIVE_UI.repairDock;
 
@@ -40,6 +46,41 @@ export default function RepairDockScreen() {
     <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.72}>
       <SectionHeader title={rd.title} subtitle={rd.subtitle} />
       <Text style={styles.blurb}>{rd.blurb}</Text>
+      {baseRepairBand === 'low' || baseRepairBand === 'empty' ? (
+        <View style={styles.supplyWarn}>
+          <Text style={styles.supplyWarnText}>
+            {baseRepairBand === 'empty'
+              ? 'Repair supplies are depleted at base. Use Restock Basic Supplies before the next trial.'
+              : 'Repair supplies are low at base. Restock before the next trial if you can.'}
+          </Text>
+        </View>
+      ) : null}
+      <PanelCard style={styles.consoleCard}>
+        <Text style={styles.cardTitle}>Repair supplies (Base Storage)</Text>
+        <Text style={styles.line}>
+          Hull kits total: {baseHullKits} (patch + sealant + brace)
+        </Text>
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.hullPatchKit}
+          label="Hull Patch Kits"
+          value={`×${bs.hullPatchKits}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.pressureSealant}
+          label="Pressure Sealant"
+          value={`×${bs.pressureSealant}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.hullPatchKit}
+          label="Emergency Brace"
+          value={`×${bs.emergencyBrace}`}
+        />
+        <IconLabelRow
+          icon={GAME_ASSETS.icons.oxygenCanister}
+          label="Oxygen canisters (base)"
+          value={`×${bs.oxygenCanisters}`}
+        />
+      </PanelCard>
       {banner ? (
         <View style={styles.banner}>
           <Text style={styles.bannerText}>{banner}</Text>
@@ -185,4 +226,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   bannerText: { color: theme.ok, fontWeight: '700' },
+  supplyWarn: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#b4530944',
+    backgroundColor: '#451a0344',
+    padding: 12,
+    marginBottom: 12,
+  },
+  supplyWarnText: { color: theme.warning, fontWeight: '700', fontSize: 13, lineHeight: 18 },
 });
