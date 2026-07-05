@@ -4,7 +4,7 @@ import { generateExternalDiscovery } from '@/game/discoveries';
 import { createId } from '@/game/ids';
 import { getCommandIntentModifiers } from '@/game/navigationIntent';
 import { depthProgress } from '@/game/pacing';
-import { assignedCrew, crewNavigationBonus, moduleLevel, riskScalar, sonarQuality } from '@/game/submarineStats';
+import { assignedCrew, crewNavigationBonus, riskScalar, sonarQuality } from '@/game/submarineStats';
 
 export const SCAN_AREA_COOLDOWN_MS = 45_000;
 

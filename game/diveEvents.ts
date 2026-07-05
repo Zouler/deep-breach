@@ -1,10 +1,21 @@
-import type { Crack, DiveSession, GameEvent, Mission } from '@/types';
+import type { Crack, DiveSession, GameEvent, Mission, RiskLevel } from '@/types';
 
 import { createId } from '@/game/ids';
+import { canRoomBeTargetedByDiveEvent, getRoomDefinition, type RoomContext } from '@/game/rooms';
+import { CRACK_ESCALATION_MS_BY_RISK } from '@/game/pacing';
 import { riskScalar } from '@/game/submarineStats';
 
-export function randomRoomId(rooms: DiveSession['rooms']): string {
-  return rooms[Math.floor(Math.random() * rooms.length)]?.id ?? 'bridge';
+export function randomRoomId(rooms: DiveSession['rooms'], ctx?: RoomContext): string {
+  let pool = rooms;
+  if (ctx) {
+    pool = rooms.filter((r) => canRoomBeTargetedByDiveEvent(r.id, ctx));
+  } else {
+    pool = rooms.filter((r) => getRoomDefinition(r.id)?.canTakeDamage !== false);
+  }
+  if (pool.length === 0) {
+    return rooms[0]?.id ?? 'command_center';
+  }
+  return pool[Math.floor(Math.random() * pool.length)]!.id;
 }
 
 export type PacedCrackContext = {
@@ -16,13 +27,38 @@ export type PacedCrackContext = {
   forcedSeverity?: Crack['severity'];
   /** <1 softens severity rolls (stabilize / avoid); >1 worsens. */
   crackEscalationMultiplier?: number;
+  /** Contract risk tier and current tick time, used to schedule escalation. */
+  risk: RiskLevel;
+  now: number;
 };
+
+/** Only unaddressed 'moderate' cracks escalate (to 'critical'); hairline and critical do not. */
+function escalationDeadline(severity: Crack['severity'], risk: RiskLevel, now: number): number | null {
+  if (severity !== 'moderate') return null;
+  return now + CRACK_ESCALATION_MS_BY_RISK[risk];
+}
+
+function crackWithTimings(
+  roomId: string,
+  severity: Crack['severity'],
+  leak: number,
+  ctx: PacedCrackContext,
+): Crack {
+  return {
+    id: createId('crack'),
+    roomId,
+    severity,
+    leakRatePerSecond: leak,
+    spawnedAt: ctx.now,
+    escalatesAt: escalationDeadline(severity, ctx.risk, ctx.now),
+  };
+}
 
 export function makePacedCrack(roomId: string, ctx: PacedCrackContext): Crack {
   if (ctx.forcedSeverity) {
     const sev = ctx.forcedSeverity;
     const leak = sev === 'critical' ? 0.22 : sev === 'moderate' ? 0.12 : 0.04;
-    return { id: createId('crack'), roomId, severity: sev, leakRatePerSecond: leak };
+    return crackWithTimings(roomId, sev, leak, ctx);
   }
 
   const esc = ctx.crackEscalationMultiplier ?? 1;
@@ -39,7 +75,7 @@ export function makePacedCrack(roomId: string, ctx: PacedCrackContext): Crack {
       severity = 'moderate';
       leak = 0.09;
     }
-    return { id: createId('crack'), roomId, severity, leakRatePerSecond: leak };
+    return crackWithTimings(roomId, severity, leak, ctx);
   }
 
   const depthBias = 0.25 + ctx.depthProgress * 0.55;
@@ -57,17 +93,7 @@ export function makePacedCrack(roomId: string, ctx: PacedCrackContext): Crack {
     leak = 0.13;
   }
 
-  return { id: createId('crack'), roomId, severity, leakRatePerSecond: leak };
-}
-
-/** @deprecated use makePacedCrack */
-export function makeCrack(roomId: string): Crack {
-  return makePacedCrack(roomId, {
-    depthProgress: 0.5,
-    missionProgress: 0.5,
-    inGrace: false,
-    allowCriticalRandom: true,
-  });
+  return crackWithTimings(roomId, severity, leak, ctx);
 }
 
 export function tryAmbientDiveEvent(

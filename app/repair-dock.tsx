@@ -184,12 +184,12 @@ export default function RepairDockScreen() {
 const styles = StyleSheet.create({
   blurb: { color: theme.textMuted, fontSize: 13, lineHeight: 18, marginBottom: 12 },
   consoleCard: {
-    borderColor: '#38bdf855',
-    backgroundColor: '#020617cc',
+    borderColor: theme.panelBorderStrong,
+    backgroundColor: theme.panelBg,
   },
   lockedCard: {
     borderColor: '#334155',
-    backgroundColor: '#02061799',
+    backgroundColor: theme.panelBgFaint,
     opacity: 0.92,
   },
   lockedLine: {
@@ -220,8 +220,8 @@ const styles = StyleSheet.create({
   banner: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#14532d55',
-    backgroundColor: '#052e1644',
+    borderColor: theme.okBorder,
+    backgroundColor: theme.okBg,
     padding: 10,
     marginBottom: 10,
   },
@@ -229,8 +229,8 @@ const styles = StyleSheet.create({
   supplyWarn: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#b4530944',
-    backgroundColor: '#451a0344',
+    borderColor: theme.warningBorder,
+    backgroundColor: theme.warningBg,
     padding: 12,
     marginBottom: 12,
   },
