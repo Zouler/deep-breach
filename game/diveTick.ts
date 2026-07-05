@@ -1,17 +1,26 @@
 import type { CrewMember, DiveSession, Mission, RoomStatus, Submarine } from '@/types';
 
-import { tickAmbientCrewChatter } from '@/game/crewMessages';
+import { pushCrewMessage, tickAmbientCrewChatter } from '@/game/crewMessages';
 import { generateExternalDiscovery } from '@/game/discoveries';
 import { makePacedCrack, randomRoomId, tryAmbientDiveEvent } from '@/game/diveEvents';
+import {
+  computeEngineHeatRisePercent,
+  ENGINE_HEAT_CRITICAL_PCT,
+  ENGINE_HEAT_WARNING_PCT,
+} from '@/game/engineHeat';
+import { navigatorHazardSenseBonus } from '@/game/crewSpecializations';
 import { createId } from '@/game/ids';
 import { getCommandIntentModifiers } from '@/game/navigationIntent';
+import { getMissionModifierById } from '@/game/missionModifiers';
 import { tickNavigationKinematics } from '@/game/navigationVector';
 import { computeOxygenDrainPercent } from '@/game/oxygen';
+import type { RoomContext } from '@/game/rooms';
 import {
   canOfferDiscovery,
   canSpawnAmbient,
   canSpawnCrack,
   countCriticalCracks,
+  CRACK_ESCALATION_WARNING_FRACTION,
   criticalRandomAllowed,
   depthProgress,
   hasUnresolvedHighStress,
@@ -36,10 +45,11 @@ export interface DiveTickParams {
   crew: CrewMember[];
   deltaMs: number;
   now: number;
+  roomContext?: RoomContext;
 }
 
 export function tickActiveDive(p: DiveTickParams): DiveSession {
-  const { dive, mission, submarine, crew, deltaMs, now } = p;
+  const { dive, mission, submarine, crew, deltaMs, now, roomContext } = p;
   if (dive.status !== 'active') return dive;
 
   const dt = deltaMs / 1000;
@@ -50,6 +60,11 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
   const inGrace = inEarlyGracePeriod(dive, now);
   const route = dive.currentRoute;
   const intent = getCommandIntentModifiers(route);
+  const modifier = getMissionModifierById(dive.activeModifierId);
+  const modOxygenMul = modifier?.oxygenDrainMultiplier ?? 1;
+  const modCrackMul = modifier?.crackRiskMultiplier ?? 1;
+  const modHazardMul = modifier?.hazardChanceMultiplier ?? 1;
+  const navHazardMul = Math.max(0.3, 1 - navigatorHazardSenseBonus(crew));
 
   let {
     missionElapsedMs,
@@ -96,7 +111,7 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
     submarine,
     waterLevelPercent,
     route,
-    oxygenIntentMultiplier: intent.oxygenDrainMultiplier,
+    oxygenIntentMultiplier: intent.oxygenDrainMultiplier * modOxygenMul,
   });
   oxygenPercent = Math.max(0, oxygenPercent - o2Drain);
 
@@ -105,6 +120,15 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
     (floodingStress * 0.06 + (oxygenPercent < 25 ? 0.04 : 0)) * dt * 60 * rs * (1 - repairBonus * 0.25);
 
   hullIntegrityPercent -= totalLeak * dt * 0.48 * rs * (1 - hullMit * 0.55);
+
+  let engineHeatPercent = Math.min(
+    100,
+    dive.engineHeatPercent + computeEngineHeatRisePercent(deltaMs, { mission, crew }),
+  );
+  if (engineHeatPercent >= ENGINE_HEAT_CRITICAL_PCT) {
+    hullIntegrityPercent -= 0.05 * dt * 60 * rs;
+    oxygenPercent = Math.max(0, oxygenPercent - 0.02 * dt * 60 * rs);
+  }
 
   const kinematics = tickNavigationKinematics(dive, deltaMs, depthDeltaM, intent);
 
@@ -115,6 +139,7 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
     oxygenPercent,
     waterLevelPercent,
     hullIntegrityPercent,
+    engineHeatPercent,
     rooms,
     collectedScrap,
     collectedResearch,
@@ -127,6 +152,20 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
     routeTimeMs,
     ...kinematics,
   };
+
+  if (engineHeatPercent >= ENGINE_HEAT_WARNING_PCT && !nextDive.engineHeatWarned) {
+    nextDive = pushCrewMessage(
+      { ...nextDive, engineHeatWarned: true },
+      {
+        speaker: 'chief_engineer',
+        department: 'Engineering',
+        text: 'Engine Bay temperature is climbing — vent heat before it stresses the hull.',
+        severity: 'warning',
+      },
+    );
+  } else if (engineHeatPercent < ENGINE_HEAT_WARNING_PCT && nextDive.engineHeatWarned) {
+    nextDive = { ...nextDive, engineHeatWarned: false };
+  }
 
   const stressHigh = hasUnresolvedHighStress(nextDive);
   const dProg = depthProgress(nextDive);
@@ -141,9 +180,11 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
       rs *
       graceFactor *
       stressFactor *
-      intent.crackRiskMultiplier;
+      intent.crackRiskMultiplier *
+      modCrackMul *
+      navHazardMul;
     if (Math.random() < crackChance) {
-      const rid = randomRoomId(nextDive.rooms);
+      const rid = randomRoomId(nextDive.rooms, roomContext);
       const allowCrit = criticalRandomAllowed(nextDive) && !inGrace;
       const crack = makePacedCrack(rid, {
         depthProgress: dProg,
@@ -151,6 +192,8 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
         inGrace,
         allowCriticalRandom: allowCrit,
         crackEscalationMultiplier: intent.crackEscalationMultiplier,
+        risk: mission.risk,
+        now,
       });
       const nextRooms = nextDive.rooms.map((r) =>
         r.id === rid
@@ -180,6 +223,47 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
     }
   }
 
+  // Crack escalation: an unaddressed 'moderate' crack worsens to 'critical' over
+  // time, with a one-time crew warning partway through its window so it isn't invisible.
+  {
+    let escalatedRooms = nextDive.rooms;
+    let warnedDive = nextDive;
+    for (const room of nextDive.rooms) {
+      let roomChanged = false;
+      const nextCracks = room.cracks.map((c) => {
+        if (c.severity !== 'moderate' || c.escalatesAt === null) return c;
+        if (now >= c.escalatesAt) {
+          roomChanged = true;
+          return {
+            ...c,
+            severity: 'critical' as const,
+            leakRatePerSecond: Math.max(c.leakRatePerSecond, 0.22),
+            escalatesAt: null,
+          };
+        }
+        if (!c.escalationWarned) {
+          const windowMs = c.escalatesAt - c.spawnedAt;
+          const warnAt = c.spawnedAt + windowMs * CRACK_ESCALATION_WARNING_FRACTION;
+          if (now >= warnAt) {
+            roomChanged = true;
+            warnedDive = pushCrewMessage(warnedDive, {
+              speaker: 'chief_engineer',
+              department: 'Engineering',
+              text: `${room.name} crack is worsening — repair it before it turns critical.`,
+              severity: 'warning',
+            });
+            return { ...c, escalationWarned: true };
+          }
+        }
+        return c;
+      });
+      if (roomChanged) {
+        escalatedRooms = escalatedRooms.map((r) => (r.id === room.id ? { ...r, cracks: nextCracks } : r));
+      }
+    }
+    nextDive = { ...warnedDive, rooms: escalatedRooms };
+  }
+
   if (!nextDive.pendingDiscovery && canSpawnAmbient(nextDive, mission, now)) {
     const ambientChance =
       0.00055 *
@@ -187,9 +271,11 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
       (inGrace ? 0.65 : 1) *
       (stressHigh ? 0.55 : 1) *
       intent.ambientChanceMultiplier *
-      intent.hazardChanceMultiplier;
+      intent.hazardChanceMultiplier *
+      modHazardMul *
+      navHazardMul;
     if (Math.random() < ambientChance) {
-      const evt = tryAmbientDiveEvent(mission, randomRoomId(nextDive.rooms), now, {
+      const evt = tryAmbientDiveEvent(mission, randomRoomId(nextDive.rooms, roomContext), now, {
         inGrace,
         stressHigh,
       });
@@ -212,6 +298,7 @@ export function tickActiveDive(p: DiveTickParams): DiveSession {
       (inGrace ? 0.55 : 1) *
       (1 + rs * 0.1) *
       intent.discoveryChanceMultiplier *
+      modHazardMul *
       lowMissionBoost;
     if (Math.random() < discChance) {
       const disc = generateExternalDiscovery(mission, nextDive, submarine, crew, now, {

@@ -10,6 +10,7 @@ import type {
 
 import { repairTemplateById } from '@/data/repairItems';
 import { createId } from '@/game/ids';
+import { getItemDisplayName, mergeCatalogCounts, normalizeItemId } from '@/game/items';
 import { randomRoomId } from '@/game/diveEvents';
 import { cargoCapacityUnits } from '@/game/submarineStats';
 
@@ -192,6 +193,7 @@ export type RewardIntent = {
   scrap?: number;
   research?: number;
   repairAdds?: { templateId: string; quantity: number }[];
+  catalogAdds?: { itemId: string; quantity: number }[];
   treasures?: Treasure[];
   artifacts?: number;
   samples?: number;
@@ -238,6 +240,17 @@ export function applyRewardIntent(
         ],
       };
     }
+  }
+
+  for (const add of intent.catalogAdds ?? []) {
+    const itemId = normalizeItemId(add.itemId);
+    if (add.quantity <= 0) continue;
+    const current = d.expeditionCatalogItems ?? {};
+    d = {
+      ...d,
+      expeditionCatalogItems: mergeCatalogCounts(current, { [itemId]: add.quantity }),
+    };
+    lines.push(`+${add.quantity}× ${getItemDisplayName(itemId)} (catalog)`);
   }
 
   const scrapAmt = intent.scrap ?? 0;

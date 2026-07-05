@@ -12,6 +12,7 @@ import {
   appendTreasuresToBaseStorage,
   withSyncedLegacyEconomy,
 } from '@/game/baseStorage';
+import { mergeExpeditionCatalogIntoBase } from '@/game/salvageCatalog';
 
 export function emptyCargoTransferSummary(): CargoTransferSummary {
   return {
@@ -107,9 +108,18 @@ export function applyExpeditionCargoTransfer(state: GameState): {
   const summary = computeCargoTransferSummary(dive, state.pendingOfflineReport);
   const treasures = dive.status === 'success' ? [...dive.collectedTreasures] : [];
   const nextBs = mergeSummaryIntoBaseStorage(state.baseStorage, summary, treasures);
+  const emergency = state.pendingOfflineReport?.emergencyExtraction ?? dive.offlineEmergencyExtraction ?? false;
+  const successFraction =
+    dive.status === 'success' ? 1 : emergency ? 0.52 : 0.35;
+  const catalogItems = mergeExpeditionCatalogIntoBase(
+    state.catalogItems ?? {},
+    dive.expeditionCatalogItems,
+    successFraction,
+  );
   const next: GameState = {
     ...state,
     baseStorage: nextBs,
+    catalogItems,
     dive: { ...dive, cargoTransferredToBase: true },
   };
   return { state: withSyncedLegacyEconomy(next), summary };

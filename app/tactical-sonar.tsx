@@ -19,6 +19,10 @@ export default function TacticalSonarScreen() {
     () => state.missions.find((m) => m.id === dive?.missionId),
     [dive?.missionId, state.missions],
   );
+  const contacts = useMemo(
+    () => (dive && mission ? buildSonarContacts({ dive, mission, route: dive.currentRoute }) : []),
+    [dive, mission],
+  );
 
   if (!dive || !mission || dive.status !== 'active') {
     return (
@@ -32,10 +36,6 @@ export default function TacticalSonarScreen() {
   const now = Date.now();
   const scanReady = canPerformAreaScan(dive, now);
   const scanCooldownLeftMs = Math.max(0, SCAN_AREA_COOLDOWN_MS - (now - dive.lastAreaScanAt));
-  const contacts = useMemo(
-    () => buildSonarContacts({ dive, mission, route: dive.currentRoute }),
-    [dive, mission],
-  );
   const hasActiveContact = Boolean(dive.pendingDiscovery);
   const scanAllowed = scanAvailable(state.submarine, state.crew);
 

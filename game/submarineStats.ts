@@ -1,5 +1,11 @@
 import type { CrewMember, Submarine, SubmarineModuleType } from '@/types';
 
+import {
+  effectiveNavigationSkill,
+  effectiveRepairSkill,
+  effectiveResearchSkill,
+} from '@/game/crewSpecializations';
+
 export function moduleLevel(sub: Submarine, type: SubmarineModuleType): number {
   return sub.modules.find((m) => m.type === type)?.level ?? 1;
 }
@@ -41,26 +47,26 @@ export function assignedCrew(crew: CrewMember[]): CrewMember[] {
 export function crewRepairBonus(crew: CrewMember[]): number {
   const c = assignedCrew(crew);
   if (!c.length) return 0;
-  return c.reduce((acc, m) => acc + m.repairSkill, 0) / c.length * 0.15;
+  return (c.reduce((acc, m) => acc + effectiveRepairSkill(m), 0) / c.length) * 0.15;
 }
 
 /** Stronger weighting when an engineer is on the active dive roster. */
 export function engineerRepairBonus(crew: CrewMember[]): number {
   const eng = assignedCrew(crew).filter((c) => c.role === 'engineer');
   if (!eng.length) return 0;
-  return Math.max(...eng.map((e) => e.repairSkill)) * 0.22;
+  return Math.max(...eng.map(effectiveRepairSkill)) * 0.22;
 }
 
 export function crewNavigationBonus(crew: CrewMember[]): number {
   const c = assignedCrew(crew);
   if (!c.length) return 0;
-  return c.reduce((acc, m) => acc + m.navigationSkill, 0) / c.length * 0.12;
+  return (c.reduce((acc, m) => acc + effectiveNavigationSkill(m), 0) / c.length) * 0.12;
 }
 
 export function crewResearchBonus(crew: CrewMember[]): number {
   const c = assignedCrew(crew);
   if (!c.length) return 0;
-  return c.reduce((acc, m) => acc + m.researchSkill, 0) / c.length * 0.1;
+  return (c.reduce((acc, m) => acc + effectiveResearchSkill(m), 0) / c.length) * 0.1;
 }
 
 export function riskScalar(risk: string): number {

@@ -1,8 +1,8 @@
-import type { DiveRoute, Mission } from '@/types';
+import type { DiveRoute, Mission , Submarine } from '@/types';
 
 import { getCommandIntentModifiers } from '@/game/navigationIntent';
 import { moduleLevel, riskScalar } from '@/game/submarineStats';
-import type { Submarine } from '@/types';
+
 
 /**
  * Baseline oxygen loss rate (% of full reserves per second) at reference conditions:

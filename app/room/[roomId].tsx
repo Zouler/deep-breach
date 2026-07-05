@@ -1,8 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
+import { CommandIntentModal } from '@/components/CommandIntentModal';
 import { BreachCard } from '@/components/room/BreachCard';
+import { EngineHeatPanel } from '@/components/room/EngineHeatPanel';
 import { RepairFeedbackBanner } from '@/components/room/RepairFeedbackBanner';
 import { RepairSuppliesSummary } from '@/components/room/RepairSuppliesSummary';
 import { RoomDamageHeader } from '@/components/room/RoomDamageHeader';
@@ -13,6 +15,8 @@ import { ScreenShell } from '@/components/ScreenShell';
 import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
+import { canVentEngineHeat, ENGINE_HEAT_VENT_COOLDOWN_MS } from '@/game/engineHeat';
+import { isPropulsionRoom } from '@/game/rooms';
 import { validateRepairPreconditions } from '@/game/repairOutcome';
 import {
   countActiveCracks,
@@ -36,6 +40,7 @@ export default function RoomDetailScreen() {
     text: string;
     tone: 'ok' | 'err';
   } | null>(null);
+  const [intentPickerOpen, setIntentPickerOpen] = useState(false);
 
   const pendingRepairRef = useRef<{ crackId: string } | null>(null);
   const lastEventIdRef = useRef<string | null>(null);
@@ -154,6 +159,17 @@ export default function RoomDetailScreen() {
         totalLeakPerSecond={totalLeak}
       />
 
+      {isPropulsionRoom(room.id) ? (
+        <EngineHeatPanel
+          heatPercent={dive.engineHeatPercent}
+          ventReady={canVentEngineHeat(dive.lastEngineHeatVentAt, Date.now())}
+          ventCooldownLeftMs={
+            ENGINE_HEAT_VENT_COOLDOWN_MS - (Date.now() - dive.lastEngineHeatVentAt)
+          }
+          onVent={() => dispatch({ type: 'VENT_ENGINE_HEAT', now: Date.now() })}
+        />
+      ) : null}
+
       <RepairSuppliesSummary inventory={inventory} />
 
       {room.cracks.length === 0 ? (
@@ -188,7 +204,21 @@ export default function RoomDetailScreen() {
         }}
       />
 
+      <PrimaryButton
+        title="Change Command Intent"
+        variant="ghost"
+        onPress={() => setIntentPickerOpen(true)}
+      />
       <PrimaryButton title="Back to Dive" variant="ghost" onPress={() => router.back()} />
+      <CommandIntentModal
+        visible={intentPickerOpen && dive.status === 'active'}
+        currentRoute={dive.currentRoute}
+        onSelect={(route) => {
+          dispatch({ type: 'SET_DIVE_ROUTE', route });
+          setIntentPickerOpen(false);
+        }}
+        onClose={() => setIntentPickerOpen(false)}
+      />
     </ScreenShell>
   );
 }
@@ -205,7 +235,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#fbbf2444',
-    backgroundColor: '#451a0344',
+    backgroundColor: theme.warningBg,
   },
   successLine: { color: '#86efac', fontWeight: '900', fontSize: 15, marginTop: 8 },
   successSub: { color: theme.textMuted, marginTop: 6, fontSize: 13 },

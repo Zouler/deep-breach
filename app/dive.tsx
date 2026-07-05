@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, Switch, Text, View } from 'react-native';
 
 import { ActionableCrewAlert } from '@/components/ActionableCrewAlert';
+import { CommandIntentModal } from '@/components/CommandIntentModal';
 import { DiscoveryOutcomeModal } from '@/components/DiscoveryOutcomeModal';
 import { DiscoveryPromptModal } from '@/components/DiscoveryPromptModal';
 import { DiveFlashBand } from '@/components/DiveFlashBand';
@@ -26,10 +27,12 @@ import { filterCrewAlertActionsForState } from '@/game/crewAlertActions';
 import { useCrewAlertActions } from '@/hooks/useCrewAlertActions';
 import { useDiveFeedback } from '@/hooks/useDiveFeedback';
 import { useDiveTick } from '@/hooks/useDiveTick';
+import { isPropulsionRoom } from '@/game/rooms';
 import { getDiveRoomThreat, type DiveRoomThreat } from '@/game/diveRoomThreat';
 import { scanAvailable } from '@/game/discoveries';
 import { formatCrewMessageDisplayName } from '@/game/crewMessagePresentation';
 import { getOfflineExplorationGuard } from '@/game/offlineGuards';
+import { getMissionModifierById, isHarderModifier } from '@/game/missionModifiers';
 import { calculateMissionRisk } from '@/game/missionRisk';
 import { ROUTE_OPTIONS } from '@/game/navigation';
 import { formatHorizontalLabel, formatVerticalLabel } from '@/game/navigationVector';
@@ -46,7 +49,6 @@ import {
   repairStockHudLine,
 } from '@/game/repairResourceStatus';
 import { cargoCapacityUnits } from '@/game/submarineStats';
-import type { DiveRoute } from '@/types';
 import {
   formatThreatLabel,
   threatForHigherIsBetter,
@@ -71,6 +73,7 @@ export default function DiveScreen() {
   );
 
   const diveActive = dive?.status === 'active';
+  const activeModifier = dive ? getMissionModifierById(dive.activeModifierId) : null;
 
   // Keep hook order stable across mission transitions (active → terminal).
   const priorityComm = useMemo(() => {
@@ -183,7 +186,7 @@ export default function DiveScreen() {
       speaker: formatCrewMessageDisplayName(m.speaker),
       severity: m.severity === 'danger' ? 'danger' : m.severity === 'warning' ? 'warning' : 'info',
       text: m.text,
-    })) as Array<{ id: string; speaker: string; severity: 'info' | 'warning' | 'danger'; text: string }>;
+    })) as { id: string; speaker: string; severity: 'info' | 'warning' | 'danger'; text: string }[];
 
   return (
     <View style={styles.wrapper}>
@@ -224,6 +227,16 @@ export default function DiveScreen() {
               • {line}
             </Text>
           ))}
+          {activeModifier ? (
+            <Text
+              style={[
+                styles.modifierLine,
+                isHarderModifier(activeModifier) ? styles.modifierLineHarder : styles.modifierLineEasier,
+              ]}
+            >
+              Conditions: {activeModifier.name} — {activeModifier.blurb}
+            </Text>
+          ) : null}
         </HudPanel>
 
         <HudPanel>
@@ -429,17 +442,19 @@ export default function DiveScreen() {
         <HudPanel>
           <HudSectionTitle>SUBMARINE COMPARTMENTS</HudSectionTitle>
           {dive.rooms.map((room) => {
-            const tier = getDiveRoomThreat(room);
+            const isEngine = isPropulsionRoom(room.id);
+            const tier = getDiveRoomThreat(room, isEngine ? dive.engineHeatPercent : undefined);
             const staged = room.loot.filter(
               (l) =>
                 !l.collected && (l.kind === 'repair_supply' || l.kind === 'emergency_supply'),
             ).length;
             const accent = roomAccentColor(tier);
+            const heatSuffix = isEngine ? ` · heat ${Math.round(dive.engineHeatPercent)}%` : '';
             return (
               <CompactRoomRow
                 key={room.id}
                 title={room.name}
-                subtitle={`${tier.toUpperCase()} · ${room.cracks.length} crack(s) · ${staged} staged`}
+                subtitle={`${tier.toUpperCase()} · ${room.cracks.length} crack(s) · ${staged} staged${heatSuffix}`}
                 leftIcon={room.cracks.length > 0 ? GAME_ASSETS.icons.crack : undefined}
                 accentColor={accent}
                 onPress={() => router.push(`/room/${room.id}`)}
@@ -472,36 +487,15 @@ export default function DiveScreen() {
         </View>
       </ScreenShell>
       <DiveFlashBand kind={flashKind} />
-      <Modal
+      <CommandIntentModal
         visible={routePickerOpen && diveActive}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setRoutePickerOpen(false)}
-      >
-        <Pressable style={styles.modalBackdrop} onPress={() => setRoutePickerOpen(false)}>
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Command Intent</Text>
-            <Text style={styles.modalSubtitle}>
-              Issue orders; department leads execute the intent. Tap to switch.
-            </Text>
-            {ROUTE_OPTIONS.map((r) => (
-              <View key={r.id} style={styles.intentRow}>
-                <PrimaryButton
-                  title={`${r.label}${dive.currentRoute === r.id ? ' · active' : ''}`}
-                  variant={dive.currentRoute === r.id ? 'primary' : 'ghost'}
-                  onPress={() => {
-                    if (!diveActive) return;
-                    dispatch({ type: 'SET_DIVE_ROUTE', route: r.id as DiveRoute });
-                    setRoutePickerOpen(false);
-                  }}
-                />
-                <Text style={styles.intentEffect}>{r.effectLine}</Text>
-              </View>
-            ))}
-            <PrimaryButton title="Close" variant="ghost" onPress={() => setRoutePickerOpen(false)} />
-          </View>
-        </Pressable>
-      </Modal>
+        currentRoute={dive.currentRoute}
+        onSelect={(route) => {
+          dispatch({ type: 'SET_DIVE_ROUTE', route });
+          setRoutePickerOpen(false);
+        }}
+        onClose={() => setRoutePickerOpen(false)}
+      />
       {diveActive && dive.pendingDiscovery ? (
         <DiscoveryPromptModal
           visible
@@ -542,6 +536,9 @@ const styles = StyleSheet.create({
   meta: { color: theme.textMuted, marginBottom: 2 },
   small: { color: theme.textMuted, fontSize: 12, lineHeight: 18 },
   tipLine: { color: theme.textMuted, fontSize: 12, lineHeight: 18, marginTop: 4 },
+  modifierLine: { fontSize: 12, lineHeight: 18, marginTop: 8, fontWeight: '700' },
+  modifierLineHarder: { color: theme.warning },
+  modifierLineEasier: { color: theme.ok },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   topTitle: { color: theme.text, fontWeight: '900', letterSpacing: 0.5 },
   topMeta: { color: theme.textMuted, marginTop: 4, fontSize: 12 },
@@ -554,9 +551,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   conditionText: { color: theme.text, fontWeight: '900', fontSize: 12, letterSpacing: 0.6 },
-  badgeOk: { borderColor: '#14532d55', backgroundColor: '#052e1644' },
-  badgeWarn: { borderColor: '#b4530944', backgroundColor: '#451a0344' },
-  badgeCrit: { borderColor: '#e11d48aa', backgroundColor: '#450a0a66' },
+  badgeOk: { borderColor: theme.okBorder, backgroundColor: theme.okBg },
+  badgeWarn: { borderColor: theme.warningBorder, backgroundColor: theme.warningBg },
+  badgeCrit: { borderColor: '#e11d48aa', backgroundColor: theme.dangerBg },
   tacticalRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
   modeLabel: { color: theme.text, fontWeight: '900', marginBottom: 2, marginTop: 8 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -567,8 +564,8 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#38bdf822',
-    backgroundColor: '#020617aa',
+    borderColor: theme.panelBorderFaint,
+    backgroundColor: theme.panelBgSoft,
     paddingVertical: 8,
     paddingHorizontal: 8,
   },
@@ -582,26 +579,9 @@ const styles = StyleSheet.create({
   returnRow: { marginTop: 4, marginBottom: 8 },
   navMapRow: { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' },
   navMapBtn: { flex: 1, minWidth: 120 },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.68)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    padding: 14,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    borderWidth: 1,
-    borderColor: '#38bdf833',
-    backgroundColor: '#020617f2',
-  },
-  modalTitle: { color: theme.text, fontWeight: '900', fontSize: 16, marginBottom: 4 },
-  modalSubtitle: { color: theme.textMuted, marginBottom: 10, fontSize: 12 },
   navLine: { color: theme.text, fontWeight: '700', fontSize: 13, marginTop: 2 },
   navMeta: { color: theme.textMuted, fontSize: 12, marginTop: 4 },
   navIntent: { color: theme.accent, fontSize: 12, fontWeight: '800', marginTop: 6 },
-  intentRow: { marginBottom: 10 },
-  intentEffect: { color: theme.textMuted, fontSize: 11, lineHeight: 15, marginTop: 4, marginLeft: 2 },
   repairStockLine: { fontSize: 14, fontWeight: '900', marginTop: 4 },
   repairStockOk: { color: theme.ok },
   repairStockLow: { color: theme.warning },

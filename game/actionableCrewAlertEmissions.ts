@@ -67,7 +67,8 @@ function openRoomRepairsAction(roomId: string, label?: string): CrewAlertAction 
 
 export function emitSeriousBreachActionableMessage(dive: DiveSession, breach: SeriousBreachInfo): DiveSession {
   if (dive.status !== 'active') return dive;
-  if (dive.lastActionableBreachSignature === breach.crackId) return dive;
+  const signature = `${breach.crackId}:${breach.severity}`;
+  if (dive.lastActionableBreachSignature === signature) return dive;
 
   const stock = getRepairStockStatus(dive);
   const outOfHullKits = stock === 'empty' || stock === 'critical_empty';
@@ -95,7 +96,7 @@ export function emitSeriousBreachActionableMessage(dive: DiveSession, breach: Se
     severity: breach.severity === 'critical' || outOfHullKits ? 'danger' : 'warning',
     actions,
   });
-  next = { ...next, lastActionableBreachSignature: breach.crackId };
+  next = { ...next, lastActionableBreachSignature: signature };
   return next;
 }
 

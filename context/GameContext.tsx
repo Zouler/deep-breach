@@ -16,6 +16,8 @@ import { gameAudio } from '@/game/audioManager';
 import { reduceGame, type GameAction } from '@/game/gameReducer';
 import { reactToGameAudio } from '@/game/reactGameAudio';
 import { loadAudioSettings } from '@/storage/audioSettingsStorage';
+import type { GameState } from '@/types';
+import { loadGameState, saveGameState } from '@/storage/gameStorage';
 
 const IMMEDIATE_SAVE = new Set<GameAction['type']>([
   'START_MISSION',
@@ -26,6 +28,7 @@ const IMMEDIATE_SAVE = new Set<GameAction['type']>([
   'SET_DIVE_ROUTE',
   'USE_EMERGENCY_OXYGEN',
   'SCAN_AREA',
+  'VENT_ENGINE_HEAT',
   'DISMISS_DISCOVERY_OUTCOME',
   'CLEAR_ACTIVE_DIVE_OVERLAYS',
   'REPAIR_CRACK',
@@ -44,12 +47,11 @@ const IMMEDIATE_SAVE = new Set<GameAction['type']>([
   'CLEAR_OFFLINE_REPORT',
   'HIRE_CREW',
   'TOGGLE_CREW_ASSIGN',
+  'CHOOSE_CREW_SPECIALIZATION',
   'NARRATIVE_DISMISS_XO_BRIEFING',
   'DISMISS_NARRATIVE_CUT_IN',
   'RESOLVE_INTERNAL_CREW_EVENT',
 ]);
-import type { GameState } from '@/types';
-import { loadGameState, saveGameState } from '@/storage/gameStorage';
 
 type GameContextValue = {
   state: GameState;

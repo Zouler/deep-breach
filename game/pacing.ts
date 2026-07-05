@@ -40,6 +40,21 @@ export const MAX_ACTIVE_CRACKS_BY_RISK: Record<RiskLevel, number> = {
   high: 7,
 };
 
+/**
+ * How long an unaddressed 'moderate' crack can persist before it worsens to
+ * 'critical', by contract risk. Gives ignoring damage a real cost instead of
+ * only ever getting worse through random rolls.
+ */
+export const CRACK_ESCALATION_MS_BY_RISK: Record<RiskLevel, number> = {
+  low: 70_000,
+  medium: 55_000,
+  'medium-high': 45_000,
+  high: 36_000,
+};
+
+/** Warn the player once a crack is this far into its escalation window, unrepaired. */
+export const CRACK_ESCALATION_WARNING_FRACTION = 0.6;
+
 export function missionElapsedMs(dive: DiveSession): number {
   return dive.missionElapsedMs;
 }
