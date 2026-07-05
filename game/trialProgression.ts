@@ -5,6 +5,7 @@ import {
 } from '@/data/experimentalTrials';
 import { getFirstClearBundle, applyFirstClearRewardsToBase } from '@/game/trialRewards';
 import { enqueueCutIn } from '@/game/cutInQueue';
+import { markExperimentalTrialsCompleteIfNeeded } from '@/game/storyMissions';
 import { withStoryBeat } from '@/game/storyBeats';
 import type { DiveSession, GameState, Mission, MissionOutcome } from '@/types';
 import type { TrialDebriefAttachment, TrialProgress } from '@/types/trials';
@@ -204,6 +205,7 @@ export function applyExperimentalTrialResolution(
     });
   }
 
+  next = markExperimentalTrialsCompleteIfNeeded(next);
   return patchOutcomeTrialDebrief(next, debrief);
 }
 

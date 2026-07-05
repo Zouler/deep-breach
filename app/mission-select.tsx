@@ -20,6 +20,13 @@ import {
   getEffectiveTrialStatus,
   getStoredTrialProgress,
 } from '@/game/trialProgression';
+import {
+  getAvailableMissions,
+  getLockedMissions,
+  isMissionUnlocked,
+  isStoryMissionCompleted,
+} from '@/game/storyMissions';
+import { STORY_MISSION_DEFINITIONS, type MissionDefinition } from '@/data/storyMissions';
 import type { TrialStatus } from '@/types';
 
 function statusBadgeLabel(status: TrialStatus): { text: string; style: object } {
@@ -53,6 +60,20 @@ function actionLabel(status: TrialStatus, isExperimental: boolean): string {
     default:
       return 'Start Trial';
   }
+}
+
+function storyMissionBadge(def: MissionDefinition, completed: boolean, locked: boolean) {
+  if (def.isPlaceholder) return { text: 'Locked', style: styles.badgeLocked };
+  if (completed) return { text: 'Completed', style: styles.badgeDone };
+  if (locked) return { text: 'Locked', style: styles.badgeLocked };
+  return { text: 'Available', style: styles.badgeAvailable };
+}
+
+function storyMissionAction(def: MissionDefinition, completed: boolean, locked: boolean): string {
+  if (def.isPlaceholder) return 'Hull Reinforcement Mk I required';
+  if (completed) return 'Review briefing';
+  if (locked) return 'Locked';
+  return 'Open briefing';
 }
 
 export default function MissionSelectScreen() {
@@ -166,6 +187,65 @@ export default function MissionSelectScreen() {
           </Pressable>
         );
       })}
+      {STORY_MISSION_DEFINITIONS.length > 0 ? (
+        <>
+          <Text style={styles.storySectionLabel}>Operational assignments</Text>
+          <Text style={styles.storySectionHint}>
+            Unlocked: {getAvailableMissions(state).length} · Locked:{' '}
+            {getLockedMissions(state).length}
+          </Text>
+          {STORY_MISSION_DEFINITIONS.map((def) => {
+            const completed = isStoryMissionCompleted(state, def.id);
+            const unlocked = isMissionUnlocked(state, def.id);
+            const locked = !unlocked && !completed;
+            const badge = storyMissionBadge(def, completed, locked);
+            const action = storyMissionAction(def, completed, locked);
+            const canPress = !locked || def.isPlaceholder || completed;
+
+            return (
+              <Pressable
+                key={def.id}
+                onPress={() => {
+                  if (!canPress && locked) return;
+                  router.push({
+                    pathname: '/story-mission-briefing' as never,
+                    params: { missionId: def.id },
+                  });
+                }}
+              >
+                <PanelCard style={styles.card}>
+                  <View style={styles.rowTop}>
+                    <Text style={styles.name}>{def.title}</Text>
+                    <Text style={[styles.badge, badge.style]}>{badge.text}</Text>
+                  </View>
+                  <Text style={styles.purpose}>{def.subtitle}</Text>
+                  <Text style={styles.meta}>{def.description}</Text>
+                  {locked && def.unlockConditions.requiredSpineEvents?.length ? (
+                    <Text style={styles.requirement}>
+                      Complete prior story requirements to unlock.
+                    </Text>
+                  ) : null}
+                  {def.isPlaceholder ? (
+                    <Text style={styles.requirement}>
+                      Hull Reinforcement Mk I authorization required.
+                    </Text>
+                  ) : null}
+                  <Text
+                    style={[
+                      styles.actionHint,
+                      locked && !completed && !def.isPlaceholder
+                        ? styles.actionMuted
+                        : styles.actionAccent,
+                    ]}
+                  >
+                    {action}
+                  </Text>
+                </PanelCard>
+              </Pressable>
+            );
+          })}
+        </>
+      ) : null}
       {state.dive?.status === 'active' ? (
         <Text style={styles.warn}>
           Active trial dive in progress — surface or complete the run first.
@@ -249,4 +329,16 @@ const styles = StyleSheet.create({
   actionAccent: { color: theme.accent },
   actionMuted: { color: theme.textMuted },
   warn: { color: theme.warning },
+  storySectionLabel: {
+    color: theme.text,
+    fontWeight: '800',
+    fontSize: 15,
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  storySectionHint: {
+    color: theme.textMuted,
+    fontSize: 12,
+    marginBottom: 8,
+  },
 });

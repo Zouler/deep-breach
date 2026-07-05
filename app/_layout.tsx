@@ -77,6 +77,7 @@ export default function RootLayout() {
           <Stack.Screen name="base-storage" options={{ title: 'Base Storage' }} />
           <Stack.Screen name="repair-dock" options={{ title: 'Repair Dock' }} />
           <Stack.Screen name="mission-select" options={{ title: 'Trial schedule' }} />
+          <Stack.Screen name="story-mission-briefing" options={{ title: 'Assignment briefing' }} />
           <Stack.Screen name="dive" options={{ title: 'Active Dive', headerBackVisible: false }} />
           <Stack.Screen name="nav-map" options={{ title: 'Strategic Map' }} />
           <Stack.Screen name="tactical-sonar" options={{ title: 'Tactical Sonar' }} />

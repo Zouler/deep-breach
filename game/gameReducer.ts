@@ -115,6 +115,7 @@ import {
   type CommandStance,
   type RobertsDeltaPayload,
 } from '@/game/roberts';
+import { applyStoryMissionCompletion } from '@/game/storyMissions';
 import { roomContextFromGameState } from '@/game/rooms';
 import { stripTransientDiveOverlays } from '@/game/diveTransientState';
 import { getRepairStockStatus } from '@/game/repairResourceStatus';
@@ -164,6 +165,7 @@ export type GameAction =
   | { type: 'RESOLVE_INTERNAL_CREW_EVENT'; eventId: string; optionId: string }
   | { type: 'ADVANCE_CANON_ERA'; nextEra: CanonEra }
   | { type: 'COMPLETE_SPINE_EVENT'; eventId: SpineEventId }
+  | { type: 'COMPLETE_STORY_MISSION'; missionId: string }
   | { type: 'SET_REVEAL_LEVEL'; revealLevel: number }
   | {
       type: 'APPLY_ROBERTS_DELTA';
@@ -1221,6 +1223,11 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         ...state,
         completedSpineEvents: [...state.completedSpineEvents, action.eventId],
       });
+    }
+    case 'COMPLETE_STORY_MISSION': {
+      const next = applyStoryMissionCompletion(state, action.missionId);
+      if (next === state) return state;
+      return touch(next);
     }
     case 'SET_REVEAL_LEVEL': {
       const revealLevel = clampRevealLevelForEra(state.canonEra, action.revealLevel);

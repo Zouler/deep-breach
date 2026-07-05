@@ -47,7 +47,9 @@ export const ERA_REVEAL_CAPS: Record<CanonEra, RevealLevel> = {
 export type SpineEventId =
   | 'experimental_trials_complete'
   | 'operational_integration'
+  | 'dbx03_signal_received'
   | 'operation_dead_beacon'
+  | 'dead_beacon_recon_started'
   | 'first_anomaly_contact'
   | 'correct_withdrawal'
   | 'hull_reinforcement_mk1'
@@ -62,7 +64,9 @@ export type SpineEventId =
 export const SPINE_EVENT_ERA: Record<SpineEventId, CanonEra> = {
   experimental_trials_complete: 'experimental_trials',
   operational_integration: 'experimental_trials',
+  dbx03_signal_received: 'dead_beacon',
   operation_dead_beacon: 'dead_beacon',
+  dead_beacon_recon_started: 'dead_beacon',
   first_anomaly_contact: 'dead_beacon',
   correct_withdrawal: 'dead_beacon',
   hull_reinforcement_mk1: 'dead_beacon',
