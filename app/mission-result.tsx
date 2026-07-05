@@ -67,6 +67,35 @@ export default function MissionResultScreen() {
       <Text style={styles.sub}>{outcome.missionName}</Text>
       <Text style={styles.vesselMeta}>{tr.vesselLine}</Text>
 
+      {!catastrophic ? (
+        <PanelCard style={[styles.consoleCard, styles.heroCard]}>
+          <View style={styles.heroRow}>
+            <View style={styles.heroStat}>
+              <Text style={styles.heroValue}>
+                {Math.min(100, Math.round((outcome.depthReachedM / outcome.targetDepthM) * 100))}%
+              </Text>
+              <Text style={styles.heroLabel}>Depth reached</Text>
+            </View>
+            <View style={styles.heroStat}>
+              <Text style={styles.heroValue}>
+                {outcome.rewards.scrap + (outcome.missionCompletionBonusScrap ?? 0)}
+              </Text>
+              <Text style={styles.heroLabel}>Scrap earned</Text>
+            </View>
+            <View style={styles.heroStat}>
+              <Text style={styles.heroValue}>{outcome.repairSuppliesConsumed}</Text>
+              <Text style={styles.heroLabel}>Close calls sealed</Text>
+            </View>
+            {typeof outcome.oxygenRemainingPercent === 'number' ? (
+              <View style={styles.heroStat}>
+                <Text style={styles.heroValue}>{outcome.oxygenRemainingPercent}%</Text>
+                <Text style={styles.heroLabel}>O₂ remaining</Text>
+              </View>
+            ) : null}
+          </View>
+        </PanelCard>
+      ) : null}
+
       {catastrophic ? (
         <PanelCard style={[styles.consoleCard, styles.failureCard]}>
           <Text style={styles.failureKicker}>{outcome.failureTitle ?? 'DBX-07 LOST'}</Text>
@@ -347,6 +376,31 @@ const styles = StyleSheet.create({
   consoleCard: {
     borderColor: '#38bdf855',
     backgroundColor: '#020617cc',
+  },
+  heroCard: {
+    borderColor: theme.accent,
+    borderWidth: 1,
+  },
+  heroRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+  },
+  heroStat: {
+    flexGrow: 1,
+    minWidth: 76,
+  },
+  heroValue: {
+    color: theme.accent,
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  heroLabel: {
+    color: theme.textMuted,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 2,
   },
   failureCard: {
     borderColor: 'rgba(248, 113, 113, 0.45)',

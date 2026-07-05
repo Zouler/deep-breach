@@ -1,19 +1,19 @@
 import { Link, Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
-import { Text, View } from '@/components/Themed';
+import { ScreenShell } from '@/components/ScreenShell';
+import { theme } from '@/constants/theme';
 
 export default function NotFoundScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Oops!' }} />
-      <View style={styles.container}>
-        <Text style={styles.title}>This screen doesn't exist.</Text>
-
+      <ScreenShell contentStyle={styles.container}>
+        <Text style={styles.title}>This screen doesn&apos;t exist.</Text>
         <Link href="/" style={styles.link}>
           <Text style={styles.linkText}>Go to home screen!</Text>
         </Link>
-      </View>
+      </ScreenShell>
     </>
   );
 }
@@ -26,6 +26,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
+    color: theme.text,
     fontSize: 20,
     fontWeight: 'bold',
   },
@@ -35,6 +36,6 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14,
-    color: '#2e78b7',
+    color: theme.accent,
   },
 });

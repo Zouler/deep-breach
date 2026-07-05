@@ -18,7 +18,6 @@ import { clearGameState } from '@/storage/gameStorage';
 export default function SettingsScreen() {
   const router = useRouter();
   const { dispatch } = useGame();
-  const [haptics, setHaptics] = useState(true);
   const [audioPrefs, setAudioPrefs] = useState<AudioUserSettings | null>(null);
 
   useEffect(() => {
@@ -68,15 +67,6 @@ export default function SettingsScreen() {
             }}
             thumbColor={theme.accent}
           />
-        </View>
-      </PanelCard>
-      <PanelCard>
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Haptic cues (mock)</Text>
-            <Text style={styles.small}>Local-only preference — not persisted in MVP.</Text>
-          </View>
-          <Switch value={haptics} onValueChange={setHaptics} thumbColor={theme.accent} />
         </View>
       </PanelCard>
       <PanelCard>

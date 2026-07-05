@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
 import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -12,7 +12,7 @@ export default function CrewScreen() {
 
   return (
     <ScreenShell scroll>
-      <SectionHeader title="Crew Roster" subtitle="Mock hiring · assignment toggles" />
+      <SectionHeader title="Crew Roster" subtitle="Recruit and assign crew to the active dive roster" />
       <Text style={styles.balance}>Scrap: {state.resources.scrap}</Text>
       {state.crew.map((c) => (
         <PanelCard key={c.id}>
