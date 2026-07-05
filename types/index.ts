@@ -1,3 +1,7 @@
+import type { CanonEra } from '@/game/canon';
+import type { CompartmentSaveState, RoomId } from '@/game/rooms';
+import type { RobertsState } from '@/game/roberts';
+
 import type { CrewAlertAction } from './crewAlerts';
 import type { CommanderProfile, NarrativeRecapState, StoryBeat, StoryProgress } from './story';
 import type { CrewConditionState } from './internalCrewEvents';
@@ -66,6 +70,14 @@ export interface Submarine {
 
 export type CrewRole = 'engineer' | 'navigator' | 'scientist';
 
+export type CrewSpecializationId =
+  | 'engineer_rapid_repairs'
+  | 'engineer_heat_discipline'
+  | 'navigator_efficient_routes'
+  | 'navigator_hazard_sense'
+  | 'scientist_deep_analysis'
+  | 'scientist_steady_hands';
+
 export interface CrewMember {
   id: string;
   name: string;
@@ -76,6 +88,10 @@ export interface CrewMember {
   navigationSkill: number;
   researchSkill: number;
   hireCostScrap: number;
+  /** Completed dives while assigned; gates the specialization choice. */
+  divesCompleted: number;
+  /** Permanent qualitative pick once unlocked; null while undecided. */
+  specializationId: CrewSpecializationId | null;
 }
 
 export type RiskLevel = 'low' | 'medium' | 'medium-high' | 'high';
@@ -102,6 +118,12 @@ export interface Crack {
   roomId: string;
   severity: CrackSeverity;
   leakRatePerSecond: number;
+  /** ms timestamp this crack appeared; used to gate escalation. */
+  spawnedAt: number;
+  /** ms timestamp this crack worsens to the next severity tier if still unrepaired; null if it won't escalate. */
+  escalatesAt: number | null;
+  /** True once the pre-escalation warning has fired, so it only fires once. */
+  escalationWarned?: boolean;
 }
 
 export type RoomStatus = 'ok' | 'damaged' | 'flooding';
@@ -365,6 +387,13 @@ export interface DiveSession {
   emergencyOxygenUsesThisDive: number;
   crewMessages: CrewMessage[];
   lastReactiveCrewAt: number;
+  /** Id of the rolled mission modifier for this attempt, or null for standard conditions. */
+  activeModifierId: string | null;
+  /** Engine Bay's dedicated hazard meter (0-100), independent of the crack/leak system. */
+  engineHeatPercent: number;
+  lastEngineHeatVentAt: number;
+  /** True once the pre-critical warning has fired for the current heat climb. */
+  engineHeatWarned: boolean;
   /** Prevents double-transfer when returning to base multiple times. */
   cargoTransferredToBase?: boolean;
   /** Throttle Chief Engineer repair-stock depletion warnings. */
@@ -383,6 +412,8 @@ export interface DiveSession {
   lastSonarSignalAdvisoryAt?: number;
   /** Dedupe breach room for repeated actionable breach lines. */
   lastActionableBreachSignature?: string;
+  /** Non-repair canon catalog items recovered this expedition. */
+  expeditionCatalogItems?: Record<string, number>;
 }
 
 export interface MissionOutcome {
@@ -451,7 +482,7 @@ export interface MissionOutcome {
   trialDebrief?: TrialDebriefAttachment;
 }
 
-export const GAME_STATE_VERSION = 1 as const;
+export const GAME_STATE_VERSION = 5 as const;
 
 export interface GameState {
   version: typeof GAME_STATE_VERSION;
@@ -492,7 +523,23 @@ export interface GameState {
   lastInternalCrewEventAt: number | null;
   /** Experimental Trials progression (mission id → progress). */
   trialProgressByMissionId: Record<string, TrialProgress>;
+  /** Fixed campaign era — gates story, unlocks, and reveal caps. */
+  canonEra: CanonEra;
+  /** Current narrative reveal progress (0–7); clamped to era cap. */
+  revealLevel: number;
+  /** Completed fixed-spine event ids (deduplicated). */
+  completedSpineEvents: string[];
+  /** Commander Phillip Roberts — RPG protagonist tracks. */
+  roberts: RobertsState;
+  /** DBX-07 compartment unlock registry (canon-gated). */
+  compartments: Record<RoomId, CompartmentSaveState>;
+  /** Canon salvage catalog counts at base (taxonomy item id → quantity). */
+  catalogItems: Record<string, number>;
 }
+
+export type { CommandStance, RobertsState } from '@/game/roberts';
+export type { CompartmentSaveState, RoomDefinition, RoomId, RoomSystem } from '@/game/rooms';
+export type { ItemDefinition, ItemGroup, ItemRarity } from '@/game/items';
 
 export type {
   CampaignDef,

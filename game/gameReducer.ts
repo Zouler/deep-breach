@@ -1,6 +1,19 @@
-import type { DiveRoute, DiveSession, GameState, Mission, RepairItem, SubmarineModuleType } from '@/types';
+import type {
+  CrewSpecializationId,
+  DiveRoute,
+  DiveSession,
+  GameState,
+  Mission,
+  RepairItem,
+  SubmarineModuleType,
+} from '@/types';
 
 import { repairTemplateById } from '@/data/repairItems';
+import {
+  hasPendingSpecialization,
+  incrementCrewDiveCounts,
+  isValidSpecializationChoice,
+} from '@/game/crewSpecializations';
 import {
   artifactRecoverySummary,
   breachReportSummary,
@@ -43,6 +56,7 @@ import {
   oxygenCanisterRestorePercent,
 } from '@/game/oxygen';
 import { performAreaScan, SCAN_AREA_COOLDOWN_MS } from '@/game/scanArea';
+import { canVentEngineHeat, ENGINE_HEAT_VENT_AMOUNT } from '@/game/engineHeat';
 import { syncRoomStatuses } from '@/game/roomSync';
 import {
   upgradeModuleResearchCost,
@@ -82,10 +96,26 @@ import {
   applyExperimentalTrialActiveAbort,
   applyExperimentalTrialResolution,
   canStartExperimentalTrial,
+  getStoredTrialProgress,
   onStartExperimentalTrial,
 } from '@/game/trialProgression';
 import { EXPERIMENTAL_TRIAL_SET } from '@/data/experimentalTrials';
 import { applyActionableCrewAlertEmissions } from '@/game/actionableCrewAlertEmissions';
+import {
+  clampRevealLevelForEra,
+  canAdvanceToEra,
+  isSpineEventId,
+  isValidSpineEventForEra,
+  type CanonEra,
+  type SpineEventId,
+} from '@/game/canon';
+import {
+  applyRobertsUpdate,
+  robertsStateEquals,
+  type CommandStance,
+  type RobertsDeltaPayload,
+} from '@/game/roberts';
+import { roomContextFromGameState } from '@/game/rooms';
 import { stripTransientDiveOverlays } from '@/game/diveTransientState';
 import { getRepairStockStatus } from '@/game/repairResourceStatus';
 import { withRepairStockCrewAwareness } from '@/game/repairResourceAlerts';
@@ -116,12 +146,14 @@ export type GameAction =
   | { type: 'SET_DIVE_ROUTE'; route: DiveRoute }
   | { type: 'USE_EMERGENCY_OXYGEN' }
   | { type: 'SCAN_AREA'; now: number }
+  | { type: 'VENT_ENGINE_HEAT'; now: number }
   | { type: 'DISMISS_DISCOVERY_OUTCOME' }
   /** Clears active-dive overlays (discovery prompt, outcome banner) and pending cut-in queue. Safe no-op layers. */
   | { type: 'CLEAR_ACTIVE_DIVE_OVERLAYS' }
   | { type: 'UPGRADE_MODULE'; moduleType: SubmarineModuleType; currency?: UpgradeCurrency }
   | { type: 'HIRE_CREW'; crewId: string }
   | { type: 'TOGGLE_CREW_ASSIGN'; crewId: string }
+  | { type: 'CHOOSE_CREW_SPECIALIZATION'; crewId: string; specializationId: CrewSpecializationId }
   | { type: 'CLEAR_OFFLINE_REPORT' }
   | { type: 'RETURN_TO_BASE' }
   | { type: 'REPAIR_DOCK_HULL'; mode: 'partial' | 'full' }
@@ -129,7 +161,16 @@ export type GameAction =
   | { type: 'SALVAGE_TREASURES'; rarity: 'common' | 'rare'; count?: number }
   | { type: 'ANALYZE_ARTIFACTS'; count?: number }
   | { type: 'ANALYZE_SAMPLES'; count?: number }
-  | { type: 'RESOLVE_INTERNAL_CREW_EVENT'; eventId: string; optionId: string };
+  | { type: 'RESOLVE_INTERNAL_CREW_EVENT'; eventId: string; optionId: string }
+  | { type: 'ADVANCE_CANON_ERA'; nextEra: CanonEra }
+  | { type: 'COMPLETE_SPINE_EVENT'; eventId: SpineEventId }
+  | { type: 'SET_REVEAL_LEVEL'; revealLevel: number }
+  | {
+      type: 'APPLY_ROBERTS_DELTA';
+      delta?: RobertsDeltaPayload;
+      stance?: CommandStance;
+      reason?: string;
+    };
 
 function touch(state: GameState): GameState {
   return {
@@ -147,7 +188,8 @@ function startMissionFromBase(state: GameState, missionId: string): GameState {
   const mission = findMission(state, missionId);
   if (!mission) return state;
   if (!canStartExperimentalTrial(state, mission.id)) return state;
-  const dive = createDiveSessionForMission(mission, state.submarine);
+  const attemptsSoFar = getStoredTrialProgress(state, mission.id).attempts;
+  const dive = createDiveSessionForMission(mission, state.submarine, attemptsSoFar, state);
   let started = withStoryBeat(
     onStartExperimentalTrial(
       {
@@ -252,6 +294,7 @@ function recordTerminal(state: GameState, dive: NonNullable<GameState['dive']>):
   };
   next = applyExperimentalTrialResolution(next, mission, diveForOutcome);
   next = appendTerminalStoryBeat(next, diveForOutcome, mission);
+  next = { ...next, crew: incrementCrewDiveCounts(next.crew) };
   return next;
 }
 
@@ -395,6 +438,7 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         crew: state.crew,
         deltaMs: action.deltaMs,
         now: action.now,
+        roomContext: roomContextFromGameState(state),
       });
       let next: GameState = { ...state, dive: nextDive };
       if (!hadPending && nextDive.pendingDiscovery) {
@@ -675,6 +719,9 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         submarine: state.submarine,
         crew: state.crew,
         now: Date.now(),
+        canonEra: state.canonEra,
+        revealLevel: state.revealLevel,
+        catalogItems: state.catalogItems,
       });
       let rooms = patch.rooms ?? state.dive.rooms;
       rooms = syncRoomStatuses(rooms);
@@ -905,6 +952,30 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       next = recordTerminal(next, nextDive);
       return touch(next);
     }
+    case 'VENT_ENGINE_HEAT': {
+      if (!state.dive || state.dive.status !== 'active') return state;
+      const now = action.now;
+      if (!canVentEngineHeat(state.dive.lastEngineHeatVentAt, now)) return state;
+      const nextDive: typeof state.dive = {
+        ...state.dive,
+        engineHeatPercent: Math.max(0, state.dive.engineHeatPercent - ENGINE_HEAT_VENT_AMOUNT),
+        lastEngineHeatVentAt: now,
+        engineHeatWarned: false,
+        eventLog: [
+          ...state.dive.eventLog,
+          {
+            id: createId('evt'),
+            type: 'special_signal',
+            message: `Engine Bay heat vented (-${ENGINE_HEAT_VENT_AMOUNT}%).`,
+            timestamp: now,
+            roomId: 'engineering',
+          },
+        ],
+      };
+      let next: GameState = { ...state, dive: nextDive };
+      next = recordTerminal(next, nextDive);
+      return touch(next);
+    }
     case 'COLLECT_LOOT': {
       if (!state.dive || state.dive.status !== 'active') return state;
       const prevDiveLoot = state.dive;
@@ -1056,6 +1127,16 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       );
       return touch({ ...state, crew });
     }
+    case 'CHOOSE_CREW_SPECIALIZATION': {
+      const member = state.crew.find((c) => c.id === action.crewId);
+      if (!member) return state;
+      if (!hasPendingSpecialization(member)) return state;
+      if (!isValidSpecializationChoice(member.role, action.specializationId)) return state;
+      const crew = state.crew.map((c) =>
+        c.id === action.crewId ? { ...c, specializationId: action.specializationId } : c,
+      );
+      return touch({ ...state, crew });
+    }
     case 'CLEAR_OFFLINE_REPORT':
       return touch({ ...state, pendingOfflineReport: null });
     case 'RETURN_TO_BASE': {
@@ -1122,6 +1203,40 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       const res = analyzeSamplesFromBaseStorage(state.baseStorage, count);
       if (res.analyzed <= 0) return state;
       return touch(withSyncedLegacyEconomy({ ...state, baseStorage: res.bs }));
+    }
+    case 'ADVANCE_CANON_ERA': {
+      if (!canAdvanceToEra(state.canonEra, action.nextEra)) return state;
+      const revealLevel = clampRevealLevelForEra(action.nextEra, state.revealLevel);
+      return touch({
+        ...state,
+        canonEra: action.nextEra,
+        revealLevel,
+      });
+    }
+    case 'COMPLETE_SPINE_EVENT': {
+      if (!isSpineEventId(action.eventId)) return state;
+      if (!isValidSpineEventForEra(action.eventId, state.canonEra)) return state;
+      if (state.completedSpineEvents.includes(action.eventId)) return state;
+      return touch({
+        ...state,
+        completedSpineEvents: [...state.completedSpineEvents, action.eventId],
+      });
+    }
+    case 'SET_REVEAL_LEVEL': {
+      const revealLevel = clampRevealLevelForEra(state.canonEra, action.revealLevel);
+      if (revealLevel === state.revealLevel) return state;
+      return touch({ ...state, revealLevel });
+    }
+    case 'APPLY_ROBERTS_DELTA': {
+      const hasDelta = action.delta && Object.keys(action.delta).length > 0;
+      const hasStance = Boolean(action.stance);
+      if (!hasDelta && !hasStance) return state;
+      const roberts = applyRobertsUpdate(state.roberts, {
+        delta: action.delta,
+        stance: action.stance,
+      });
+      if (robertsStateEquals(roberts, state.roberts)) return state;
+      return touch({ ...state, roberts });
     }
     default:
       return state;

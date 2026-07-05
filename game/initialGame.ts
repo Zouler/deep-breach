@@ -11,9 +11,16 @@ import { createId } from '@/game/ids';
 import { DEFAULT_DIVE_ROUTE, emptyRouteTimeMs } from '@/game/navigation';
 import { horizontalKmPerMinute } from '@/game/navigationVector';
 import { getCommandIntentModifiers } from '@/game/navigationIntent';
+import { modifierForAttempt } from '@/game/missionModifiers';
 import { emergencyOxygenMaxCharges } from '@/game/oxygen';
 import { initializePacingGaps } from '@/game/pacing';
-import { createEmptyRooms } from '@/game/rooms';
+import {
+  DEFAULT_CANON_ERA,
+  DEFAULT_COMPLETED_SPINE_EVENTS,
+  DEFAULT_REVEAL_LEVEL,
+} from '@/game/canon';
+import { createDefaultRobertsState } from '@/game/roberts';
+import { createDiveRooms, normalizeCompartmentRegistry, roomContextFromGameState } from '@/game/rooms';
 import type { DiveSession, GameState, Mission, PlayerProfile, Submarine } from '@/types';
 import { GAME_STATE_VERSION } from '@/types';
 import { defaultCrewConditionState } from '@/types/internalCrewEvents';
@@ -88,6 +95,16 @@ export function createInitialGameState(): GameState {
     internalCrewNextEventAtReturns: 4,
     lastInternalCrewEventAt: null,
     trialProgressByMissionId: {},
+    canonEra: DEFAULT_CANON_ERA,
+    revealLevel: DEFAULT_REVEAL_LEVEL,
+    completedSpineEvents: [...DEFAULT_COMPLETED_SPINE_EVENTS],
+    roberts: createDefaultRobertsState(),
+    compartments: normalizeCompartmentRegistry({
+      canonEra: DEFAULT_CANON_ERA,
+      revealLevel: DEFAULT_REVEAL_LEVEL,
+      compartments: {} as GameState['compartments'],
+    }),
+    catalogItems: {},
   };
   return withSyncedLegacyEconomy(raw);
 }
@@ -95,10 +112,18 @@ export function createInitialGameState(): GameState {
 export function createDiveSessionForMission(
   mission: Mission,
   submarine: Submarine,
+  attemptsSoFar = 0,
+  roomSource?: Pick<GameState, 'canonEra' | 'revealLevel' | 'compartments'>,
 ): DiveSession {
+  const roomCtx = roomSource ? roomContextFromGameState(roomSource) : roomContextFromGameState({
+    canonEra: DEFAULT_CANON_ERA,
+    revealLevel: DEFAULT_REVEAL_LEVEL,
+    compartments: {} as GameState['compartments'],
+  });
   const now = Date.now();
   const initialHull = Math.max(5, Math.min(100, submarine.hullIntegrityPercent));
   const startIntent = getCommandIntentModifiers(DEFAULT_DIVE_ROUTE);
+  const activeModifierId = modifierForAttempt(attemptsSoFar)?.id ?? null;
   const base: DiveSession = {
     outcomeRecorded: false,
     missionId: mission.id,
@@ -111,7 +136,7 @@ export function createDiveSessionForMission(
     oxygenPercent: 100,
     waterLevelPercent: 0,
     hullIntegrityPercent: initialHull,
-    rooms: createEmptyRooms(),
+    rooms: createDiveRooms(roomCtx),
     continueExplorationWhileAway: false,
     backgroundedAt: null,
     status: 'active',
@@ -149,6 +174,11 @@ export function createDiveSessionForMission(
     emergencyOxygenUsesThisDive: 0,
     crewMessages: [],
     lastReactiveCrewAt: now,
+    activeModifierId,
+    engineHeatPercent: 0,
+    lastEngineHeatVentAt: now,
+    engineHeatWarned: false,
+    expeditionCatalogItems: {},
   };
   return initializePacingGaps(base, mission);
 }

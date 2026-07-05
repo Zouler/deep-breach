@@ -23,6 +23,7 @@ export function withStoryBeat(
   return { ...state, storyBeats: next };
 }
 
+/** Detects both brand-new serious cracks and existing cracks that just escalated to critical. */
 export function findNewSeriousBreach(
   prev: NonNullable<GameState['dive']>,
   next: NonNullable<GameState['dive']>,
@@ -32,10 +33,15 @@ export function findNewSeriousBreach(
   severity: 'moderate' | 'critical';
   crackId: string;
 } | null {
-  const prevIds = new Set(prev.rooms.flatMap((r) => r.cracks.map((c) => c.id)));
+  const prevSeverityById = new Map(
+    prev.rooms.flatMap((r) => r.cracks.map((c) => [c.id, c.severity] as const)),
+  );
   for (const r of next.rooms) {
     for (const c of r.cracks) {
-      if (!prevIds.has(c.id) && (c.severity === 'moderate' || c.severity === 'critical')) {
+      const prevSeverity = prevSeverityById.get(c.id);
+      const isNew = prevSeverity === undefined;
+      const justEscalated = prevSeverity !== undefined && prevSeverity !== 'critical' && c.severity === 'critical';
+      if ((isNew || justEscalated) && (c.severity === 'moderate' || c.severity === 'critical')) {
         return {
           roomId: r.id,
           roomName: r.name,

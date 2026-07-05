@@ -11,6 +11,16 @@ import {
   withSyncedLegacyEconomy,
 } from '@/game/baseStorage';
 import { DEFAULT_DIVE_ROUTE, emptyRouteTimeMs } from '@/game/navigation';
+import {
+  clampRevealLevelForEra,
+  DEFAULT_CANON_ERA,
+  DEFAULT_REVEAL_LEVEL,
+  normalizeCanonEra,
+  normalizeCompletedSpineEvents,
+} from '@/game/canon';
+import { normalizeCatalogItems } from '@/game/items';
+import { normalizeCompartmentsFromUnknown, normalizeDiveRooms, roomContextFromGameState } from '@/game/rooms';
+import { normalizeRobertsState } from '@/game/roberts';
 import { stripTransientDiveOverlays } from '@/game/diveTransientState';
 import { emergencyOxygenMaxCharges } from '@/game/oxygen';
 import type {
@@ -20,18 +30,104 @@ import type {
   OfflineReport,
   RepairItem,
 } from '@/types';
+import { GAME_STATE_VERSION } from '@/types';
 import { defaultCrewConditionState } from '@/types/internalCrewEvents';
 import type { CommanderProfile, StoryProgress } from '@/types/story';
 
 const STORAGE_KEY = '@deep_breach/game_state_v1';
 
+/**
+ * One step per version bump: index 0 carries a save from version 1 to version 2,
+ * index 1 from version 2 to version 3, and so on. Add a new entry here whenever
+ * GAME_STATE_VERSION increments — never edit an old entry once it has shipped.
+ */
+const MIGRATIONS: ((raw: any) => any)[] = [
+  /** v1 → v2: canon progression fields */
+  (raw) => ({
+    ...raw,
+    canonEra: raw.canonEra ?? DEFAULT_CANON_ERA,
+    revealLevel: raw.revealLevel ?? DEFAULT_REVEAL_LEVEL,
+    completedSpineEvents: raw.completedSpineEvents ?? [],
+  }),
+  /** v2 → v3: Roberts RPG protagonist state */
+  (raw) => ({
+    ...raw,
+    roberts: normalizeRobertsState(raw.roberts),
+  }),
+  /** v3 → v4: DBX-07 compartment registry */
+  (raw) => {
+    const canonEra = normalizeCanonEra(raw.canonEra);
+    const revealLevel =
+      typeof raw.revealLevel === 'number' ? raw.revealLevel : DEFAULT_REVEAL_LEVEL;
+    const compartments = normalizeCompartmentsFromUnknown(raw.compartments, {
+      canonEra,
+      revealLevel,
+    });
+    const roomCtx = roomContextFromGameState({ canonEra, revealLevel, compartments });
+    const dive =
+      raw.dive && typeof raw.dive === 'object'
+        ? {
+            ...raw.dive,
+            rooms: normalizeDiveRooms(raw.dive.rooms, roomCtx),
+          }
+        : raw.dive;
+    return { ...raw, compartments, dive };
+  },
+  /** v4 → v5: canon item taxonomy catalog */
+  (raw) => ({
+    ...raw,
+    catalogItems: normalizeCatalogItems(raw.catalogItems),
+    dive:
+      raw.dive && typeof raw.dive === 'object'
+        ? {
+            ...raw.dive,
+            expeditionCatalogItems: normalizeCatalogItems(raw.dive.expeditionCatalogItems),
+          }
+        : raw.dive,
+  }),
+];
+
+/**
+ * Pure migration entry point: takes whatever shape was parsed from storage and
+ * either returns a fully-populated current-version GameState, or null if the
+ * save is unreadable (corrupt) or from a newer build than this code understands.
+ * Kept free of AsyncStorage so it can be unit tested directly.
+ */
+export function migrateGameState(parsed: unknown): GameState | null {
+  if (!parsed || typeof parsed !== 'object') return null;
+  let raw = parsed as { version?: number } & Record<string, unknown>;
+  const storedVersion = typeof raw.version === 'number' ? raw.version : 1;
+
+  if (storedVersion > GAME_STATE_VERSION) {
+    // Save came from a newer build than this code knows how to read — don't guess.
+    return null;
+  }
+
+  for (let v = storedVersion; v < GAME_STATE_VERSION; v++) {
+    const step = MIGRATIONS[v - 1];
+    if (!step) return null; // no known path from this version forward
+    raw = { ...step(raw), version: v + 1 };
+  }
+
+  const normalized = normalizeV1Shape(raw as unknown as GameState);
+  return isValidPersistedGameState(normalized) ? normalized : null;
+}
+
+function isValidPersistedGameState(state: GameState | null): state is GameState {
+  if (!state || typeof state !== 'object') return false;
+  const profile = state.profile;
+  if (!profile || typeof profile !== 'object' || typeof profile.id !== 'string') return false;
+  if (!state.submarine || typeof state.submarine !== 'object') return false;
+  if (!state.baseStorage || typeof state.baseStorage !== 'object') return false;
+  if (!Array.isArray(state.crew)) return false;
+  return true;
+}
+
 export async function loadGameState(): Promise<GameState | null> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as GameState;
-    if (!parsed || parsed.version !== 1) return null;
-    return migrate(parsed);
+    return migrateGameState(JSON.parse(raw));
   } catch {
     return null;
   }
@@ -118,8 +214,21 @@ function migrateCutInIdList(ids: string[] | undefined): string[] {
   return out;
 }
 
-function migrate(state: GameState): GameState {
+/** Backfills every optional field the current code expects onto a version-1-shaped save. */
+function normalizeV1Shape(state: GameState): GameState {
   const baseStorage = migrateBaseStorage(state);
+  const canonEra = normalizeCanonEra((state as GameState).canonEra);
+  const revealLevel = clampRevealLevelForEra(
+    canonEra,
+    typeof (state as GameState).revealLevel === 'number'
+      ? (state as GameState).revealLevel
+      : DEFAULT_REVEAL_LEVEL,
+  );
+  const compartments = normalizeCompartmentsFromUnknown((state as GameState).compartments, {
+    canonEra,
+    revealLevel,
+  });
+  const roomCtx = roomContextFromGameState({ canonEra, revealLevel, compartments });
   const diveBase = state.dive
     ? {
         ...state.dive,
@@ -135,6 +244,17 @@ function migrate(state: GameState): GameState {
           ...j,
           source: j.source ?? 'passive',
         })),
+        rooms: normalizeDiveRooms(
+          (state.dive.rooms ?? []).map((r) => ({
+            ...r,
+            cracks: r.cracks.map((c) => ({
+              ...c,
+              spawnedAt: c.spawnedAt ?? state.dive!.startedAt,
+              escalatesAt: c.escalatesAt ?? null,
+            })),
+          })),
+          roomCtx,
+        ),
         lastCrackSpawnAt: state.dive.lastCrackSpawnAt ?? state.dive.startedAt,
         lastAmbientAt: state.dive.lastAmbientAt ?? state.dive.startedAt,
         lastDiscoveryOfferAt:
@@ -153,6 +273,10 @@ function migrate(state: GameState): GameState {
         crewMessages: state.dive.crewMessages ?? [],
         lastReactiveCrewAt:
           state.dive.lastReactiveCrewAt ?? state.dive.startedAt,
+        activeModifierId: state.dive.activeModifierId ?? null,
+        engineHeatPercent: state.dive.engineHeatPercent ?? 0,
+        lastEngineHeatVentAt: state.dive.lastEngineHeatVentAt ?? state.dive.startedAt,
+        engineHeatWarned: state.dive.engineHeatWarned ?? false,
         collectedArtifacts: state.dive.collectedArtifacts ?? 0,
         collectedSamples: state.dive.collectedSamples ?? 0,
         missionCompletionBonusScrap: state.dive.missionCompletionBonusScrap ?? 0,
@@ -164,6 +288,9 @@ function migrate(state: GameState): GameState {
         oxygenCanisterUsesThisDive: state.dive.oxygenCanisterUsesThisDive ?? 0,
         cargoLeftBehindNotes: state.dive.cargoLeftBehindNotes ?? [],
         cargoTransferredToBase: state.dive.cargoTransferredToBase ?? false,
+        expeditionCatalogItems: normalizeCatalogItems(
+          (state.dive as NonNullable<GameState['dive']>).expeditionCatalogItems,
+        ),
         horizontalDistanceKm: state.dive.horizontalDistanceKm ?? 0,
         verticalMovementState: state.dive.verticalMovementState ?? 'descending',
         horizontalMovementState: state.dive.horizontalMovementState ?? 'advancing',
@@ -242,12 +369,18 @@ function migrate(state: GameState): GameState {
     lastXOBriefingDismissedFingerprint: null,
     lastXOBriefingDismissedAt: null,
   };
+  const crew = (state.crew ?? []).map((c) => ({
+    ...c,
+    divesCompleted: c.divesCompleted ?? 0,
+    specializationId: c.specializationId ?? null,
+  }));
   const merged: GameState = {
     ...state,
     commander,
     story,
     baseStorage,
-    repairInventory: migrateRepairItems(state.repairInventory),
+    crew,
+    repairInventory: migrateRepairItems(state.repairInventory ?? []),
     dive,
     pendingOfflineReport,
     lastMissionOutcome,
@@ -268,6 +401,14 @@ function migrate(state: GameState): GameState {
     internalCrewNextEventAtReturns: (state as GameState).internalCrewNextEventAtReturns ?? 4,
     lastInternalCrewEventAt: (state as GameState).lastInternalCrewEventAt ?? null,
     trialProgressByMissionId: (state as GameState).trialProgressByMissionId ?? {},
+    canonEra,
+    revealLevel,
+    completedSpineEvents: normalizeCompletedSpineEvents(
+      (state as GameState).completedSpineEvents,
+    ),
+    roberts: normalizeRobertsState((state as GameState).roberts),
+    compartments,
+    catalogItems: normalizeCatalogItems((state as GameState).catalogItems),
   };
   return withSyncedLegacyEconomy(merged);
 }
