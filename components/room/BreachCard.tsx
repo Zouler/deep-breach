@@ -38,6 +38,9 @@ export function BreachCard({
         <View style={{ flex: 1 }}>
           <Text style={styles.breachTitle}>Breach {breachIndex}</Text>
           <Text style={styles.severity}>{formatSeverityUi(crack.severity)}</Text>
+          {crack.severity === 'moderate' && crack.escalationWarned ? (
+            <Text style={styles.worsening}>WORSENING — repair before it turns critical</Text>
+          ) : null}
           <Text style={styles.leak}>Leak: {crack.leakRatePerSecond.toFixed(2)} u/s</Text>
           <Text style={styles.rec}>
             Recommended: {tools.find((t) => t.id === recId)?.name ?? 'Pressure Sealant'}
@@ -76,17 +79,24 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#38bdf844',
-    backgroundColor: '#020617cc',
+    backgroundColor: theme.panelBg,
     padding: 12,
     marginBottom: 10,
   },
   head: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   breachTitle: { color: theme.text, fontWeight: '900', fontSize: 16 },
   severity: { color: '#fde68a', fontWeight: '900', marginTop: 4, letterSpacing: 0.5 },
+  worsening: {
+    color: theme.warning,
+    fontWeight: '900',
+    fontSize: 11,
+    letterSpacing: 0.3,
+    marginTop: 4,
+  },
   leak: { color: theme.textMuted, marginTop: 4, fontSize: 13 },
   rec: { color: '#67e8f9', marginTop: 6, fontSize: 12, fontWeight: '800' },
   inline: { marginTop: 10, borderRadius: 10, borderWidth: 1, padding: 10 },
-  inlineOk: { borderColor: '#166534', backgroundColor: '#052e1655' },
+  inlineOk: { borderColor: '#166534', backgroundColor: theme.okBgStrong },
   inlineErr: { borderColor: '#b91c1c', backgroundColor: '#450a0a55' },
   inlineText: { color: theme.text, fontWeight: '700', fontSize: 12, lineHeight: 16 },
 });

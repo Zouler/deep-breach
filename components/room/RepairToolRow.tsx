@@ -60,8 +60,8 @@ const styles = StyleSheet.create({
   wrap: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#38bdf833',
-    backgroundColor: '#02061799',
+    borderColor: theme.panelBorder,
+    backgroundColor: theme.panelBgFaint,
     padding: 10,
     marginTop: 10,
   },

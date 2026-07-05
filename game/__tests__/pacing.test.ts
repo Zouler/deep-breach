@@ -11,12 +11,19 @@ import type { Crack, DiveSession, Mission } from '@/types';
 function baseDive(): { mission: Mission; dive: DiveSession } {
   const state = createInitialGameState();
   const mission = state.missions[0]!;
-  const dive = createDiveSessionForMission(mission, state.submarine);
+  const dive = createDiveSessionForMission(mission, state.submarine, 0, state);
   return { mission, dive };
 }
 
 function crackAt(roomId: string, severity: Crack['severity'] = 'hairline'): Crack {
-  return { id: `crack-${roomId}-${severity}-${Math.random()}`, roomId, severity, leakRatePerSecond: 0.05 };
+  return {
+    id: `crack-${roomId}-${severity}-${Math.random()}`,
+    roomId,
+    severity,
+    leakRatePerSecond: 0.05,
+    spawnedAt: 0,
+    escalatesAt: null,
+  };
 }
 
 describe('hasUnresolvedHighStress', () => {

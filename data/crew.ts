@@ -11,6 +11,8 @@ export const INITIAL_CREW: CrewMember[] = [
     navigationSkill: 0.35,
     researchSkill: 0.4,
     hireCostScrap: 40,
+    divesCompleted: 0,
+    specializationId: null,
   },
   {
     id: 'crew_navigator',
@@ -22,6 +24,8 @@ export const INITIAL_CREW: CrewMember[] = [
     navigationSkill: 0.9,
     researchSkill: 0.45,
     hireCostScrap: 45,
+    divesCompleted: 0,
+    specializationId: null,
   },
   {
     id: 'crew_scientist',
@@ -33,5 +37,7 @@ export const INITIAL_CREW: CrewMember[] = [
     navigationSkill: 0.4,
     researchSkill: 0.92,
     hireCostScrap: 50,
+    divesCompleted: 0,
+    specializationId: null,
   },
 ];

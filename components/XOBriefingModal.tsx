@@ -54,7 +54,7 @@ export function XOBriefingModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: '#000b18ee',
+    backgroundColor: theme.overlayBg,
     justifyContent: 'center',
     padding: 16,
   },

@@ -120,8 +120,8 @@ export default function BaseStorageScreen() {
 
 const styles = StyleSheet.create({
   consoleCard: {
-    borderColor: '#38bdf855',
-    backgroundColor: '#020617cc',
+    borderColor: theme.panelBorderStrong,
+    backgroundColor: theme.panelBg,
   },
   cardTitle: { color: theme.text, fontWeight: '700', marginBottom: 8 },
   line: { color: theme.textMuted, marginBottom: 4 },

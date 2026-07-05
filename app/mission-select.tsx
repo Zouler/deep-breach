@@ -12,11 +12,13 @@ import {
 } from '@/data/experimentalTrials';
 import { NARRATIVE_UI } from '@/data/storyBriefings';
 import { useGame } from '@/context/GameContext';
+import { isHarderModifier, modifierForAttempt } from '@/game/missionModifiers';
 import { FIRST_TRIAL_MISSION_ID } from '@/game/storyNavigation';
 import { getFirstClearBundle } from '@/game/trialRewards';
 import {
   experimentalTrialsCompletedCount,
   getEffectiveTrialStatus,
+  getStoredTrialProgress,
 } from '@/game/trialProgression';
 import type { TrialStatus } from '@/types';
 
@@ -90,6 +92,9 @@ export default function MissionSelectScreen() {
         const req = isExperimental ? unlockRequirementCopy(m.id, state.missions) : null;
         const action = actionLabel(status, isExperimental);
         const canPress = !locked && !activeBlocking && !debriefBlocking && !inProg;
+        const upcomingModifier = !locked
+          ? modifierForAttempt(getStoredTrialProgress(state, m.id).attempts)
+          : null;
 
         return (
           <Pressable
@@ -114,6 +119,24 @@ export default function MissionSelectScreen() {
               <Text style={styles.meta}>Est. duration: {m.durationMinutes} min (active)</Text>
               <Text style={styles.meta}>Risk: {m.risk}</Text>
               <Text style={styles.reward}>Expected: {m.expectedRewardsText}</Text>
+              {upcomingModifier ? (
+                <View
+                  style={[
+                    styles.modifierTag,
+                    isHarderModifier(upcomingModifier) ? styles.modifierTagHarder : styles.modifierTagEasier,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.modifierName,
+                      isHarderModifier(upcomingModifier) ? styles.modifierNameHarder : styles.modifierNameEasier,
+                    ]}
+                  >
+                    {upcomingModifier.name.toUpperCase()}
+                  </Text>
+                  <Text style={styles.modifierBlurb}>{upcomingModifier.blurb}</Text>
+                </View>
+              ) : null}
               {isExperimental && firstClear && (status === 'available' || status === 'locked') ? (
                 <Text style={styles.rewardPreview}>
                   First-clear rewards: +{firstClear.scrap} Scrap, +{firstClear.researchData}{' '}
@@ -193,6 +216,33 @@ const styles = StyleSheet.create({
   purpose: { color: theme.textMuted, fontSize: 13, lineHeight: 18, marginBottom: 8 },
   meta: { color: theme.textMuted, marginBottom: 2 },
   reward: { color: theme.accent, marginTop: 6 },
+  modifierTag: {
+    marginTop: 8,
+    padding: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  modifierTagHarder: {
+    borderColor: theme.warningBorder,
+    backgroundColor: theme.warningBg,
+  },
+  modifierTagEasier: {
+    borderColor: theme.okBorder,
+    backgroundColor: theme.okBg,
+  },
+  modifierName: {
+    fontWeight: '900',
+    fontSize: 11,
+    letterSpacing: 0.6,
+  },
+  modifierNameHarder: { color: theme.warning },
+  modifierNameEasier: { color: theme.ok },
+  modifierBlurb: {
+    color: theme.textMuted,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
   rewardPreview: { color: theme.textMuted, fontSize: 12, lineHeight: 17, marginTop: 6 },
   requirement: { color: theme.warning, fontSize: 12, marginTop: 8, lineHeight: 17 },
   actionHint: { marginTop: 10, fontSize: 13, fontWeight: '800' },

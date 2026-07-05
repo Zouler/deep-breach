@@ -38,10 +38,6 @@ function voiceSensors(crew: CrewMember[]): CrewLeadMessageSpeakerId {
   return assignedCrew(crew).some((c) => c.role === 'scientist') ? 'sensor_officer' : 'system';
 }
 
-function voiceResearch(crew: CrewMember[]): CrewLeadMessageSpeakerId {
-  return assignedCrew(crew).some((c) => c.role === 'scientist') ? 'research_lead' : 'system';
-}
-
 function voiceLogistics(crew: CrewMember[]): CrewLeadMessageSpeakerId {
   return assignedCrew(crew).length > 0 ? 'logistics_officer' : 'system';
 }

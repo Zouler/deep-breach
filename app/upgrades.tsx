@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
 import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';

@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
   },
-  ok: { borderColor: '#166534', backgroundColor: '#052e1655' },
-  err: { borderColor: '#b91c1c', backgroundColor: '#450a0a66' },
+  ok: { borderColor: '#166534', backgroundColor: theme.okBgStrong },
+  err: { borderColor: '#b91c1c', backgroundColor: theme.dangerBg },
   text: { color: theme.text, fontWeight: '700', fontSize: 13, lineHeight: 18 },
 });

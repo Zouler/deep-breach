@@ -79,8 +79,8 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     borderTopWidth: 1,
-    borderTopColor: '#38bdf833',
-    backgroundColor: '#020617f2',
+    borderTopColor: theme.panelBorder,
+    backgroundColor: theme.panelBgSolid,
     paddingHorizontal: 18,
     paddingTop: 12,
     gap: 10,

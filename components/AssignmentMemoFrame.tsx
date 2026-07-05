@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   portraitCaption: { color: theme.text, fontSize: 11, fontWeight: '800', textAlign: 'center' },
   portraitSub: { color: theme.textMuted, fontSize: 10, textAlign: 'center' },
   memoCard: {
-    borderColor: '#38bdf855',
+    borderColor: theme.panelBorderStrong,
     backgroundColor: '#020617ee',
     marginBottom: 8,
   },
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   memoVal: { color: theme.text, fontSize: 14, fontWeight: '700', lineHeight: 20 },
   divider: {
     height: 1,
-    backgroundColor: '#38bdf833',
+    backgroundColor: theme.panelBorder,
     marginVertical: 12,
   },
   body: {

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet } from 'react-native';
 
 import { theme } from '@/constants/theme';
 import type { DiveFlashKind } from '@/hooks/useDiveFeedback';

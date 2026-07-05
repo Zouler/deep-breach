@@ -44,5 +44,5 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   note: { color: theme.textMuted, fontSize: 12, lineHeight: 18, marginTop: 12 },
-  footer: { paddingHorizontal: 18, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#38bdf822' },
+  footer: { paddingHorizontal: 18, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.panelBorderFaint },
 });

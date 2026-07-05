@@ -57,7 +57,6 @@ export const COMMAND_BRIEFING_LEADS: DepartmentLeadId[] = [
 
 export function computeDepartmentStatuses(state: GameState, mission: Mission | null): DepartmentStatus[] {
   const dive = state.dive;
-  const atBase = !dive || dive.status !== 'active';
   const crew = state.crewState;
   const leak = diveLeakSummary(state);
   const repairStock = dive && dive.status === 'active' ? getRepairStockStatus(dive) : null;
