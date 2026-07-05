@@ -10,6 +10,11 @@ import { theme } from '@/constants/theme';
 import { EXPERIMENTAL_TRIAL_SET } from '@/data/experimentalTrials';
 import { NARRATIVE_UI } from '@/data/storyBriefings';
 import { useGame } from '@/context/GameContext';
+import {
+  DEAD_BEACON_DECISION_OPTIONS,
+  isDeadBeaconDataDecisionPending,
+  type DeadBeaconDataDecisionChoice,
+} from '@/game/deadBeaconDecision';
 import type { CargoTransferSummary } from '@/types';
 
 function transferLines(p: CargoTransferSummary): string[] {
@@ -57,6 +62,15 @@ export default function MissionResultScreen() {
   const { text: headlineText, color: headlineColor } = trialHeadline(outcome);
   const sec = tr.sections;
   const catastrophic = Boolean(outcome.catastrophicFailure);
+  const dataDecisionPending =
+    isDeadBeaconDataDecisionPending(state) &&
+    Boolean(outcome.storyDebrief?.reconComplete) &&
+    !outcome.storyDebrief?.dataDecisionResolved;
+  const dataDecisionResolved = Boolean(outcome.storyDebrief?.dataDecisionResolved);
+
+  const handleDataDecision = (choice: DeadBeaconDataDecisionChoice) => {
+    dispatch({ type: 'RESOLVE_DEAD_BEACON_DATA_DECISION', choice });
+  };
 
   return (
     <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.74}>
@@ -163,6 +177,51 @@ export default function MissionResultScreen() {
               Unlocked: {outcome.trialDebrief.unlockedTrialName}
             </Text>
           ) : null}
+        </PanelCard>
+      ) : null}
+
+      {outcome.storyDebrief ? (
+        <PanelCard style={styles.consoleCard}>
+          <Text style={styles.cardTitle}>Operational debrief</Text>
+          <Text style={[styles.line, styles.unlockLine]}>{outcome.storyDebrief.headline}</Text>
+          <Text style={styles.line}>{outcome.storyDebrief.summaryLine}</Text>
+          {!outcome.storyDebrief.reconComplete ? (
+            <Text style={[styles.line, styles.mutedNote]}>
+              Standoff scan and depth requirements were not fully met. Command may re-task the
+              reconnaissance package.
+            </Text>
+          ) : null}
+          {dataDecisionResolved && outcome.storyDebrief.dataDecisionHeadline ? (
+            <>
+              <Text style={[styles.line, styles.unlockLine, { marginTop: 10 }]}>
+                {outcome.storyDebrief.dataDecisionHeadline}
+              </Text>
+              <Text style={styles.line}>{outcome.storyDebrief.dataDecisionSummary}</Text>
+            </>
+          ) : null}
+        </PanelCard>
+      ) : null}
+
+      {dataDecisionPending ? (
+        <PanelCard style={[styles.consoleCard, styles.decisionCard]}>
+          <Text style={styles.cardTitle}>Data disposition — command review</Text>
+          <Text style={styles.line}>
+            Recon confirms the DBX-03 signal is active, but the telemetry is incomplete and
+            partially corrupted. Command expects a disposition decision before DBX-07 stands down
+            from Dead Beacon tasking.
+          </Text>
+          <Text style={[styles.line, styles.mutedNote]}>
+            We have enough proof to escalate, but not enough context to understand what we found.
+          </Text>
+          {DEAD_BEACON_DECISION_OPTIONS.map((option) => (
+            <PrimaryButton
+              key={option.id}
+              title={option.label}
+              variant="ghost"
+              onPress={() => handleDataDecision(option.id)}
+              style={styles.decisionOption}
+            />
+          ))}
         </PanelCard>
       ) : null}
 
@@ -338,11 +397,17 @@ export default function MissionResultScreen() {
 
       <PrimaryButton
         title={catastrophic ? 'Return to Base / Command Hub' : 'Return to Base'}
+        disabled={dataDecisionPending}
         onPress={() => {
           dispatch({ type: 'RETURN_TO_BASE' });
           router.replace('/base');
         }}
       />
+      {dataDecisionPending ? (
+        <Text style={styles.mutedNote}>
+          Select a data disposition option before returning to base.
+        </Text>
+      ) : null}
       {catastrophic && outcome.missionId ? (
         <PrimaryButton
           title="Retry Trial"
@@ -475,6 +540,18 @@ const styles = StyleSheet.create({
   cardTitle: { color: theme.text, fontWeight: '700', marginBottom: 6 },
   rewardHead: { color: theme.accent, fontWeight: '700', marginTop: 8 },
   unlockLine: { color: theme.ok, fontWeight: '700', marginTop: 8 },
+  mutedNote: { color: theme.textMuted, fontStyle: 'italic', marginTop: 8 },
+  decisionCard: {
+    borderColor: theme.warningBorder,
+    backgroundColor: theme.warningBg,
+  },
+  decisionOption: { marginTop: 10 },
+  decisionSummary: { color: theme.textMuted, fontSize: 12, lineHeight: 18, marginTop: 4 },
+  decisionDivider: {
+    height: 1,
+    backgroundColor: theme.panelBorderFaint,
+    marginVertical: 10,
+  },
   line: { color: theme.textMuted, marginBottom: 4 },
   event: { color: theme.text, marginBottom: 4 },
   muted: { color: theme.textMuted, fontStyle: 'italic' },

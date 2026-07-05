@@ -1,5 +1,29 @@
 import type { Mission } from '@/types';
 
+export const OPERATION_DEAD_BEACON_MISSION_ID = 'operation_dead_beacon';
+
+/** Playable operational dives launched from story assignments. */
+export const STORY_DIVE_MISSIONS: Mission[] = [
+  {
+    id: OPERATION_DEAD_BEACON_MISSION_ID,
+    name: 'Operation Dead Beacon',
+    targetDepthM: 900,
+    durationMinutes: 6,
+    risk: 'medium',
+    expectedRewardsText: 'Environmental readings · limited salvage · recon data',
+    scrapRewardRange: [40, 70],
+    researchRewardRange: [8, 18],
+    treasureChance: 0.08,
+    specialEventChance: 0.18,
+    trialPurpose:
+      'Standoff reconnaissance of the DBX-03 distress signal sector — confirm source, scan wreckage, collect readings, return.',
+  },
+];
+
+export const STORY_DIVE_MISSION_IDS = STORY_DIVE_MISSIONS.map((m) => m.id);
+
+export const STORY_DIVE_MISSION_SET: Set<string> = new Set(STORY_DIVE_MISSION_IDS);
+
 export const MOCK_MISSIONS: Mission[] = [
   {
     id: 'shallow_descent',

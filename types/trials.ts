@@ -30,3 +30,16 @@ export interface TrialDebriefAttachment {
   };
   unlockedTrialName?: string;
 }
+
+/** Shown on Mission Result for operational story recon missions. */
+export interface StoryDebriefAttachment {
+  headline: string;
+  summaryLine: string;
+  reconComplete: boolean;
+  /** Set after P1.2 data disposition decision is resolved. */
+  dataDecisionResolved?: boolean;
+  dataDecisionHeadline?: string;
+  dataDecisionSummary?: string;
+  /** True when recon succeeded but data disposition is still pending. */
+  pendingDataDecision?: boolean;
+}

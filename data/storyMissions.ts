@@ -24,14 +24,14 @@ export interface MissionUnlockConditions {
   requiredSpineEvents?: SpineEventId[];
   /** All experimental trials must be certified. */
   requireAllTrialsComplete?: boolean;
-  /** Story flag ids that must be present (future P1.2 grant path). */
+  /** Story flag ids that must be present (P1.2 grants deadBeaconData, hull_reinforcement_mk1). */
   requiredFlags?: string[];
 }
 
 export interface MissionRewardStub {
   scrap?: number;
   researchData?: number;
-  /** Reward flags defined but not granted until P1.2. */
+  /** Reward flags granted via P1.2 post-recon data decision. */
   flags?: string[];
 }
 
@@ -47,6 +47,12 @@ export interface MissionDefinition {
   isSpineMission: boolean;
   /** When true, shown as locked placeholder with no dive gameplay. */
   isPlaceholder?: boolean;
+  /** When true, assignment launches a dive via `diveMissionId` instead of briefing-only completion. */
+  isDiveMission?: boolean;
+  /** Mission id in `state.missions` used when launching this story assignment. */
+  diveMissionId?: string;
+  /** Spine event fired when the recon dive is launched. */
+  launchSpineEventId?: SpineEventId;
   description: string;
   briefing: MissionBriefing;
   objectives: string[];
@@ -120,8 +126,11 @@ export const STORY_MISSION_DEFINITIONS: MissionDefinition[] = [
     category: 'story_spine',
     canonEraRequired: 'dead_beacon',
     revealLevelRequired: REVEAL_LEVEL.IMPOSSIBLE_SIGNAL,
-    spineEventId: 'dead_beacon_recon_started',
+    spineEventId: 'operation_dead_beacon',
+    launchSpineEventId: 'dead_beacon_recon_started',
     isSpineMission: true,
+    isDiveMission: true,
+    diveMissionId: 'operation_dead_beacon',
     description:
       'Reconnaissance assignment to investigate an impossible distress signal matching DBX-03 authentication codes near its last known loss zone.',
     briefing: {

@@ -85,6 +85,11 @@ const MIGRATIONS: ((raw: any) => any)[] = [
           }
         : raw.dive,
   }),
+  /** v5 → v6: story progression flags (P1.2 Dead Beacon data disposition) */
+  (raw) => ({
+    ...raw,
+    storyFlags: normalizeStoryFlags(raw.storyFlags),
+  }),
 ];
 
 /**
@@ -215,6 +220,18 @@ function migrateCutInIdList(ids: string[] | undefined): string[] {
 }
 
 /** Backfills every optional field the current code expects onto a version-1-shaped save. */
+function normalizeStoryFlags(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const entry of value) {
+    if (typeof entry !== 'string' || entry.length === 0 || seen.has(entry)) continue;
+    seen.add(entry);
+    out.push(entry);
+  }
+  return out;
+}
+
 function normalizeV1Shape(state: GameState): GameState {
   const baseStorage = migrateBaseStorage(state);
   const canonEra = normalizeCanonEra((state as GameState).canonEra);
@@ -406,6 +423,7 @@ function normalizeV1Shape(state: GameState): GameState {
     completedSpineEvents: normalizeCompletedSpineEvents(
       (state as GameState).completedSpineEvents,
     ),
+    storyFlags: normalizeStoryFlags((state as GameState).storyFlags),
     roberts: normalizeRobertsState((state as GameState).roberts),
     compartments,
     catalogItems: normalizeCatalogItems((state as GameState).catalogItems),

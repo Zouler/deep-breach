@@ -26,6 +26,7 @@ import {
   isMissionUnlocked,
   isStoryMissionCompleted,
 } from '@/game/storyMissions';
+import { returnMissionActionCopy, returnMissionLockCopy } from '@/game/deadBeaconDecision';
 import { STORY_MISSION_DEFINITIONS, type MissionDefinition } from '@/data/storyMissions';
 import type { TrialStatus } from '@/types';
 
@@ -69,10 +70,19 @@ function storyMissionBadge(def: MissionDefinition, completed: boolean, locked: b
   return { text: 'Available', style: styles.badgeAvailable };
 }
 
-function storyMissionAction(def: MissionDefinition, completed: boolean, locked: boolean): string {
+function storyMissionAction(
+  def: MissionDefinition,
+  completed: boolean,
+  locked: boolean,
+  state: ReturnType<typeof useGame>['state'],
+): string {
+  if (def.id === 'operation_dead_beacon_return' && def.isPlaceholder) {
+    return returnMissionActionCopy(state);
+  }
   if (def.isPlaceholder) return 'Hull Reinforcement Mk I required';
   if (completed) return 'Review briefing';
   if (locked) return 'Locked';
+  if (def.isDiveMission) return 'Launch recon';
   return 'Open briefing';
 }
 
@@ -199,7 +209,7 @@ export default function MissionSelectScreen() {
             const unlocked = isMissionUnlocked(state, def.id);
             const locked = !unlocked && !completed;
             const badge = storyMissionBadge(def, completed, locked);
-            const action = storyMissionAction(def, completed, locked);
+            const action = storyMissionAction(def, completed, locked, state);
             const canPress = !locked || def.isPlaceholder || completed;
 
             return (
@@ -227,7 +237,9 @@ export default function MissionSelectScreen() {
                   ) : null}
                   {def.isPlaceholder ? (
                     <Text style={styles.requirement}>
-                      Hull Reinforcement Mk I authorization required.
+                      {def.id === 'operation_dead_beacon_return'
+                        ? returnMissionLockCopy(state)
+                        : 'Hull Reinforcement Mk I authorization required.'}
                     </Text>
                   ) : null}
                   <Text
