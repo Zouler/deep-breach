@@ -7,15 +7,15 @@ import type { RoomDamageBadge } from '@/game/roomDetailHelpers';
 function badgeColors(badge: RoomDamageBadge): { bg: string; border: string; fg: string } {
   switch (badge) {
     case 'SAFE':
-      return { bg: '#052e1644', border: '#22c55e55', fg: '#86efac' };
+      return { bg: theme.okBg, border: '#22c55e55', fg: '#86efac' };
     case 'WARNING':
-      return { bg: '#451a0344', border: '#f59e0b55', fg: '#fcd34d' };
+      return { bg: theme.warningBg, border: '#f59e0b55', fg: '#fcd34d' };
     case 'DAMAGED':
       return { bg: '#43140755', border: '#fb923c66', fg: '#fdba74' };
     case 'CRITICAL':
-      return { bg: '#450a0a66', border: '#fb718588', fg: '#fecaca' };
+      return { bg: theme.dangerBg, border: '#fb718588', fg: '#fecaca' };
     default:
-      return { bg: '#020617cc', border: '#38bdf833', fg: theme.text };
+      return { bg: theme.panelBg, border: theme.panelBorder, fg: theme.text };
   }
 }
 

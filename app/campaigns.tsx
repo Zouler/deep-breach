@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   sectionHint: { color: theme.textMuted, fontSize: 12, lineHeight: 17, marginBottom: 8 },
-  card: { marginBottom: 10, borderColor: '#38bdf833', backgroundColor: '#020617cc' },
+  card: { marginBottom: 10, borderColor: theme.panelBorder, backgroundColor: theme.panelBg },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   name: { color: theme.text, fontWeight: '800', flex: 1 },
   subtitle: { color: theme.textMuted, fontSize: 12, marginTop: 6 },
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   loreCard: {
     marginBottom: 14,
     borderColor: '#33415588',
-    backgroundColor: '#020617aa',
+    backgroundColor: theme.panelBgSoft,
   },
   loreRow: { marginBottom: 12 },
   loreDesignation: { color: theme.text, fontWeight: '800', marginBottom: 2 },

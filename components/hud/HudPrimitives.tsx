@@ -158,7 +158,7 @@ export function CompactRoomRow({
 export function AlertFeedCompact({
   lines,
 }: {
-  lines: Array<{ id: string; speaker: string; severity: 'info' | 'warning' | 'danger'; text: string }>;
+  lines: { id: string; speaker: string; severity: 'info' | 'warning' | 'danger'; text: string }[];
 }) {
   if (lines.length === 0) {
     return <Text style={styles.muted}>Quiet channel — standing by.</Text>;
@@ -193,11 +193,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   panelDefault: {
-    borderColor: '#38bdf833',
-    backgroundColor: '#020617cc',
+    borderColor: theme.panelBorder,
+    backgroundColor: theme.panelBg,
   },
   panelEmergency: {
-    borderColor: '#fb718566',
+    borderColor: theme.dangerBorder,
     backgroundColor: '#2a060acc',
   },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: '#0b1220',
     borderWidth: 1,
-    borderColor: '#38bdf822',
+    borderColor: theme.panelBorderFaint,
     overflow: 'hidden',
   },
   fill: { height: '100%' },
@@ -230,8 +230,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#38bdf833',
-    backgroundColor: '#020617aa',
+    borderColor: theme.panelBorder,
+    backgroundColor: theme.panelBgSoft,
   },
   emergencyBtn: {
     flexDirection: 'row',
@@ -241,8 +241,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#fb718566',
-    backgroundColor: '#450a0a66',
+    borderColor: theme.dangerBorder,
+    backgroundColor: theme.dangerBg,
   },
   btnIcon: { opacity: 0.95 },
   btnTitle: { color: theme.text, fontWeight: '900' },

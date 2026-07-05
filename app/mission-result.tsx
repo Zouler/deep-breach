@@ -374,8 +374,8 @@ export default function MissionResultScreen() {
 
 const styles = StyleSheet.create({
   consoleCard: {
-    borderColor: '#38bdf855',
-    backgroundColor: '#020617cc',
+    borderColor: theme.panelBorderStrong,
+    backgroundColor: theme.panelBg,
   },
   heroCard: {
     borderColor: theme.accent,

@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { CommandIntentModal } from '@/components/CommandIntentModal';
 import { DepartmentBriefingCard } from '@/components/DepartmentBriefingCard';
 import { DepartmentBriefingModal } from '@/components/DepartmentBriefingModal';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -12,7 +13,6 @@ import { useGame } from '@/context/GameContext';
 import { buildDepartmentBriefing } from '@/game/departmentBriefings';
 import { executeCrewAlertAction, type CrewAlertDispatch } from '@/game/crewAlertActions';
 import { COMMAND_BRIEFING_LEADS, computeDepartmentStatuses } from '@/game/departmentStatus';
-import { ROUTE_OPTIONS } from '@/game/navigation';
 import type { GameAction } from '@/game/gameReducer';
 import type { DepartmentBriefing, DepartmentLeadId } from '@/types/departmentBriefings';
 import type { CrewAlertAction } from '@/types/crewAlerts';
@@ -111,32 +111,16 @@ export default function CommandBriefingsScreen() {
         onAction={runAction}
       />
 
-      <Modal
+      <CommandIntentModal
         visible={intentPickerOpen && Boolean(diveActive)}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIntentPickerOpen(false)}
-      >
-        <Pressable style={styles.intentBackdrop} onPress={() => setIntentPickerOpen(false)}>
-          <View style={styles.intentSheet}>
-            <Text style={styles.intentTitle}>Command Intent</Text>
-            <Text style={styles.intentSub}>Issue orders; department leads execute the intent.</Text>
-            {ROUTE_OPTIONS.map((r) => (
-              <View key={r.id} style={styles.intentRow}>
-                <PrimaryButton
-                  title={`${r.label}${dive?.currentRoute === r.id ? ' · active' : ''}`}
-                  variant={dive?.currentRoute === r.id ? 'primary' : 'ghost'}
-                  onPress={() => {
-                    dispatch({ type: 'SET_DIVE_ROUTE', route: r.id } as GameAction);
-                    setIntentPickerOpen(false);
-                    if (activeLead) setBriefing(buildDepartmentBriefing(state, mission, activeLead, Date.now()));
-                  }}
-                />
-              </View>
-            ))}
-          </View>
-        </Pressable>
-      </Modal>
+        currentRoute={dive?.currentRoute}
+        onSelect={(route) => {
+          dispatch({ type: 'SET_DIVE_ROUTE', route } as GameAction);
+          setIntentPickerOpen(false);
+          if (activeLead) setBriefing(buildDepartmentBriefing(state, mission, activeLead, Date.now()));
+        }}
+        onClose={() => setIntentPickerOpen(false)}
+      />
     </ScreenShell>
   );
 }
@@ -145,8 +129,8 @@ const styles = StyleSheet.create({
   summaryCard: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#38bdf855',
-    backgroundColor: '#020617cc',
+    borderColor: theme.panelBorderStrong,
+    backgroundColor: theme.panelBg,
     padding: 14,
     marginBottom: 12,
   },
@@ -159,25 +143,5 @@ const styles = StyleSheet.create({
   },
   summaryBody: { color: theme.text, marginTop: 8, fontSize: 13, lineHeight: 20 },
   summaryHint: { color: theme.warning, marginTop: 8, fontSize: 12 },
-
-  intentBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 2, 10, 0.86)',
-    justifyContent: 'flex-end',
-    padding: 16,
-  },
-  intentSheet: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(44, 217, 255, 0.35)',
-    backgroundColor: 'rgba(0, 5, 14, 0.94)',
-    padding: 16,
-    maxWidth: 560,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  intentTitle: { color: theme.text, fontSize: 18, fontWeight: '900' },
-  intentSub: { color: theme.textMuted, marginTop: 6, marginBottom: 10, fontSize: 12 },
-  intentRow: { marginBottom: 10 },
 });
 

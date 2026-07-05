@@ -13,7 +13,7 @@ function leadLabel(id: DepartmentLeadId): string {
   return lead ? `${lead.displayName} · ${lead.department}` : id;
 }
 
-function paragraph(...parts: Array<string | null | undefined>): string {
+function paragraph(...parts: (string | null | undefined)[]): string {
   return parts.filter(Boolean).join(' ');
 }
 
@@ -65,7 +65,7 @@ function returnToBase(): CrewAlertAction {
   return { id: 'return', label: 'Return to Base', type: 'return_to_base', style: 'danger' };
 }
 
-function useEmergencyOxygen(): CrewAlertAction {
+function emergencyOxygenAction(): CrewAlertAction {
   return { id: 'use_o2', label: 'Use Emergency Oxygen', type: 'use_emergency_oxygen', style: 'primary' };
 }
 
@@ -289,7 +289,7 @@ export function buildDepartmentBriefing(
       recommendation = canUseO2
         ? 'If oxygen margins fall below safe bands, emergency oxygen routing is available.'
         : 'Emergency oxygen reserve unavailable. Return to base if oxygen margins degrade.';
-      if (canUseO2) actions.push(useEmergencyOxygen());
+      if (canUseO2) actions.push(emergencyOxygenAction());
       actions.push(stabilizeIntent());
       actions.push(returnToBase());
       actions.push({ id: 'ack', label: 'Acknowledge', type: 'acknowledge', style: 'secondary' });

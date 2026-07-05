@@ -158,8 +158,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   consoleCard: {
-    borderColor: '#38bdf855',
-    backgroundColor: '#020617cc',
+    borderColor: theme.panelBorderStrong,
+    backgroundColor: theme.panelBg,
   },
   cardTitle: { color: theme.text, fontWeight: '700', marginBottom: 10 },
   statusLine: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },

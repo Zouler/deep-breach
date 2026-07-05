@@ -14,4 +14,22 @@ export const theme = {
   radar: '#1d4ed8',
   cardRadius: 14,
   fontMono: 'SpaceMono' as const,
+
+  // Translucent panel/border tokens — named so repeated hex-alpha literals
+  // (previously copy-pasted across screens) share one source of truth.
+  panelBorderFaint: '#38bdf822',
+  panelBorder: '#38bdf833',
+  panelBorderStrong: '#38bdf855',
+  panelBgFaint: '#02061799',
+  panelBgSoft: '#020617aa',
+  panelBg: '#020617cc',
+  panelBgSolid: '#020617f2',
+  overlayBg: '#000b18ee',
+  dangerBorder: '#fb718566',
+  dangerBg: '#450a0a66',
+  warningBorder: '#b4530944',
+  warningBg: '#451a0344',
+  okBorder: '#14532d55',
+  okBg: '#052e1644',
+  okBgStrong: '#052e1655',
 };

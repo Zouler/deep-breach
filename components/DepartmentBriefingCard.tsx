@@ -53,8 +53,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#38bdf855',
-    backgroundColor: '#020617cc',
+    borderColor: theme.panelBorderStrong,
+    backgroundColor: theme.panelBg,
     padding: 14,
     marginBottom: 12,
   },
