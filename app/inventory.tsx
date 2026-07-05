@@ -11,7 +11,68 @@ import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
 import { computeCargoUsed } from '@/game/cargo';
 import { repairTemplateIconSource } from '@/game/assetVisuals';
+import {
+  groupCatalogEntries,
+  ITEM_GROUP_LABELS,
+  ITEM_GROUP_ORDER,
+  normalizeItemId,
+} from '@/game/items';
 import { cargoCapacityUnits } from '@/game/submarineStats';
+
+function mergeInventoryCounts(
+  repairRows: { id: string; quantity: number }[],
+  catalog: Record<string, number> | undefined,
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const [id, qty] of Object.entries(catalog ?? {})) {
+    if (qty <= 0) continue;
+    const canonId = normalizeItemId(id);
+    counts[canonId] = (counts[canonId] ?? 0) + qty;
+  }
+  for (const row of repairRows) {
+    if (row.quantity <= 0) continue;
+    const canonId = normalizeItemId(row.id);
+    counts[canonId] = (counts[canonId] ?? 0) + row.quantity;
+  }
+  return counts;
+}
+
+function GroupedSupplySections({
+  counts,
+}: {
+  counts: Record<string, number>;
+}) {
+  const grouped = groupCatalogEntries(counts);
+  const groups = ITEM_GROUP_ORDER.filter((g) => (grouped[g]?.length ?? 0) > 0);
+  if (groups.length === 0) {
+    return <Text style={styles.muted}>No field kits aboard — seek external recoveries.</Text>;
+  }
+  return (
+    <>
+      {groups.map((group) => (
+        <View key={group} style={styles.groupBlock}>
+          <Text style={styles.groupLabel}>{ITEM_GROUP_LABELS[group]}</Text>
+          {grouped[group]!.map((entry) => {
+            const iconId =
+              entry.itemId === 'hull_patch_kit'
+                ? 'patch_kit'
+                : entry.itemId === 'emergency_bulkhead_clamps'
+                  ? 'brace_frame'
+                  : entry.itemId;
+            return (
+              <IconLabelRow
+                key={entry.itemId}
+                icon={repairTemplateIconSource(iconId)}
+                label={entry.name}
+                value={`×${entry.quantity}`}
+              />
+            );
+          })}
+        </View>
+      ))}
+    </>
+  );
+}
 
 export default function InventoryScreen() {
   const { state } = useGame();
@@ -22,10 +83,8 @@ export default function InventoryScreen() {
     const cap = cargoCapacityUnits(state.submarine);
     const used = computeCargoUsed(dive);
     const inv = dive.expeditionRepairInventory ?? [];
-    const patch = inv.find((i) => i.id === 'patch_kit')?.quantity ?? 0;
-    const seal = inv.find((i) => i.id === 'pressure_sealant')?.quantity ?? 0;
-    const brace = inv.find((i) => i.id === 'brace_frame')?.quantity ?? 0;
-    const o2c = inv.find((i) => i.id === 'oxygen_canister')?.quantity ?? 0;
+    const catalog = dive.expeditionCatalogItems ?? {};
+    const supplyCounts = mergeInventoryCounts(inv, catalog);
 
     const pct = cap > 0 ? Math.min(100, Math.round((used / cap) * 100)) : 0;
 
@@ -48,30 +107,8 @@ export default function InventoryScreen() {
           </Text>
         </PanelCard>
         <PanelCard style={styles.consoleCard}>
-          <Text style={styles.cardTitle}>Repair supplies</Text>
-          <IconLabelRow
-            icon={repairTemplateIconSource('patch_kit')}
-            label="Hull Patch Kit"
-            value={`×${patch}`}
-          />
-          <IconLabelRow
-            icon={repairTemplateIconSource('pressure_sealant')}
-            label="Pressure Sealant"
-            value={`×${seal}`}
-          />
-          <IconLabelRow
-            icon={repairTemplateIconSource('brace_frame')}
-            label="Emergency Brace"
-            value={`×${brace}`}
-          />
-          <IconLabelRow
-            icon={repairTemplateIconSource('oxygen_canister')}
-            label="Oxygen Canister"
-            value={`×${o2c}`}
-          />
-          {patch + seal + brace + o2c === 0 ? (
-            <Text style={styles.muted}>No field kits aboard — seek external recoveries.</Text>
-          ) : null}
+          <Text style={styles.cardTitle}>Supplies & salvage</Text>
+          <GroupedSupplySections counts={supplyCounts} />
         </PanelCard>
         <PanelCard style={styles.consoleCard}>
           <Text style={styles.cardTitle}>Resources</Text>
@@ -138,15 +175,13 @@ export default function InventoryScreen() {
         />
       </PanelCard>
       <PanelCard style={styles.consoleCard}>
-        <Text style={styles.cardTitle}>Repair items</Text>
-        {state.repairInventory.map((r) => (
-          <IconLabelRow
-            key={r.id}
-            icon={repairTemplateIconSource(r.id)}
-            label={r.name}
-            value={`×${r.quantity} · up to ${r.maxSeverity}`}
-          />
-        ))}
+        <Text style={styles.cardTitle}>Supplies & salvage</Text>
+        <GroupedSupplySections
+          counts={mergeInventoryCounts(
+            state.repairInventory.map((r) => ({ id: r.id, quantity: r.quantity })),
+            state.catalogItems,
+          )}
+        />
       </PanelCard>
       <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Treasures & specimens</Text>
@@ -184,8 +219,8 @@ export default function InventoryScreen() {
 
 const styles = StyleSheet.create({
   consoleCard: {
-    borderColor: '#38bdf855',
-    backgroundColor: '#020617cc',
+    borderColor: theme.panelBorderStrong,
+    backgroundColor: theme.panelBg,
   },
   cargoTrack: {
     height: 10,
@@ -201,6 +236,15 @@ const styles = StyleSheet.create({
     backgroundColor: theme.accent,
   },
   cardTitle: { color: theme.text, fontWeight: '700', marginBottom: 8 },
+  groupBlock: { marginBottom: 12 },
+  groupLabel: {
+    color: theme.accent,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
   line: { color: theme.textMuted, marginBottom: 4 },
   item: { color: theme.text, fontWeight: '600' },
   muted: { color: theme.textMuted, fontStyle: 'italic' },

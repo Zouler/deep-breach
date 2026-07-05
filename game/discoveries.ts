@@ -13,8 +13,11 @@ import type {
 } from '@/types';
 
 import { repairTemplateById } from '@/data/repairItems';
+import { scientistSteadyHandsBonus } from '@/game/crewSpecializations';
 import { makePacedCrack, randomRoomId } from '@/game/diveEvents';
+import type { CanonEra } from '@/game/canon';
 import type { RewardIntent } from '@/game/cargo';
+import { appendCatalogSalvageToRewardIntent, itemStateFromGameState } from '@/game/salvageCatalog';
 import { scanNarrativeForDiscovery } from '@/game/cargo';
 import { createId } from '@/game/ids';
 import { getCommandIntentModifiers, type CommandIntentModifiers } from '@/game/navigationIntent';
@@ -133,7 +136,7 @@ export function calculateDiscoveryRisk(
   const hull = (100 - dive.hullIntegrityPercent) / 220;
   const o2 = (100 - dive.oxygenPercent) / 260;
   const sonar = (1 - sonarQuality(submarine)) * 0.08;
-  const sci = 1 - crewResearchBonus(crew) * 0.35;
+  const sci = Math.max(0.35, 1 - crewResearchBonus(crew) * 0.35 - scientistSteadyHandsBonus(crew));
   const raw = (base + depth + hull + o2) * rs * sci + sonar;
   return Math.min(0.92, Math.max(0.08, raw));
 }
@@ -326,6 +329,9 @@ export type DiscoveryResolveInput = {
   submarine: Submarine;
   crew: CrewMember[];
   now: number;
+  canonEra?: CanonEra;
+  revealLevel?: number;
+  catalogItems?: Record<string, number>;
 };
 
 export type DiscoveryResolvePatch = {
@@ -356,6 +362,15 @@ function mergeRepairAdds(
 
 export function resolveExternalDiscovery(input: DiscoveryResolveInput): DiscoveryResolvePatch {
   const { choice, discovery, mission, dive, submarine, crew, now } = input;
+  const dropCtx = {
+    ...itemStateFromGameState({
+      canonEra: input.canonEra ?? 'experimental_trials',
+      revealLevel: input.revealLevel ?? 0,
+      catalogItems: input.catalogItems ?? {},
+    }),
+    route: dive.currentRoute,
+    discoveryCategory: discovery.category,
+  };
   const intent = getCommandIntentModifiers(dive.currentRoute);
   if (choice === 'ignore') {
     return {
@@ -491,6 +506,9 @@ export function resolveExternalDiscovery(input: DiscoveryResolveInput): Discover
 
     if (!rewardIntent.repairAdds?.length) delete rewardIntent.repairAdds;
 
+    const rolls = discovery.category === 'salvage' ? 2 : 1;
+    const enrichedIntent = appendCatalogSalvageToRewardIntent(rewardIntent, dropCtx, rolls);
+
     events.push({
       id: createId('evt'),
       type: 'discovery_recovery',
@@ -517,7 +535,7 @@ export function resolveExternalDiscovery(input: DiscoveryResolveInput): Discover
         source: discovery.provenance,
       },
       events,
-      rewardIntent,
+      rewardIntent: enrichedIntent,
       hullDelta: 0,
       oxygenDelta: -oxyCost,
       waterDelta: 0,
@@ -545,6 +563,8 @@ export function resolveExternalDiscovery(input: DiscoveryResolveInput): Discover
     inGrace: false,
     allowCriticalRandom: allowCrit,
     forcedSeverity: wantCrit ? 'critical' : undefined,
+    risk: mission.risk,
+    now,
   });
   rooms = rooms.map((r) =>
     r.id === roomId
