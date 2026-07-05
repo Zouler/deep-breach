@@ -2,6 +2,7 @@ import {
   EXPERIMENTAL_TRIAL_MISSION_IDS,
   EXPERIMENTAL_TRIAL_SET,
 } from '@/data/experimentalTrials';
+import { STORY_DIVE_MISSION_SET } from '@/data/missions';
 import {
   SPINE_EVENT_ALIASES,
   STORY_MISSION_BY_ID,
@@ -17,9 +18,13 @@ import {
   type RevealLevel,
   type SpineEventId,
 } from '@/game/canon';
+import { withSyncedLegacyEconomy } from '@/game/baseStorage';
+import { hasStoryFlag as hasStoryFlagFromState } from '@/game/deadBeaconDecision';
+import { isStoryDiveReconSuccessful } from '@/game/storyMissionObjectives';
 import { withStoryBeat } from '@/game/storyBeats';
 import { experimentalTrialsCompletedCount } from '@/game/trialProgression';
-import type { GameState } from '@/types';
+import type { DiveSession, GameState, Mission, MissionOutcome } from '@/types';
+import type { StoryDebriefAttachment } from '@/types/trials';
 
 export function resolveSpineEventId(eventRef: string): SpineEventId | null {
   if (isSpineEventId(eventRef)) return eventRef;
@@ -71,9 +76,13 @@ function meetsUnlockConditions(state: GameState, def: MissionDefinition): boolea
   return true;
 }
 
-/** Story flags are stubbed in rewards data — not granted until P1.2. */
-function stateHasStoryFlag(_state: GameState, _flag: string): boolean {
-  return false;
+/** Story flags from data/storyMissions rewards and unlock conditions. */
+export function hasStoryFlag(state: GameState, flag: string): boolean {
+  return hasStoryFlagFromState(state, flag);
+}
+
+function stateHasStoryFlag(state: GameState, flag: string): boolean {
+  return hasStoryFlag(state, flag);
 }
 
 export function isMissionUnlocked(state: GameState, missionId: string): boolean {
@@ -98,6 +107,114 @@ export function getNextStoryMission(state: GameState): MissionDefinition | undef
   return getAvailableMissions(state)[0];
 }
 
+export function isStoryDiveMissionId(missionId: string): boolean {
+  return STORY_DIVE_MISSION_SET.has(missionId);
+}
+
+export function storyAssignmentIdForDiveMission(diveMissionId: string): string | undefined {
+  const def = STORY_MISSION_DEFINITIONS.find((d) => d.diveMissionId === diveMissionId);
+  return def?.id;
+}
+
+export function canStartStoryDiveMission(state: GameState, diveMissionId: string): boolean {
+  if (!isStoryDiveMissionId(diveMissionId)) return false;
+  if (state.dive) return false;
+  const assignmentId = storyAssignmentIdForDiveMission(diveMissionId) ?? diveMissionId;
+  return isMissionUnlocked(state, assignmentId) && !isStoryMissionCompleted(state, assignmentId);
+}
+
+/** Mark recon launch spine events when a story dive begins. */
+export function onStartStoryDiveMission(state: GameState, diveMissionId: string): GameState {
+  const assignmentId = storyAssignmentIdForDiveMission(diveMissionId) ?? diveMissionId;
+  const def = getMissionDefinition(assignmentId);
+  if (!def?.isDiveMission) return state;
+  let next = state;
+  if (def.launchSpineEventId) {
+    next = completeSpineEventIfValid(next, def.launchSpineEventId);
+  }
+  return next;
+}
+
+function patchOutcomeStoryDebrief(
+  state: GameState,
+  debrief: StoryDebriefAttachment | null,
+): GameState {
+  if (!debrief || !state.lastMissionOutcome) return state;
+  const o: MissionOutcome = { ...state.lastMissionOutcome, storyDebrief: debrief };
+  return { ...state, lastMissionOutcome: o };
+}
+
+function deadBeaconStoryDebrief(dive: DiveSession): StoryDebriefAttachment {
+  const reconComplete = isStoryDiveReconSuccessful(dive);
+  if (reconComplete) {
+    return {
+      reconComplete: true,
+      pendingDataDecision: true,
+      headline: 'Recon data returned — signal confirmed active',
+      summaryLine:
+        'DBX-07 returned with partial acoustic and environmental readings from the DBX-03 loss zone. The authenticated distress signal appears active. Command has flagged the data as incomplete and restricted pending review — enough to worry, not enough to explain. DBX Program Command awaits your disposition of the data package.',
+    };
+  }
+  return {
+    reconComplete: false,
+    headline: 'Recon incomplete — insufficient standoff data',
+    summaryLine:
+      'DBX-07 surfaced before standoff scan and depth requirements were met. Command notes the DBX-03 signal remains unconfirmed in the field record. Re-tasking may follow.',
+  };
+}
+
+/** Modest completion payout — P1.2 flag grants deferred. */
+const DEAD_BEACON_COMPLETION_SCRAP = 45;
+const DEAD_BEACON_COMPLETION_RESEARCH = 25;
+
+/**
+ * Apply story dive resolution after terminal outcome is recorded.
+ * P1.2 reward flags (deadBeaconData, hull_reinforcement_mk1) granted via post-recon decision.
+ */
+export function applyStoryDiveResolution(
+  state: GameState,
+  mission: Mission,
+  dive: DiveSession,
+): GameState {
+  if (!isStoryDiveMissionId(mission.id)) return state;
+
+  const assignmentId = storyAssignmentIdForDiveMission(mission.id) ?? mission.id;
+  const def = getMissionDefinition(assignmentId);
+  if (!def) return state;
+
+  let next = state;
+  let debrief: StoryDebriefAttachment | null = null;
+
+  if (assignmentId === 'operation_dead_beacon') {
+    debrief = deadBeaconStoryDebrief(dive);
+    if (debrief.reconComplete && def.spineEventId) {
+      next = completeSpineEventIfValid(next, def.spineEventId);
+      next = {
+        ...withSyncedLegacyEconomy({
+          ...next,
+          baseStorage: {
+            ...next.baseStorage,
+            scrap: next.baseStorage.scrap + DEAD_BEACON_COMPLETION_SCRAP,
+            researchData: next.baseStorage.researchData + DEAD_BEACON_COMPLETION_RESEARCH,
+          },
+        }),
+      };
+      next = withStoryBeat(next, {
+        type: 'mission_complete',
+        importance: 'high',
+        title: 'Operation Dead Beacon — recon returned',
+        summaryText:
+          'Standoff reconnaissance of the DBX-03 sector is logged. The distress signal reads as active; Research and Command have restricted the data package pending review.',
+        speakerId: 'xo',
+        missionId: assignmentId,
+        diveStartedAt: dive.startedAt,
+      });
+    }
+  }
+
+  return patchOutcomeStoryDebrief(next, debrief);
+}
+
 function completeSpineEventIfValid(state: GameState, eventId: SpineEventId): GameState {
   if (!isValidSpineEventForEra(eventId, state.canonEra)) return state;
   if (state.completedSpineEvents.includes(eventId)) return state;
@@ -119,6 +236,7 @@ export function applyStoryMissionCompletion(state: GameState, missionId: string)
   if (!def || def.isPlaceholder) return state;
   if (!isMissionUnlocked(state, missionId)) return state;
   if (isStoryMissionCompleted(state, missionId)) return state;
+  if (def.isDiveMission) return state;
 
   let next = state;
 
@@ -140,19 +258,6 @@ export function applyStoryMissionCompletion(state: GameState, missionId: string)
         summaryText:
           'Commander Roberts and DBX-07 are integrated into Navy operational command. DBX Program Command has closed the experimental certification file.',
         speakerId: 'xo',
-      });
-      break;
-    }
-    case 'operation_dead_beacon': {
-      next = completeSpineEventIfValid(next, 'dead_beacon_recon_started');
-      next = withStoryBeat(next, {
-        type: 'mission_start',
-        importance: 'high',
-        title: 'Operation Dead Beacon — recon authorized',
-        summaryText:
-          'An impossible DBX-03 distress signal triggered priority recon tasking. DBX-07 is cleared for standoff survey only.',
-        speakerId: 'xo',
-        missionId: def.id,
       });
       break;
     }

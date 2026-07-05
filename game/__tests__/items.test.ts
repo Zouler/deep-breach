@@ -164,6 +164,6 @@ describe('save migration v4 → v5 (catalog items)', () => {
     const migrated = migrateGameState(legacyV4SaveFixture());
     expect(migrated).not.toBeNull();
     expect(migrated!.catalogItems).toEqual({});
-    expect(migrated!.version).toBe(5);
+    expect(migrated!.version).toBe(GAME_STATE_VERSION);
   });
 });

@@ -3,15 +3,22 @@ import { createInitialGameState } from '@/game/initialGame';
 import { reduceGame } from '@/game/gameReducer';
 import { upsertTrialProgress } from '@/game/trialProgression';
 import {
+  applyStoryDiveResolution,
   areAllExperimentalTrialsComplete,
+  canStartStoryDiveMission,
   getAvailableMissions,
   getLockedMissions,
   getMissionDefinition,
   getNextStoryMission,
   hasCompletedSpineEvent,
+  hasStoryFlag,
   isMissionUnlocked,
+  isStoryMissionCompleted,
   markExperimentalTrialsCompleteIfNeeded,
 } from '@/game/storyMissions';
+import { buildMissionOutcome } from '@/game/missionOutcome';
+import { DEAD_BEACON_RECON_MIN_DEPTH_FRACTION } from '@/game/storyMissionObjectives';
+import { OPERATION_DEAD_BEACON_MISSION_ID } from '@/data/missions';
 import { EXPERIMENTAL_TRIAL_MISSION_IDS } from '@/data/experimentalTrials';
 import type { GameState } from '@/types';
 
@@ -30,6 +37,37 @@ function completeAllTrials(state: GameState): GameState {
 
 function withOperationalIntegrationComplete(state: GameState): GameState {
   return reduceGame(state, { type: 'COMPLETE_STORY_MISSION', missionId: 'operational_integration' });
+}
+
+function withDeadBeaconReady(state: GameState): GameState {
+  return withOperationalIntegrationComplete(completeAllTrials(state));
+}
+
+/** Launch + scan via reducer; resolve terminal recon through story dive resolution. */
+function completeDeadBeaconReconViaDive(state: GameState): GameState {
+  let next = reduceGame(state, { type: 'START_MISSION', missionId: OPERATION_DEAD_BEACON_MISSION_ID });
+  next = reduceGame(next, { type: 'SCAN_AREA', now: next.dive!.startedAt + 1_000 });
+  const mission = next.missions.find((m) => m.id === OPERATION_DEAD_BEACON_MISSION_ID)!;
+  const successfulDive = {
+    ...next.dive!,
+    currentDepthM: next.dive!.targetDepthM * DEAD_BEACON_RECON_MIN_DEPTH_FRACTION,
+    missionElapsedMs: next.dive!.missionDurationMs,
+    scansPerformed: Math.max(next.dive!.scansPerformed, 1),
+    status: 'success' as const,
+    hullIntegrityPercent: 80,
+  };
+  const lastMissionOutcome = buildMissionOutcome(
+    { ...successfulDive, outcomeRecorded: true },
+    mission,
+    next.submarine,
+    next.pendingOfflineReport,
+  );
+  next = {
+    ...next,
+    dive: { ...successfulDive, outcomeRecorded: true },
+    lastMissionOutcome,
+  };
+  return applyStoryDiveResolution(next, mission, successfulDive);
 }
 
 describe('storyMissions vertical slice', () => {
@@ -83,13 +121,62 @@ describe('storyMissions vertical slice', () => {
     expect(isMissionUnlocked(state, 'operation_dead_beacon')).toBe(false);
   });
 
-  it('return mission stays locked before hull reinforcement', () => {
-    let state = completeAllTrials(createInitialGameState());
-    state = withOperationalIntegrationComplete(state);
-    state = reduceGame(state, { type: 'COMPLETE_STORY_MISSION', missionId: 'operation_dead_beacon' });
+  it('return mission stays locked before P1.2 data disposition', () => {
+    let state = withDeadBeaconReady(createInitialGameState());
+    state = completeDeadBeaconReconViaDive(state);
+    expect(hasCompletedSpineEvent(state, 'operation_dead_beacon')).toBe(true);
     expect(isMissionUnlocked(state, 'operation_dead_beacon_return')).toBe(false);
+    expect(hasStoryFlag(state, 'hull_reinforcement_mk1')).toBe(false);
     const placeholder = getMissionDefinition('operation_dead_beacon_return')!;
     expect(placeholder.isPlaceholder).toBe(true);
+  });
+
+  it('briefing acknowledgement alone does not complete Operation Dead Beacon', () => {
+    const state = withDeadBeaconReady(createInitialGameState());
+    const afterAck = reduceGame(state, {
+      type: 'COMPLETE_STORY_MISSION',
+      missionId: 'operation_dead_beacon',
+    });
+    expect(isStoryMissionCompleted(afterAck, 'operation_dead_beacon')).toBe(false);
+    expect(hasCompletedSpineEvent(afterAck, 'operation_dead_beacon')).toBe(false);
+  });
+
+  it('cannot launch Operation Dead Beacon from a new game', () => {
+    const state = createInitialGameState();
+    expect(canStartStoryDiveMission(state, OPERATION_DEAD_BEACON_MISSION_ID)).toBe(false);
+    const launched = reduceGame(state, { type: 'START_MISSION', missionId: OPERATION_DEAD_BEACON_MISSION_ID });
+    expect(launched.dive).toBeNull();
+  });
+
+  it('launching Operation Dead Beacon starts a dive and marks recon started', () => {
+    const state = withDeadBeaconReady(createInitialGameState());
+    const launched = reduceGame(state, { type: 'START_MISSION', missionId: OPERATION_DEAD_BEACON_MISSION_ID });
+    expect(launched.dive?.missionId).toBe(OPERATION_DEAD_BEACON_MISSION_ID);
+    expect(launched.dive?.status).toBe('active');
+    expect(hasCompletedSpineEvent(launched, 'dead_beacon_recon_started')).toBe(true);
+    expect(isStoryMissionCompleted(launched, 'operation_dead_beacon')).toBe(false);
+  });
+
+  it('successful recon completes operation_dead_beacon and opens P1.2 decision', () => {
+    let state = withDeadBeaconReady(createInitialGameState());
+    const scrapBefore = state.baseStorage.scrap;
+    state = completeDeadBeaconReconViaDive(state);
+    expect(hasCompletedSpineEvent(state, 'operation_dead_beacon')).toBe(true);
+    expect(isStoryMissionCompleted(state, 'operation_dead_beacon')).toBe(true);
+    expect(state.baseStorage.scrap).toBeGreaterThan(scrapBefore);
+    expect(state.lastMissionOutcome?.storyDebrief?.reconComplete).toBe(true);
+    expect(state.lastMissionOutcome?.storyDebrief?.pendingDataDecision).toBe(true);
+    expect(state.storyFlags).not.toContain('deadBeaconData');
+    expect(state.completedSpineEvents).not.toContain('first_anomaly_contact');
+    expect(state.completedSpineEvents).not.toContain('correct_withdrawal');
+    expect(state.completedSpineEvents).not.toContain('hull_reinforcement_mk1');
+  });
+
+  it('experimental trial launch still works after story missions exist', () => {
+    const state = createInitialGameState();
+    const launched = reduceGame(state, { type: 'START_MISSION', missionId: 'shallow_descent' });
+    expect(launched.dive?.missionId).toBe('shallow_descent');
+    expect(launched.dive?.status).toBe('active');
   });
 
   it('canon era cannot skip to war or collapse from story helpers', () => {

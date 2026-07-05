@@ -115,7 +115,17 @@ import {
   type CommandStance,
   type RobertsDeltaPayload,
 } from '@/game/roberts';
-import { applyStoryMissionCompletion } from '@/game/storyMissions';
+import {
+  isDeadBeaconDataDecisionChoice,
+  resolveDeadBeaconDataDecision,
+} from '@/game/deadBeaconDecision';
+import {
+  applyStoryDiveResolution,
+  applyStoryMissionCompletion,
+  canStartStoryDiveMission,
+  isStoryDiveMissionId,
+  onStartStoryDiveMission,
+} from '@/game/storyMissions';
 import { roomContextFromGameState } from '@/game/rooms';
 import { stripTransientDiveOverlays } from '@/game/diveTransientState';
 import { getRepairStockStatus } from '@/game/repairResourceStatus';
@@ -166,6 +176,7 @@ export type GameAction =
   | { type: 'ADVANCE_CANON_ERA'; nextEra: CanonEra }
   | { type: 'COMPLETE_SPINE_EVENT'; eventId: SpineEventId }
   | { type: 'COMPLETE_STORY_MISSION'; missionId: string }
+  | { type: 'RESOLVE_DEAD_BEACON_DATA_DECISION'; choice: string }
   | { type: 'SET_REVEAL_LEVEL'; revealLevel: number }
   | {
       type: 'APPLY_ROBERTS_DELTA';
@@ -189,6 +200,35 @@ function startMissionFromBase(state: GameState, missionId: string): GameState {
   if (state.dive) return state;
   const mission = findMission(state, missionId);
   if (!mission) return state;
+
+  if (isStoryDiveMissionId(missionId)) {
+    if (!canStartStoryDiveMission(state, missionId)) return state;
+    const dive = createDiveSessionForMission(mission, state.submarine, 0, state);
+    let started = onStartStoryDiveMission(
+      {
+        ...state,
+        dive,
+        pendingOfflineReport: null,
+        lastMissionOutcome: null,
+      },
+      missionId,
+    );
+    started = withStoryBeat(started, {
+      type: 'mission_start',
+      importance: 'high',
+      title: `${mission.name} — recon authorized`,
+      summaryText:
+        missionId === 'operation_dead_beacon'
+          ? 'An impossible DBX-03 distress signal triggered priority recon tasking. DBX-07 is cleared for standoff survey only.'
+          : missionStartSummary(mission.name, state.commander.name),
+      speakerId: 'xo',
+      missionId: mission.id,
+      diveStartedAt: dive.startedAt,
+    });
+    started = enqueueCutIn(started, 'first_scan_available');
+    return started;
+  }
+
   if (!canStartExperimentalTrial(state, mission.id)) return state;
   const attemptsSoFar = getStoredTrialProgress(state, mission.id).attempts;
   const dive = createDiveSessionForMission(mission, state.submarine, attemptsSoFar, state);
@@ -239,6 +279,17 @@ function appendTerminalStoryBeat(
     );
   }
   if (dive.status === 'success') {
+    if (isStoryDiveMissionId(mission.id)) {
+      return withStoryBeat(state, {
+        type: 'mission_complete',
+        importance: 'high',
+        title: `${mission.name} — surfaced`,
+        summaryText: missionCompleteSummary(mission.name, dive.currentDepthM),
+        speakerId: 'xo',
+        missionId: mission.id,
+        diveStartedAt: dive.startedAt,
+      });
+    }
     return withStoryBeat(state, {
       type: 'mission_complete',
       importance: 'high',
@@ -295,6 +346,7 @@ function recordTerminal(state: GameState, dive: NonNullable<GameState['dive']>):
     lastMissionOutcome,
   };
   next = applyExperimentalTrialResolution(next, mission, diveForOutcome);
+  next = applyStoryDiveResolution(next, mission, diveForOutcome);
   next = appendTerminalStoryBeat(next, diveForOutcome, mission);
   next = { ...next, crew: incrementCrewDiveCounts(next.crew) };
   return next;
@@ -1226,6 +1278,12 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
     }
     case 'COMPLETE_STORY_MISSION': {
       const next = applyStoryMissionCompletion(state, action.missionId);
+      if (next === state) return state;
+      return touch(next);
+    }
+    case 'RESOLVE_DEAD_BEACON_DATA_DECISION': {
+      if (!isDeadBeaconDataDecisionChoice(action.choice)) return state;
+      const next = resolveDeadBeaconDataDecision(state, action.choice);
       if (next === state) return state;
       return touch(next);
     }

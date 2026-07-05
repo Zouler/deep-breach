@@ -1,5 +1,5 @@
 import { INITIAL_CREW } from '@/data/crew';
-import { MOCK_MISSIONS } from '@/data/missions';
+import { MOCK_MISSIONS, STORY_DIVE_MISSIONS } from '@/data/missions';
 import { STARTER_REPAIR_INVENTORY, createExpeditionRepairInventory } from '@/data/repairItems';
 import { DEFAULT_COMMANDER } from '@/data/storyBriefings';
 import {
@@ -75,7 +75,7 @@ export function createInitialGameState(): GameState {
     crew: INITIAL_CREW.map((c) => ({ ...c })),
     repairInventory: STARTER_REPAIR_INVENTORY.map((r) => ({ ...r })),
     treasureInventory: [],
-    missions: MOCK_MISSIONS.map((m) => ({ ...m })),
+    missions: [...MOCK_MISSIONS, ...STORY_DIVE_MISSIONS].map((m) => ({ ...m })),
     dive: null,
     pendingOfflineReport: null,
     lastMissionOutcome: null,
@@ -98,6 +98,7 @@ export function createInitialGameState(): GameState {
     canonEra: DEFAULT_CANON_ERA,
     revealLevel: DEFAULT_REVEAL_LEVEL,
     completedSpineEvents: [...DEFAULT_COMPLETED_SPINE_EVENTS],
+    storyFlags: [],
     roberts: createDefaultRobertsState(),
     compartments: normalizeCompartmentRegistry({
       canonEra: DEFAULT_CANON_ERA,

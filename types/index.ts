@@ -5,7 +5,7 @@ import type { RobertsState } from '@/game/roberts';
 import type { CrewAlertAction } from './crewAlerts';
 import type { CommanderProfile, NarrativeRecapState, StoryBeat, StoryProgress } from './story';
 import type { CrewConditionState } from './internalCrewEvents';
-import type { TrialDebriefAttachment, TrialProgress } from './trials';
+import type { StoryDebriefAttachment, TrialDebriefAttachment, TrialProgress } from './trials';
 
 export interface ResourceBalance {
   scrap: number;
@@ -480,9 +480,11 @@ export interface MissionOutcome {
   storageTransferPreview?: CargoTransferSummary;
   /** Experimental trial certification / unlock summary (Act 1). */
   trialDebrief?: TrialDebriefAttachment;
+  /** Operational story recon debrief (Operation Dead Beacon, etc.). */
+  storyDebrief?: StoryDebriefAttachment;
 }
 
-export const GAME_STATE_VERSION = 5 as const;
+export const GAME_STATE_VERSION = 6 as const;
 
 export interface GameState {
   version: typeof GAME_STATE_VERSION;
@@ -529,6 +531,8 @@ export interface GameState {
   revealLevel: number;
   /** Completed fixed-spine event ids (deduplicated). */
   completedSpineEvents: string[];
+  /** Story reward / progression flags (e.g. deadBeaconData, hull_reinforcement_mk1). */
+  storyFlags: string[];
   /** Commander Phillip Roberts — RPG protagonist tracks. */
   roberts: RobertsState;
   /** DBX-07 compartment unlock registry (canon-gated). */
@@ -588,4 +592,4 @@ export { defaultCrewConditionState } from './internalCrewEvents';
 
 export type { SonarContact, SonarContactSource, SonarContactType } from './navigationMap';
 
-export type { TrialDebriefAttachment, TrialLastOutcome, TrialProgress, TrialStatus } from './trials';
+export type { StoryDebriefAttachment, TrialDebriefAttachment, TrialLastOutcome, TrialProgress, TrialStatus } from './trials';

@@ -8,6 +8,7 @@ import { ScreenShell } from '@/components/ScreenShell';
 import { theme } from '@/constants/theme';
 import { CREW_LEADS_BY_ID } from '@/data/crewLeads';
 import { useGame } from '@/context/GameContext';
+import { returnMissionLockCopy } from '@/game/deadBeaconDecision';
 import { getMissionDefinition, isMissionUnlocked, isStoryMissionCompleted } from '@/game/storyMissions';
 
 function speakerLabel(speakerId: string): string {
@@ -34,11 +35,21 @@ export default function StoryMissionBriefingScreen() {
   }
 
   const b = def.briefing;
+  const isDiveAssignment = def.isDiveMission === true;
+  const diveMissionId = def.diveMissionId ?? def.id;
+  const activeBlocking = state.dive?.status === 'active';
+  const debriefBlocking = Boolean(state.dive && state.dive.status !== 'active');
 
   const onAcknowledge = () => {
-    if (!unlocked || completed || def.isPlaceholder) return;
+    if (!unlocked || completed || def.isPlaceholder || isDiveAssignment) return;
     dispatch({ type: 'COMPLETE_STORY_MISSION', missionId: def.id });
     router.replace('/mission-select');
+  };
+
+  const onLaunchRecon = () => {
+    if (!unlocked || completed || def.isPlaceholder || activeBlocking || debriefBlocking) return;
+    dispatch({ type: 'START_MISSION', missionId: diveMissionId });
+    router.replace('/dive');
   };
 
   return (
@@ -102,7 +113,9 @@ export default function StoryMissionBriefingScreen() {
 
           {def.isPlaceholder ? (
             <Text style={styles.placeholderNote}>
-              This operation remains locked. Hull Reinforcement Mk I is required before launch.
+              {def.id === 'operation_dead_beacon_return'
+                ? returnMissionLockCopy(state)
+                : 'This operation remains locked. Hull Reinforcement Mk I is required before launch.'}
             </Text>
           ) : null}
         </ScrollView>
@@ -112,6 +125,20 @@ export default function StoryMissionBriefingScreen() {
             <PrimaryButton title="Return to schedule" variant="ghost" onPress={() => router.back()} />
           ) : completed ? (
             <PrimaryButton title="Back to schedule" variant="ghost" onPress={() => router.back()} />
+          ) : unlocked && isDiveAssignment ? (
+            <>
+              {activeBlocking ? (
+                <Text style={styles.lockedHint}>Active dive in progress — complete the run first.</Text>
+              ) : debriefBlocking ? (
+                <Text style={styles.lockedHint}>Debrief pending — review the last run before launching.</Text>
+              ) : null}
+              <PrimaryButton
+                title="Launch recon"
+                onPress={onLaunchRecon}
+                disabled={activeBlocking || debriefBlocking}
+              />
+              <PrimaryButton title="Back to schedule" variant="ghost" onPress={() => router.back()} />
+            </>
           ) : unlocked ? (
             <PrimaryButton title="Acknowledge assignment" onPress={onAcknowledge} />
           ) : (
