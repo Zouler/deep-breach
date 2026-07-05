@@ -80,8 +80,8 @@ export function ActionableCrewAlert({ message, actions, onAction }: Props) {
 const styles = StyleSheet.create({
   wrap: {
     borderWidth: 1,
-    borderColor: '#38bdf855',
-    backgroundColor: '#020617cc',
+    borderColor: theme.panelBorderStrong,
+    backgroundColor: theme.panelBg,
     borderRadius: 12,
     padding: 12,
     marginBottom: 10,
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(120, 53, 15, 0.12)',
   },
   wrapDanger: {
-    borderColor: '#fb718566',
+    borderColor: theme.dangerBorder,
     backgroundColor: 'rgba(127, 29, 29, 0.14)',
   },
   header: {
