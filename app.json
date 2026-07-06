@@ -4,13 +4,13 @@
     "slug": "deep-breach",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo-deep-breach-icon.png",
+    "icon": "./assets/branding/expo-app-icon.png",
     "scheme": "deepbreach",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/logo-deep-breach.png",
-      "resizeMode": "contain",
+      "image": "./assets/branding/expo-splash-portrait.png",
+      "resizeMode": "cover",
       "backgroundColor": "#030712"
     },
     "ios": {
@@ -18,7 +18,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo-deep-breach-icon.png",
+        "foregroundImage": "./assets/branding/expo-adaptive-icon.png",
         "backgroundColor": "#030712"
       },
       "edgeToEdgeEnabled": true,
@@ -27,7 +27,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/logo-deep-breach-icon.png"
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router"

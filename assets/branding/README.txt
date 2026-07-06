@@ -1,9 +1,16 @@
-Deep Breach — optional branding drops (not required to run)
+Deep Breach — branding exports (Phase B)
 
-Place files here when you have art ready, then wire them in code / app.json:
+Derived store/splash assets (regenerate via scripts/prepare-phase-b-p0-assets.ps1):
 
-- logo.png        — title / start screen (update constants/brandingAssets.ts require path)
-- splash.png      — full-bleed splash (reference from app.json "splash.image")
-- background.png  — optional full-screen texture (load via ImageBackground once file exists)
+- expo-app-icon.png          — 1024×1024 app icon (#030712 field, 12% margin)
+- expo-adaptive-icon.png     — 1024×1024 adaptive foreground (transparent)
+- expo-splash-portrait.png   — 1284×2778 splash plate
 
-The app ships with safe fallbacks using existing Expo template images under assets/images/.
+Source masters (do not delete):
+
+- logo-deep-breach-icon.png  — icon master (1254×1254)
+- barracuda-games-logo.png    — publisher mark
+
+Wired in app.json as of Visual Phase B.1.
+
+See docs/visual/phase-b-asset-production-pack.md and phase-b-asset-status.md.
