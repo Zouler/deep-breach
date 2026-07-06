@@ -1,0 +1,70 @@
+﻿{
+  "generated": "2026-07-06T02:01:55.738Z",
+  "tooling": "scripts/prepare-phase-b-p0-assets.ps1 (System.Drawing)",
+  "icons": [
+    {
+      "name": "icon-scrap.png",
+      "source": "assets/icons/icon-scrap.png",
+      "sourceDimensions": "1254x1254",
+      "outputDimensions": "256x256",
+      "format": "png",
+      "note": "WebP re-export optional via scripts/prepare-phase-b-p0-assets.mjs with sharp"
+    },
+    {
+      "name": "icon-research-data.png",
+      "source": "assets/icons/icon-research-data.png",
+      "sourceDimensions": "1254x1254",
+      "outputDimensions": "256x256",
+      "format": "png",
+      "note": "WebP re-export optional via scripts/prepare-phase-b-p0-assets.mjs with sharp"
+    },
+    {
+      "name": "icon-hull-patch-kit.png",
+      "source": "assets/icons/icon-hull-patch-kit.png",
+      "sourceDimensions": "1254x1254",
+      "outputDimensions": "256x256",
+      "format": "png",
+      "note": "WebP re-export optional via scripts/prepare-phase-b-p0-assets.mjs with sharp"
+    },
+    {
+      "name": "icon-pressure-sealant.png",
+      "source": "assets/icons/icon-pressure-sealant.png",
+      "sourceDimensions": "1254x1254",
+      "outputDimensions": "256x256",
+      "format": "png",
+      "note": "WebP re-export optional via scripts/prepare-phase-b-p0-assets.mjs with sharp"
+    },
+    {
+      "name": "icon-oxygen-canister.png",
+      "source": "assets/icons/icon-oxygen-canister.png",
+      "sourceDimensions": "1254x1254",
+      "outputDimensions": "256x256",
+      "format": "png",
+      "note": "WebP re-export optional via scripts/prepare-phase-b-p0-assets.mjs with sharp"
+    },
+    {
+      "name": "icon-artifact.png",
+      "source": "assets/icons/icon-artifact.png",
+      "sourceDimensions": "1254x1254",
+      "outputDimensions": "256x256",
+      "format": "png",
+      "note": "WebP re-export optional via scripts/prepare-phase-b-p0-assets.mjs with sharp"
+    },
+    {
+      "name": "icon-scan-area.png",
+      "source": "assets/icons/icon-scan-area.png",
+      "sourceDimensions": "1254x1254",
+      "outputDimensions": "256x256",
+      "format": "png",
+      "note": "WebP re-export optional via scripts/prepare-phase-b-p0-assets.mjs with sharp"
+    },
+    {
+      "name": "icon-crack.png",
+      "source": "assets/icons/icon-crack.png",
+      "sourceDimensions": "1254x1254",
+      "outputDimensions": "256x256",
+      "format": "png",
+      "note": "WebP re-export optional via scripts/prepare-phase-b-p0-assets.mjs with sharp"
+    }
+  ]
+}
