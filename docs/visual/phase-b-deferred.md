@@ -1,5 +1,7 @@
 # COLD HULL — Phase B deferred assets
 
+> **Production spec:** see [`phase-b-asset-production-pack.md`](./phase-b-asset-production-pack.md) for the reconciled MVP list, prompts, and folder structure.
+
 Phase A is code-only using existing assets. The following remain for Phase B (art production).
 
 ## Known visual gaps (Phase A left unchanged)
