@@ -84,13 +84,18 @@ export default function SettingsScreen() {
         <PanelCard>
           <Text style={styles.label}>Developer / QA</Text>
           <Text style={styles.small}>
-            Fast-forward the save to post–First Contact Analysis (Growing Ocean monitoring ready).
-            Does not start a dive. For internal testing only — not part of normal gameplay.
+            Fast-forward saves for internal story testing. Does not start dives or auto-resolve
+            decisions. For internal testing only — not part of normal gameplay.
           </Text>
           <PrimaryButton
             title="QA: Advance to Growing Ocean monitoring ready"
             variant="ghost"
             onPress={() => dispatch({ type: 'QA_FAST_FORWARD_TO_MONITORING' })}
+          />
+          <PrimaryButton
+            title="QA: Advance to Command Pressure ready"
+            variant="ghost"
+            onPress={() => dispatch({ type: 'QA_FAST_FORWARD_TO_COMMAND_PRESSURE' })}
           />
         </PanelCard>
       ) : null}

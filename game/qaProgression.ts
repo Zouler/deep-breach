@@ -1,6 +1,8 @@
 import { REVEAL_LEVEL } from '@/game/canon';
+import { isCommandPressurePending } from '@/game/commandPressure';
 import { resolveDeadBeaconDataDecision } from '@/game/deadBeaconDecision';
 import { resolveFirstContactAnalysis } from '@/game/firstContactAftermath';
+import { MONITORING_DRIFT_DEPTH_FRACTION } from '@/game/growingOceanAnomaly';
 import { createInitialGameState } from '@/game/initialGame';
 import { reduceGame } from '@/game/gameReducer';
 import { upsertTrialProgress } from '@/game/trialProgression';
@@ -15,6 +17,7 @@ import { DEAD_BEACON_RECON_MIN_DEPTH_FRACTION } from '@/game/storyMissionObjecti
 import {
   OPERATION_DEAD_BEACON_MISSION_ID,
   OPERATION_DEAD_BEACON_RETURN_MISSION_ID,
+  GROWING_OCEAN_ANOMALY_MISSION_ID,
 } from '@/data/missions';
 import { EXPERIMENTAL_TRIAL_MISSION_IDS } from '@/data/experimentalTrials';
 import type { GameState } from '@/types';
@@ -105,6 +108,62 @@ export function advanceQaToMonitoringReady(state: GameState = createInitialGameS
 
   if (!isMissionUnlocked(next, 'growing_ocean_anomaly_prep')) {
     throw new Error('QA fast-forward failed: Growing Ocean Anomaly is not unlocked');
+  }
+
+  return next;
+}
+
+function completeGrowingOceanMonitoring(state: GameState): GameState {
+  let next = reduceGame(state, { type: 'START_MISSION', missionId: GROWING_OCEAN_ANOMALY_MISSION_ID });
+  const mission = next.missions.find((m) => m.id === GROWING_OCEAN_ANOMALY_MISSION_ID)!;
+  next = reduceGame(next, { type: 'SCAN_AREA', now: next.dive!.startedAt + 1_000 });
+  next = reduceGame(next, { type: 'SCAN_AREA', now: next.dive!.startedAt + 2_000 });
+  const successfulDive = {
+    ...next.dive!,
+    currentDepthM: next.dive!.targetDepthM * MONITORING_DRIFT_DEPTH_FRACTION,
+    missionElapsedMs: next.dive!.missionDurationMs,
+    monitoringDriftActive: true,
+    monitoringBaselineScans: 1,
+    monitoringDriftScans: 1,
+    status: 'success' as const,
+    hullIntegrityPercent: 75,
+  };
+  const lastMissionOutcome = buildMissionOutcome(
+    { ...successfulDive, outcomeRecorded: true },
+    mission,
+    next.submarine,
+    null,
+  );
+  next = applyStoryDiveResolution(
+    { ...next, dive: { ...successfulDive, outcomeRecorded: true }, lastMissionOutcome },
+    mission,
+    successfulDive,
+  );
+  return reduceGame(next, { type: 'RETURN_TO_BASE' });
+}
+
+/**
+ * Dev/QA helper — advances a save to post–Growing Ocean success where Command Pressure
+ * strategic response is pending. Does not auto-resolve the decision.
+ */
+export function advanceQaToCommandPressureReady(state: GameState = createInitialGameState()): GameState {
+  let next = advanceQaToMonitoringReady(state);
+  next = completeGrowingOceanMonitoring(next);
+  next = {
+    ...next,
+    dive: null,
+    lastMissionOutcome: null,
+    pendingOfflineReport: null,
+  };
+
+  if (!next.completedSpineEvents.includes('growing_ocean_anomaly')) {
+    throw new Error('QA fast-forward failed: Growing Ocean Anomaly not complete');
+  }
+  if (!isCommandPressurePending(next)) {
+    throw new Error('QA fast-forward failed: Command Pressure is not pending');
+  }
+  if (!isMissionUnlocked(next, 'command_pressure')) {
+    throw new Error('QA fast-forward failed: Command Pressure mission not unlocked');
   }
 
   return next;
