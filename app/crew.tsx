@@ -1,12 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { PanelCard } from '@/components/PanelCard';
+import { PortraitFrame } from '@/components/PortraitFrame';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
 import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
+import { portraitForCrewRole } from '@/game/portraitAssets';
 import {
   getCrewSpecialization,
   hasPendingSpecialization,
@@ -24,8 +26,12 @@ export default function CrewScreen() {
       {state.crew.map((c) => {
         const pending = hasPendingSpecialization(c);
         const chosen = getCrewSpecialization(c.specializationId);
+        const portrait = portraitForCrewRole(c.role);
         return (
           <PanelCard key={c.id}>
+            <View style={styles.cardTop}>
+              {portrait ? <PortraitFrame source={portrait} size={72} /> : null}
+              <View style={styles.cardBody}>
             <Text style={styles.name}>
               {c.name} · {c.role}
             </Text>
@@ -76,6 +82,8 @@ export default function CrewScreen() {
                 ))}
               </View>
             ) : null}
+              </View>
+            </View>
           </PanelCard>
         );
       })}
@@ -85,6 +93,8 @@ export default function CrewScreen() {
 
 const styles = StyleSheet.create({
   balance: { color: theme.accent, marginBottom: 8, fontWeight: '700' },
+  cardTop: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  cardBody: { flex: 1, minWidth: 0 },
   name: { color: theme.text, fontWeight: '700', marginBottom: 6 },
   meta: { color: theme.textMuted, marginBottom: 8 },
   specializationBox: {

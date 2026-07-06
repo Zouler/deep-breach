@@ -1,93 +1,105 @@
 # Visual Phase B — Asset Status
 
-**Phase:** B.4 P1 Art Preparation  
-**Branch:** `feature/visual-phase-b-p1-art-pack`  
+**Phase:** B.5 P1 Asset Integration  
+**Branch:** `feature/visual-phase-b-p1-integration`  
 **Spec:** [`phase-b-asset-production-pack.md`](./phase-b-asset-production-pack.md)  
 **P1 prompts:** [`phase-b-p1-art-prompts.md`](./phase-b-p1-art-prompts.md)  
-**P1 review:** [`phase-b-p1-art-review.md`](./phase-b-p1-art-review.md)  
 **Last updated:** 2026-07-06  
 
 ---
 
 ## Summary
 
-| Category | Created (B.4) | Integrated | Ready for integration |
-|----------|---------------|------------|----------------------|
-| P0 backgrounds | 3 | Yes (B.3) | — |
-| Scanline overlay | 1 | Yes (B.3) | — |
-| Optimized item icons | 8 | Yes (B.3) | — |
-| **Portraits** | **5** | No | **Pending art review** |
-| **Room plates** | **4** | No | **Pending art review** |
-| **Command tile icons** | **6 SVG** | No | **Yes** (SVG — review tint on device) |
-| **Classification stamps** | **3 WebP + 3 SVG source** | No | **Yes** (programmatic text) |
-| P2 extras | — | — | sonar room, wordmark, dive HUD, etc. |
-
-**Regeneration:** `npm install sharp --no-save && node scripts/prepare-phase-b-p1-art.mjs`
+| Category | Integrated (B.5) | Notes |
+|----------|------------------|-------|
+| P0 backgrounds / overlay / item icons | Yes (B.3) | — |
+| Portraits ×5 | **Yes** | Cards + briefings |
+| Room plates ×4 | **Yes** | Dive room detail |
+| Command tile icons ×6 | **Partial** | Ionicons runtime; SVG masters on disk |
+| Classification stamps ×3 | **Yes** | Briefings + mission result |
 
 ---
 
-## P0 Integration (B.3 — unchanged)
+## P1 Integration Map (B.5)
 
-See prior sections in git history. Backgrounds, overlay, and optimized icons remain wired per B.3 map.
+### Portraits (`GAME_ASSETS.portraits.*`)
+
+| Asset | Where used | Helper |
+|-------|------------|--------|
+| `robertsNeutral` | Captain's Log header | `robertsPortrait()` |
+| `xoNeutral` | Department cards, story lead lines | `portraitForDepartmentLead` / `portraitForSpeakerId` |
+| `engineerNeutral` | Department cards, crew roster, lead lines | same |
+| `navigatorNeutral` | Department cards, crew roster, lead lines | same |
+| `scientistNeutral` | Department cards, crew roster, lead lines | same |
+
+Component: `PortraitFrame` (64–80px instrument frame)
+
+### Room backgrounds (`GAME_ASSETS.*RoomBackground`)
+
+| RoomId (incl. legacy) | Asset | Screen |
+|-----------------------|-------|--------|
+| `command_center` / `bridge` | `bridgeRoomBackground` | `room/[roomId].tsx` |
+| `engineering` / `engine` | `engineRoomBackground` | same |
+| `research_lab` / `lab` | `labRoomBackground` | same |
+| `cargo_recovery` / `cargo` | `cargoRoomBackground` | same |
+| other | `diveScreenBg` fallback | same |
+
+Helper: `roomBackgroundForId` / `roomBackgroundScrimForId` in `game/roomBackgrounds.ts`
+
+### Command icons
+
+| Tile | Icon key | Runtime |
+|------|----------|---------|
+| Repair Dock | `dock` | Ionicons via `CommandTileIcon` |
+| Trial schedule | `missions` | same |
+| Command Briefings | `log` | same |
+| Upgrades | `upgrades` | same |
+| Crew | `crew` | same |
+| Inventory | `inventory` | same |
+| Service Record | — | text-only (no duplicate glyph) |
+
+**Note:** Custom SVG masters in `assets/icons/command/*.svg` are production reference. `react-native-svg` file wiring deferred to avoid new dependency; swap `CommandTileIcon` when added.
+
+### Stamps (`GAME_ASSETS.stamps.*`)
+
+| Variant | Where |
+|---------|-------|
+| `classified` | Story mission briefing, assignment briefing/memo, failed/aborted result |
+| `cleared` | Successful mission result |
+| `vesselLost` | Catastrophic mission result |
+
+Component: `ClassificationStamp` (decorative, low opacity)
 
 ---
 
-## P1 Assets Created (B.4)
+## Manual Visual QA Checklist (B.5)
 
-### Portraits — `assets/images/portraits/`
-
-| File | Source method | Dimensions | Size | Ready |
-|------|---------------|------------|------|-------|
-| `portrait-roberts-neutral.webp` | AI source → sharp crop | 768×768 | 51 KB | Pending review |
-| `portrait-xo-neutral.webp` | AI source → sharp crop | 768×768 | 36 KB | Pending review |
-| `portrait-engineer-neutral.webp` | AI source → sharp crop | 768×768 | 65 KB | Pending review |
-| `portrait-navigator-neutral.webp` | AI source → sharp crop | 768×768 | 49 KB | Pending review |
-| `portrait-scientist-neutral.webp` | AI source → sharp crop | 768×768 | 42 KB | Pending review |
-
-### Room plates — `assets/images/rooms/`
-
-| File | Source method | Dimensions | Size | Ready |
-|------|---------------|------------|------|-------|
-| `bg-room-bridge.webp` | AI source → letterbox + vignette | 1080×2340 | 49 KB | Pending review |
-| `bg-room-engine.webp` | AI source → letterbox + vignette | 1080×2340 | 53 KB | Pending review |
-| `bg-room-lab.webp` | AI source → letterbox + vignette | 1080×2340 | 89 KB | Pending review |
-| `bg-room-cargo.webp` | AI source → letterbox + vignette | 1080×2340 | 56 KB | Pending review |
-
-### Command tile icons — `assets/icons/command/`
-
-| File | Source method | ViewBox | Size | Ready |
-|------|---------------|---------|------|-------|
-| `icon-dock.svg` | Hand-authored SVG | 24×24 | 363 B | Yes |
-| `icon-missions.svg` | Hand-authored SVG | 24×24 | 391 B | Yes |
-| `icon-crew.svg` | Hand-authored SVG | 24×24 | 355 B | Yes |
-| `icon-inventory.svg` | Hand-authored SVG | 24×24 | 301 B | Yes |
-| `icon-upgrades.svg` | Hand-authored SVG | 24×24 | 337 B | Yes |
-| `icon-log.svg` | Hand-authored SVG | 24×24 | 289 B | Yes |
-
-### Classification stamps — `assets/stamps/`
-
-| File | Source method | Dimensions | Size | Ready |
-|------|---------------|------------|------|-------|
-| `stamp-classified.webp` | SVG → sharp export | 512×256 | 12 KB | Yes |
-| `stamp-cleared.webp` | SVG → sharp export | 512×256 | 8 KB | Yes |
-| `stamp-vessel-lost.webp` | SVG → sharp export | 512×256 | 10 KB | Yes |
-| `stamp-*.svg` | Programmatic (source masters) | 512×256 | <1 KB each | Yes — editable source |
+- [ ] **Crew roster** — engineer/navigator/scientist portraits visible at 72px
+- [ ] **Department briefing cards** — lead portraits at 64px; text readable
+- [ ] **Story briefing lead lines** — speaker portraits match role
+- [ ] **Captain's Log** — Roberts portrait; not repair-dock bg (uses captains log bg)
+- [ ] **Room detail** — bridge/engine/lab/cargo distinct backgrounds; repair UI readable
+- [ ] **Command tiles** — icons tinted cyan/amber; readable at mobile size
+- [ ] **Stamps** — subtle on briefings; cleared/vessel-lost on result; no text overlap
+- [ ] **No gameplay regression** — hire, repair, dive, missions unchanged
+- [ ] **No missing assets** — no red error screens
 
 ---
 
-## Deferred / Not in B.4
+## Remaining After Phase B.5
 
-| Asset | Reason |
-|-------|--------|
-| Sensor / Logistics portraits | P2 per production pack |
+| Item | Priority |
+|------|----------|
+| Wire custom SVG command glyphs (`react-native-svg` + transformer) | P2 polish |
+| Sensor / logistics portraits | P2 |
 | Sonar room plate | P2 |
-| Production-pack PNG tile icons | Superseded by SVG command set |
-| `stamp-restricted` / `stamp-dbx-program` / `stamp-phos-restricted` names | B.4 uses classified/cleared/vessel-lost semantic set — map at integration |
+| Dive HUD chrome integration | P2 |
+| Wordmark export | P2 |
 
 ---
 
 ## Next Steps
 
-1. **Manual art review** — [`phase-b-p1-art-review.md`](./phase-b-p1-art-review.md)
-2. **Phase B.5 integration PR** — wire portraits, room plates, command SVGs, stamps per prompts doc §Integration notes
-3. **Device QA** — face at 64px, rooms behind room HUD, icons on base grid
+1. Device playtest — run checklist above
+2. Optional: add `react-native-svg` and replace Ionicons with SVG masters
+3. P2 art pass — sonar room, extra portraits, dive HUD evaluation

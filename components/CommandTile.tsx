@@ -1,15 +1,18 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { CommandTileIcon } from '@/components/CommandTileIcon';
+import type { CommandIconKey } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 
 type Props = {
   title: string;
   subtitle?: string;
   emphasis?: boolean;
+  icon?: CommandIconKey;
   onPress: () => void;
 };
 
-export function CommandTile({ title, subtitle, emphasis, onPress }: Props) {
+export function CommandTile({ title, subtitle, emphasis, icon, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
@@ -20,6 +23,14 @@ export function CommandTile({ title, subtitle, emphasis, onPress }: Props) {
       ]}
     >
       <View style={styles.rail} />
+      {icon ? (
+        <View style={styles.iconWrap}>
+          <CommandTileIcon
+            name={icon}
+            color={emphasis ? theme.phosphorAmber : theme.instrumentCyan}
+          />
+        </View>
+      ) : null}
       <View style={styles.body}>
         <Text style={styles.title}>{title.toUpperCase()}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
@@ -53,6 +64,12 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     backgroundColor: theme.phosphorAmber,
     marginRight: 10,
+  },
+  iconWrap: {
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 24,
   },
   body: { flex: 1 },
   title: {

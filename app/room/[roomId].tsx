@@ -18,6 +18,7 @@ import { useGame } from '@/context/GameContext';
 import { canVentEngineHeat, ENGINE_HEAT_VENT_COOLDOWN_MS } from '@/game/engineHeat';
 import { isPropulsionRoom } from '@/game/rooms';
 import { validateRepairPreconditions } from '@/game/repairOutcome';
+import { roomBackgroundForId, roomBackgroundScrimForId } from '@/game/roomBackgrounds';
 import {
   countActiveCracks,
   countHullRepairUnitsInExpedition,
@@ -139,8 +140,11 @@ export default function RoomDetailScreen() {
     });
   };
 
+  const roomBg = roomId ? roomBackgroundForId(roomId) : GAME_ASSETS.diveScreenBg;
+  const roomScrim = roomId ? roomBackgroundScrimForId(roomId) : 0.74;
+
   return (
-    <ScreenShell scroll backgroundImage={GAME_ASSETS.diveScreenBg} backgroundScrimOpacity={0.74}>
+    <ScreenShell scroll backgroundImage={roomBg} backgroundScrimOpacity={roomScrim}>
       {topBanner ? <RepairFeedbackBanner tone={topBanner.tone} text={topBanner.text} /> : null}
       {hullKits <= 0 && breachesActive > 0 ? (
         <HudPanel>

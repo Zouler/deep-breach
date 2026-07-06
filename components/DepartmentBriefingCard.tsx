@@ -1,7 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { PortraitFrame } from '@/components/PortraitFrame';
 import { theme } from '@/constants/theme';
 import { CREW_LEADS_BY_ID } from '@/data/crewLeads';
+import { portraitForDepartmentLead } from '@/game/portraitAssets';
 import type { DepartmentStatus } from '@/types/departmentBriefings';
 
 function badgeColors(tone: DepartmentStatus['tone']): { bg: string; fg: string; border: string } {
@@ -25,10 +27,12 @@ export function DepartmentBriefingCard({ status, onRequestBriefing }: Props) {
   const label = lead ? `${lead.displayName} · ${lead.department}` : status.leadId;
   const role = lead?.fullTitle ?? 'Department Lead';
   const c = badgeColors(status.tone);
+  const portrait = portraitForDepartmentLead(status.leadId);
 
   return (
     <Pressable onPress={onRequestBriefing} style={styles.card}>
       <View style={styles.topRow}>
+        {portrait ? <PortraitFrame source={portrait} size={64} /> : null}
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.lead} numberOfLines={1}>
             {label}
