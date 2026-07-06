@@ -2,6 +2,7 @@ import type { Mission } from '@/types';
 
 export const OPERATION_DEAD_BEACON_MISSION_ID = 'operation_dead_beacon';
 export const OPERATION_DEAD_BEACON_RETURN_MISSION_ID = 'operation_dead_beacon_return';
+export const GROWING_OCEAN_ANOMALY_MISSION_ID = 'growing_ocean_anomaly';
 
 /** Playable operational dives launched from story assignments. */
 export const STORY_DIVE_MISSIONS: Mission[] = [
@@ -32,6 +33,20 @@ export const STORY_DIVE_MISSIONS: Mission[] = [
     specialEventChance: 0.24,
     trialPurpose:
       'Controlled return to the DBX-03 loss zone under Hull Reinforcement Mk I — verify the site, gather readings through interference, and withdraw. No recovery authorized.',
+  },
+  {
+    id: GROWING_OCEAN_ANOMALY_MISSION_ID,
+    name: 'Growing Ocean Anomaly',
+    targetDepthM: 1000,
+    durationMinutes: 5,
+    risk: 'medium-high',
+    expectedRewardsText: 'Restricted research packets · low salvage · monitoring telemetry',
+    scrapRewardRange: [18, 40],
+    researchRewardRange: [22, 48],
+    treasureChance: 0.04,
+    specialEventChance: 0.32,
+    trialPurpose:
+      'Passive monitoring dive — confirm whether DBX-03 interval signatures recur outside the loss zone, collect repeatable readings, and withdraw under restriction.',
   },
 ];
 

@@ -44,4 +44,6 @@ export interface StoryDebriefAttachment {
   pendingDataDecision?: boolean;
   /** P1.3 — first anomaly contact objectives met on return dive. */
   firstContactComplete?: boolean;
+  /** P1.6 — growing ocean passive monitoring objectives met. */
+  monitoringComplete?: boolean;
 }

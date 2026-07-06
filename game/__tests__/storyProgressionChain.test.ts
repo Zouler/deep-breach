@@ -18,6 +18,7 @@ import { reduceGame } from '@/game/gameReducer';
 import { upsertTrialProgress } from '@/game/trialProgression';
 import {
   applyStoryDiveResolution,
+  canStartStoryDiveMission,
   getAvailableMissions,
   hasCompletedSpineEvent,
   isMissionUnlocked,
@@ -30,6 +31,7 @@ import { DEAD_BEACON_RECON_MIN_DEPTH_FRACTION } from '@/game/storyMissionObjecti
 import {
   OPERATION_DEAD_BEACON_MISSION_ID,
   OPERATION_DEAD_BEACON_RETURN_MISSION_ID,
+  GROWING_OCEAN_ANOMALY_MISSION_ID,
 } from '@/data/missions';
 import { EXPERIMENTAL_TRIAL_MISSION_IDS } from '@/data/experimentalTrials';
 import { migrateGameState } from '@/storage/gameStorage';
@@ -137,6 +139,7 @@ describe('story progression chain (P1.5 regression)', () => {
     state = advanceThroughAftermath(state);
     expect(isStoryMissionCompleted(state, 'first_contact_analysis')).toBe(true);
     expect(isMissionUnlocked(state, 'growing_ocean_anomaly_prep')).toBe(true);
+    expect(canStartStoryDiveMission(state, GROWING_OCEAN_ANOMALY_MISSION_ID)).toBe(true);
     expect(state.canonEra).toBe('anomaly_growth');
     expect(state.revealLevel).toBeGreaterThanOrEqual(REVEAL_LEVEL.ANOMALY_GROWTH);
   });
