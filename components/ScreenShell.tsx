@@ -1,5 +1,6 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
+  Image,
   ImageBackground,
   ScrollView,
   StyleSheet,
@@ -8,6 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 
 type Props = {
@@ -18,6 +20,8 @@ type Props = {
   backgroundImage?: ImageSourcePropType;
   /** Darken background for readability (0 = none, 1 = opaque). */
   backgroundScrimOpacity?: number;
+  /** Subtle COLD HULL instrument scanline tile — does not block touches. */
+  scanlineOverlay?: boolean;
 };
 
 export function ScreenShell({
@@ -26,6 +30,7 @@ export function ScreenShell({
   contentStyle,
   backgroundImage,
   backgroundScrimOpacity = 0.72,
+  scanlineOverlay = false,
 }: Props) {
   const transparent = Boolean(backgroundImage);
   const body = scroll ? (
@@ -44,17 +49,42 @@ export function ScreenShell({
             { backgroundColor: `rgba(2, 8, 18, ${backgroundScrimOpacity})` },
           ]}
         />
+        {scanlineOverlay ? (
+          <View pointerEvents="none" style={styles.scanlineWrap}>
+            <Image
+              source={GAME_ASSETS.scanlineNoiseOverlay}
+              style={[styles.scanline, { opacity: theme.scanlineOpacity }]}
+              resizeMode="repeat"
+            />
+          </View>
+        ) : null}
         <SafeAreaView style={[styles.safe, transparent && styles.safeTransparent]}>{body}</SafeAreaView>
       </ImageBackground>
     );
   }
 
-  return <SafeAreaView style={styles.safe}>{body}</SafeAreaView>;
+  return (
+    <View style={styles.plainRoot}>
+      {scanlineOverlay ? (
+        <View pointerEvents="none" style={styles.scanlineWrap}>
+          <Image
+            source={GAME_ASSETS.scanlineNoiseOverlay}
+            style={[styles.scanline, { opacity: theme.scanlineOpacity }]}
+            resizeMode="repeat"
+          />
+        </View>
+      ) : null}
+      <SafeAreaView style={styles.safe}>{body}</SafeAreaView>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   bgRoot: { flex: 1, width: '100%', height: '100%' },
+  plainRoot: { flex: 1, backgroundColor: theme.bg },
   scrim: { ...StyleSheet.absoluteFillObject },
+  scanlineWrap: { ...StyleSheet.absoluteFillObject },
+  scanline: { width: '100%', height: '100%' },
   safe: { flex: 1, backgroundColor: theme.bg },
   safeTransparent: { backgroundColor: 'transparent' },
   fill: { flex: 1, paddingHorizontal: 18, paddingTop: 8 },

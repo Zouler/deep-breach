@@ -6,6 +6,7 @@ import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
 import { theme } from '@/constants/theme';
+import { GAME_ASSETS } from '@/constants/assets';
 import { CREW_LEADS_BY_ID } from '@/data/crewLeads';
 import { useGame } from '@/context/GameContext';
 import { returnMissionLockCopy, hasStoryFlag } from '@/game/deadBeaconDecision';
@@ -35,7 +36,7 @@ export default function StoryMissionBriefingScreen() {
 
   if (!def) {
     return (
-      <ScreenShell scroll>
+      <ScreenShell scroll backgroundImage={GAME_ASSETS.briefingRoomBackground} backgroundScrimOpacity={0.62} scanlineOverlay>
         <Text style={styles.error}>Assignment not found.</Text>
         <PrimaryButton title="Back" variant="ghost" onPress={() => router.back()} />
       </ScreenShell>
@@ -70,7 +71,12 @@ export default function StoryMissionBriefingScreen() {
   };
 
   return (
-    <ScreenShell scroll={false}>
+    <ScreenShell
+      scroll={false}
+      backgroundImage={GAME_ASSETS.briefingRoomBackground}
+      backgroundScrimOpacity={0.62}
+      scanlineOverlay
+    >
       <View style={styles.root}>
         <ScrollView
           style={styles.scroll}

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AssignmentMemoFrame } from '@/components/AssignmentMemoFrame';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
+import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
 import { navigateToFirstTrialFlow } from '@/game/storyNavigation';
@@ -42,7 +43,11 @@ export default function AssignmentBriefingScreen() {
   };
 
   return (
-    <ScreenShell scroll={false}>
+    <ScreenShell
+      scroll={false}
+      backgroundImage={GAME_ASSETS.briefingRoomBackground}
+      backgroundScrimOpacity={0.64}
+    >
       <View style={styles.root}>
         <ScrollView
           style={styles.scroll}

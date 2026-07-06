@@ -29,7 +29,12 @@ export default function BaseScreen() {
   const firstContactReviewPending = isFirstContactAnalysisPending(state);
 
   return (
-    <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.7}>
+    <ScreenShell
+      scroll
+      backgroundImage={GAME_ASSETS.commandHubBackground}
+      backgroundScrimOpacity={0.58}
+      scanlineOverlay
+    >
       <SectionHeader
         title={nu.title}
         subtitle={nu.subtitle}

@@ -8,6 +8,7 @@ import { DepartmentBriefingModal } from '@/components/DepartmentBriefingModal';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
+import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
 import { buildDepartmentBriefing } from '@/game/departmentBriefings';
@@ -76,7 +77,7 @@ export default function CommandBriefingsScreen() {
   }, [state.crewState]);
 
   return (
-    <ScreenShell scroll>
+    <ScreenShell scroll backgroundImage={GAME_ASSETS.briefingRoomBackground} backgroundScrimOpacity={0.62}>
       <SectionHeader
         title="Command Briefings"
         subtitle="Department status reports from DBX-07 crew leads."

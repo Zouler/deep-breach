@@ -5,6 +5,7 @@ import { StyleSheet, Switch, Text, View } from 'react-native';
 import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
+import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
 import { gameAudio } from '@/game/audioManager';
@@ -37,7 +38,7 @@ export default function SettingsScreen() {
   }, []);
 
   return (
-    <ScreenShell scroll>
+    <ScreenShell scroll backgroundImage={GAME_ASSETS.captainsLogBackground} backgroundScrimOpacity={0.65}>
       <Text style={styles.title}>Settings</Text>
       <PanelCard>
         <View style={styles.row}>

@@ -47,7 +47,11 @@ export default function CaptainsLogScreen() {
   ).slice(0, 3);
 
   return (
-    <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.72}>
+    <ScreenShell
+      scroll
+      backgroundImage={GAME_ASSETS.captainsLogBackground}
+      backgroundScrimOpacity={0.62}
+    >
       <SectionHeader title="Captain’s Log" subtitle="Narrative record · not a raw systems dump" />
       <PanelCard style={styles.card}>
         <Text style={styles.cardHead}>Story so far</Text>
