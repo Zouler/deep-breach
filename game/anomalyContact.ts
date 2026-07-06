@@ -15,7 +15,7 @@ export const ANOMALY_CONTACT_MIN_DEPTH_FRACTION = 0.85;
 export const ANOMALY_CONTACT_MIN_SCANS = 1;
 
 /** Small hull stress pulse per second while in interference zone. */
-const ANOMALY_HULL_PULSE_PER_SEC = 0.018;
+const ANOMALY_HULL_PULSE_PER_SEC = 0.014;
 
 export function isAnomalyContactMission(missionId: string): boolean {
   return missionId === OPERATION_DEAD_BEACON_RETURN_MISSION_ID;

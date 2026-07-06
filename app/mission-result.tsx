@@ -200,7 +200,8 @@ export default function MissionResultScreen() {
           {outcome.storyDebrief.firstContactComplete &&
           !state.storyFlags?.includes('first_contact_analysis') ? (
             <Text style={[styles.line, styles.mutedNote]}>
-              Return to base — First Contact Analysis is available under Operational assignments.
+              Return to base — open First Contact Analysis under Operational assignments to authorize
+              the next preparation step.
             </Text>
           ) : null}
           {dataDecisionResolved && outcome.storyDebrief.dataDecisionHeadline ? (
@@ -218,9 +219,9 @@ export default function MissionResultScreen() {
         <PanelCard style={[styles.consoleCard, styles.decisionCard]}>
           <Text style={styles.cardTitle}>Data disposition — command review</Text>
           <Text style={styles.line}>
-            Recon confirms the DBX-03 signal is active, but the telemetry is incomplete and
-            partially corrupted. Command expects a disposition decision before DBX-07 stands down
-            from Dead Beacon tasking.
+            Recon confirms the DBX-03 signal is active, but telemetry is incomplete and partially
+            corrupted. Choose how DBX-07 handles the data package before standing down from Dead
+            Beacon tasking.
           </Text>
           <Text style={[styles.line, styles.mutedNote]}>
             We have enough proof to escalate, but not enough context to understand what we found.

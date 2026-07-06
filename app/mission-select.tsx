@@ -71,7 +71,7 @@ function actionLabel(status: TrialStatus, isExperimental: boolean): string {
 function storyMissionBadge(def: MissionDefinition, completed: boolean, locked: boolean) {
   if (def.id === 'growing_ocean_anomaly_prep') {
     if (locked) return { text: 'Locked', style: styles.badgeLocked };
-    return { text: 'Coming soon', style: styles.badgeProgress };
+    return { text: 'Preparation', style: styles.badgeProgress };
   }
   if (def.isPlaceholder) return { text: 'Locked', style: styles.badgeLocked };
   if (completed) return { text: 'Completed', style: styles.badgeDone };
@@ -96,9 +96,9 @@ function storyMissionAction(
     return firstContactAnalysisActionCopy(state);
   }
   if (def.id === 'growing_ocean_anomaly_prep') {
-    return 'Preparation phase';
+    return 'View preparation status';
   }
-  if (def.isPlaceholder) return 'Hull Reinforcement Mk I required';
+  if (def.isPlaceholder) return 'Requirements not met';
   if (completed) return 'Review briefing';
   if (locked) return 'Locked';
   if (def.isDiveMission) return 'Launch recon';
@@ -253,6 +253,10 @@ export default function MissionSelectScreen() {
                     <Text style={styles.requirement}>{returnMissionLockCopy(state)}</Text>
                   ) : locked && def.id === 'first_contact_analysis' ? (
                     <Text style={styles.requirement}>{firstContactAnalysisLockCopy(state)}</Text>
+                  ) : locked && def.id === 'operation_dead_beacon' ? (
+                    <Text style={styles.requirement}>
+                      Complete Operational Integration and await DBX-03 signal tasking.
+                    </Text>
                   ) : locked && def.unlockConditions.requiredSpineEvents?.length ? (
                     <Text style={styles.requirement}>
                       Complete prior story requirements to unlock.
