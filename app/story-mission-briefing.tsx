@@ -214,7 +214,7 @@ export default function StoryMissionBriefingScreen() {
             <Text style={styles.placeholderNote}>
               {def.id === 'operation_dead_beacon_return'
                 ? returnMissionLockCopy(state)
-                : 'This operation remains locked. Hull Reinforcement Mk I is required before launch.'}
+                : 'Further authorization required before launch clearance.'}
             </Text>
           ) : null}
           {def.id === 'growing_ocean_anomaly_prep' && !unlocked && !completed ? (

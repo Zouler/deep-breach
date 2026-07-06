@@ -136,7 +136,7 @@ function storyMissionAction(
   if (def.id === 'expansion_model_deployment_hold') {
     return 'Deployment threshold not met';
   }
-  if (def.isPlaceholder) return 'Requirements not met';
+  if (def.isPlaceholder) return 'Authorization requirements not met';
   if (completed) return 'Review briefing';
   if (locked) return 'Locked';
   if (def.isDiveMission) return 'Launch recon';

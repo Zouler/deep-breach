@@ -142,7 +142,9 @@ import {
 import {
   advanceQaToAbyssalExpansionModelsReady,
   advanceQaToCommandPressureReady,
+  advanceQaToDeadBeaconReady,
   advanceQaToMonitoringReady,
+  advanceQaToReturnDiveReady,
 } from '@/game/qaProgression';
 import {
   applyStoryDiveResolution,
@@ -205,6 +207,8 @@ export type GameAction =
   | { type: 'RESOLVE_FIRST_CONTACT_ANALYSIS'; choice: string }
   | { type: 'RESOLVE_COMMAND_PRESSURE'; choice: string }
   | { type: 'RESOLVE_ABYSSAL_EXPANSION_MODELS'; choice: string }
+  | { type: 'QA_FAST_FORWARD_TO_DEAD_BEACON' }
+  | { type: 'QA_FAST_FORWARD_TO_RETURN_DIVE' }
   | { type: 'QA_FAST_FORWARD_TO_MONITORING' }
   | { type: 'QA_FAST_FORWARD_TO_COMMAND_PRESSURE' }
   | { type: 'QA_FAST_FORWARD_TO_EXPANSION_MODELS' }
@@ -1354,6 +1358,22 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       const next = resolveAbyssalExpansionModels(state, action.choice);
       if (next === state) return state;
       return touch(next);
+    }
+    case 'QA_FAST_FORWARD_TO_DEAD_BEACON': {
+      try {
+        const next = advanceQaToDeadBeaconReady(state);
+        return touch(next);
+      } catch {
+        return state;
+      }
+    }
+    case 'QA_FAST_FORWARD_TO_RETURN_DIVE': {
+      try {
+        const next = advanceQaToReturnDiveReady(state);
+        return touch(next);
+      } catch {
+        return state;
+      }
     }
     case 'QA_FAST_FORWARD_TO_MONITORING': {
       try {
