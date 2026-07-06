@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
+import { GAME_ASSETS } from '@/constants/assets';
 import { CAMPAIGNS, getCampaignById } from '@/data/campaigns';
 import { DBX_FUTURE_ACT_VARIANTS, DBX_PROTOTYPE_LORE } from '@/data/dbxProgramLore';
 import { SUBMARINE_IDENTITY } from '@/data/submarine';
@@ -35,7 +36,7 @@ export default function CampaignsScreen() {
     : undefined;
 
   return (
-    <ScreenShell scroll>
+    <ScreenShell scroll backgroundImage={GAME_ASSETS.commandHubBackground} backgroundScrimOpacity={0.6}>
       <Text style={styles.title}>Campaigns / Service Record</Text>
       <Text style={styles.sub}>
         Commander {state.commander.name} · {state.commander.title}

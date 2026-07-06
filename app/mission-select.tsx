@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PanelCard } from '@/components/PanelCard';
 import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
+import { GAME_ASSETS } from '@/constants/assets';
 import { monoData, theme } from '@/constants/theme';
 import {
   EXPERIMENTAL_TRIAL_MISSION_IDS,
@@ -127,7 +128,12 @@ export default function MissionSelectScreen() {
   const nextMission = nextTrialId ? state.missions.find((x) => x.id === nextTrialId) : undefined;
 
   return (
-    <ScreenShell scroll>
+    <ScreenShell
+      scroll
+      backgroundImage={GAME_ASSETS.commandHubBackground}
+      backgroundScrimOpacity={0.6}
+      scanlineOverlay
+    >
       <SectionHeader title={ms.title} subtitle={ms.subtitle} />
       <Text style={styles.progressLine}>
         Experimental Trials: {done} / {totalTrials} completed

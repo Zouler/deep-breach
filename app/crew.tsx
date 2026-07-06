@@ -4,6 +4,7 @@ import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
+import { GAME_ASSETS } from '@/constants/assets';
 import { theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
 import {
@@ -17,7 +18,7 @@ export default function CrewScreen() {
   const { state, dispatch } = useGame();
 
   return (
-    <ScreenShell scroll>
+    <ScreenShell scroll backgroundImage={GAME_ASSETS.commandHubBackground} backgroundScrimOpacity={0.6}>
       <SectionHeader title="Crew Roster" subtitle="Recruit and assign crew to the active dive roster" />
       <Text style={styles.balance}>Scrap: {state.resources.scrap}</Text>
       {state.crew.map((c) => {

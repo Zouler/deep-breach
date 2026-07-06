@@ -195,6 +195,7 @@ export default function DiveScreen() {
         contentStyle={styles.scrollPad}
         backgroundImage={GAME_ASSETS.diveScreenBg}
         backgroundScrimOpacity={0.68}
+        scanlineOverlay
       >
         <HudPanel>
           <View style={styles.topRow}>

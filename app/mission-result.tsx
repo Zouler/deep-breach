@@ -73,7 +73,7 @@ export default function MissionResultScreen() {
   };
 
   return (
-    <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.74}>
+    <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.74} scanlineOverlay>
       <Text style={styles.docTitle}>{tr.docTitle}</Text>
       <Text style={[styles.title, { color: catastrophic ? theme.danger : headlineColor }]}>
         {catastrophic ? 'VESSEL LOST' : headlineText}
