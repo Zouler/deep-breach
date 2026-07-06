@@ -28,7 +28,7 @@ export default function CrewScreen() {
         const chosen = getCrewSpecialization(c.specializationId);
         const portrait = portraitForCrewRole(c.role);
         return (
-          <PanelCard key={c.id}>
+          <PanelCard key={c.id} variant="document">
             <View style={styles.cardTop}>
               {portrait ? <PortraitFrame source={portrait} size={72} /> : null}
               <View style={styles.cardBody}>

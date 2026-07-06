@@ -76,11 +76,11 @@ export default function MissionResultScreen() {
   return (
     <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.74} scanlineOverlay>
       {catastrophic ? (
-        <ClassificationStamp variant="vesselLost" width={150} />
+        <ClassificationStamp variant="vesselLost" width={138} align="end" />
       ) : outcome.success ? (
-        <ClassificationStamp variant="cleared" width={130} />
+        <ClassificationStamp variant="cleared" width={124} align="end" />
       ) : (
-        <ClassificationStamp variant="classified" width={120} />
+        <ClassificationStamp variant="classified" width={112} align="end" />
       )}
       <Text style={styles.docTitle}>{tr.docTitle}</Text>
       <Text style={[styles.title, { color: catastrophic ? theme.danger : headlineColor }]}>

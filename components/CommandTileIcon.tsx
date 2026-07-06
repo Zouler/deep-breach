@@ -24,7 +24,7 @@ const GLYPH: Record<CommandIconKey, keyof typeof Ionicons.glyphMap> = {
 
 export function CommandTileIcon({
   name,
-  size = 22,
+  size = 24,
   color = theme.instrumentCyan,
 }: Props) {
   return <Ionicons name={GLYPH[name]} size={size} color={color} />;

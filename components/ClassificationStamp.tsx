@@ -7,17 +7,29 @@ export type StampVariant = 'classified' | 'cleared' | 'vesselLost';
 type Props = {
   variant: StampVariant;
   width?: number;
+  /** Stamp alignment within its row */
+  align?: 'start' | 'end';
 };
 
 const STAMP_ASPECT = 512 / 256;
 
-export function ClassificationStamp({ variant, width = 140 }: Props) {
+const STAMP_OPACITY: Record<StampVariant, number> = {
+  classified: 0.34,
+  cleared: 0.4,
+  vesselLost: 0.46,
+};
+
+export function ClassificationStamp({ variant, width = 140, align = 'start' }: Props) {
   const source: ImageSourcePropType = GAME_ASSETS.stamps[variant];
   const height = width / STAMP_ASPECT;
   return (
     <Image
       source={source}
-      style={[styles.stamp, { width, height, opacity: variant === 'classified' ? 0.42 : 0.5 }]}
+      style={[
+        styles.stamp,
+        align === 'end' ? styles.alignEnd : styles.alignStart,
+        { width, height, opacity: STAMP_OPACITY[variant] },
+      ]}
       resizeMode="contain"
       accessibilityIgnoresInvertColors
     />
@@ -26,7 +38,8 @@ export function ClassificationStamp({ variant, width = 140 }: Props) {
 
 const styles = StyleSheet.create({
   stamp: {
-    alignSelf: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 6,
   },
+  alignStart: { alignSelf: 'flex-start' },
+  alignEnd: { alignSelf: 'flex-end' },
 });

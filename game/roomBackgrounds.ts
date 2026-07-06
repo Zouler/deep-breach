@@ -29,8 +29,10 @@ export function roomBackgroundScrimForId(roomId: string): number {
   const id = canonicalRoomId(roomId);
   switch (id) {
     case 'research_lab':
-      return 0.72;
+      return 0.74;
     case 'engineering':
+      return 0.72;
+    case 'command_center':
       return 0.7;
     default:
       return 0.68;

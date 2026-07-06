@@ -29,7 +29,10 @@ export const theme = {
   instrumentCyan: '#22d3ee',
   emergencyRed: '#f87171',
   panelRailBg: '#0a1628ee',
-  scanlineOpacity: 0.035,
+  /** Default scanline tile strength on command/briefing screens */
+  scanlineOpacity: 0.03,
+  /** Softer scanline on dive HUD where gauge legibility matters */
+  scanlineOpacityHud: 0.022,
   /** Display / section headers — system sans, heavy weight */
   fontDisplay: undefined as string | undefined,
   /** Body copy — system sans */

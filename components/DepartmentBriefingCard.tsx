@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: theme.panelBorderStrong,
-    backgroundColor: theme.panelBg,
+    backgroundColor: theme.panelBgSolid,
     padding: 14,
     marginBottom: 12,
   },

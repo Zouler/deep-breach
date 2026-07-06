@@ -55,16 +55,16 @@ export default function CaptainsLogScreen() {
       backgroundScrimOpacity={0.62}
     >
       <View style={styles.headerRow}>
-        <PortraitFrame source={robertsPortrait()} size={80} />
+        <PortraitFrame source={robertsPortrait()} size={72} />
         <View style={styles.headerText}>
           <SectionHeader title="Captain’s Log" subtitle="Narrative record · not a raw systems dump" />
         </View>
       </View>
-      <PanelCard style={styles.card}>
+      <PanelCard variant="document" style={styles.card}>
         <Text style={styles.cardHead}>Story so far</Text>
         <Text style={styles.storySoFar}>{STORY_SO_FAR_TEMPLATE}</Text>
       </PanelCard>
-      <PanelCard style={styles.card}>
+      <PanelCard variant="document" style={styles.card}>
         <Text style={styles.cardHead}>Recent operations</Text>
         {recent.length === 0 ? (
           <Text style={styles.muted}>No notable beats logged yet — trials will write here.</Text>
@@ -72,7 +72,7 @@ export default function CaptainsLogScreen() {
           recent.map((b) => <BeatRow key={b.id} beat={b} />)
         )}
       </PanelCard>
-      <PanelCard style={styles.card}>
+      <PanelCard variant="document" style={styles.card}>
         <Text style={styles.cardHead}>Last descents / trials</Text>
         {missionEnds.length === 0 ? (
           <Text style={styles.muted}>Complete or abort a trial to see summaries here.</Text>

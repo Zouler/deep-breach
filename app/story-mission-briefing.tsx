@@ -39,7 +39,7 @@ export default function StoryMissionBriefingScreen() {
 
   if (!def) {
     return (
-      <ScreenShell scroll backgroundImage={GAME_ASSETS.briefingRoomBackground} backgroundScrimOpacity={0.62} scanlineOverlay>
+      <ScreenShell scroll backgroundImage={GAME_ASSETS.briefingRoomBackground} backgroundScrimOpacity={0.64} scanlineOverlay>
         <Text style={styles.error}>Assignment not found.</Text>
         <PrimaryButton title="Back" variant="ghost" onPress={() => router.back()} />
       </ScreenShell>
@@ -77,7 +77,7 @@ export default function StoryMissionBriefingScreen() {
     <ScreenShell
       scroll={false}
       backgroundImage={GAME_ASSETS.briefingRoomBackground}
-      backgroundScrimOpacity={0.62}
+      backgroundScrimOpacity={0.64}
       scanlineOverlay
     >
       <View style={styles.root}>
@@ -86,12 +86,12 @@ export default function StoryMissionBriefingScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <ClassificationStamp variant="classified" width={120} />
+          <ClassificationStamp variant="classified" width={110} />
           <Text style={styles.kicker}>{b.kicker}</Text>
           <Text style={styles.title}>{b.title}</Text>
           <Text style={styles.subtitle}>{b.subtitle}</Text>
 
-          <PanelCard style={styles.memoCard}>
+          <PanelCard variant="document" style={styles.memoCard}>
             {b.body.map((paragraph, i) =>
               paragraph ? (
                 <Text key={i} style={styles.bodyPara}>
@@ -110,7 +110,7 @@ export default function StoryMissionBriefingScreen() {
           </PanelCard>
 
           {def.objectives.length > 0 ? (
-            <PanelCard style={styles.sectionCard}>
+            <PanelCard variant="document" style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>Objectives</Text>
               {def.objectives.map((o) => (
                 <Text key={o} style={styles.listItem}>
@@ -121,7 +121,7 @@ export default function StoryMissionBriefingScreen() {
           ) : null}
 
           {def.restrictions.length > 0 ? (
-            <PanelCard style={styles.sectionCard}>
+            <PanelCard variant="document" style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>Restrictions</Text>
               {def.restrictions.map((r) => (
                 <Text key={r} style={styles.listItemMuted}>
@@ -132,7 +132,7 @@ export default function StoryMissionBriefingScreen() {
           ) : null}
 
           {isAnalysisMission ? (
-            <PanelCard style={styles.sectionCard}>
+            <PanelCard variant="document" style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>Research findings — contradictory telemetry</Text>
               {FIRST_CONTACT_ANALYSIS_FINDINGS.map((finding) => (
                 <Text key={finding} style={styles.listItemMuted}>
@@ -145,7 +145,7 @@ export default function StoryMissionBriefingScreen() {
           {b.leadLines.map((line) => {
             const portrait = portraitForSpeakerId(line.speakerId);
             return (
-            <PanelCard key={line.speakerId} style={styles.leadCard}>
+            <PanelCard key={line.speakerId} variant="document" style={styles.leadCard}>
               <View style={styles.leadRow}>
                 {portrait ? <PortraitFrame source={portrait} size={56} /> : null}
                 <View style={styles.leadCopy}>
@@ -264,7 +264,6 @@ const styles = StyleSheet.create({
   leadCard: {
     marginBottom: 10,
     borderColor: 'rgba(44, 217, 255, 0.25)',
-    backgroundColor: theme.panelBgSoft,
   },
   leadRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   leadCopy: { flex: 1, minWidth: 0 },

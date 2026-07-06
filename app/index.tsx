@@ -44,7 +44,13 @@ export default function StartScreen() {
         resizeMode="cover"
       >
         <View style={styles.scrim} />
-        <View style={styles.scanlines} pointerEvents="none" />
+        <View style={styles.scanlineWrap} pointerEvents="none">
+          <Image
+            source={GAME_ASSETS.scanlineNoiseOverlay}
+            style={[styles.scanline, { opacity: theme.scanlineOpacity }]}
+            resizeMode="repeat"
+          />
+        </View>
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
           <View style={styles.content}>
             <View style={styles.hero}>
@@ -88,13 +94,10 @@ const styles = StyleSheet.create({
   bg: { flex: 1, width: '100%', height: '100%' },
   scrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(2, 8, 18, 0.78)',
+    backgroundColor: 'rgba(2, 8, 18, 0.74)',
   },
-  scanlines: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: `rgba(34, 211, 238, ${theme.scanlineOpacity})`,
-    opacity: 0.35,
-  },
+  scanlineWrap: { ...StyleSheet.absoluteFillObject },
+  scanline: { width: '100%', height: '100%' },
   safe: { flex: 1 },
   content: {
     flex: 1,
