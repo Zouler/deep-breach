@@ -16,6 +16,7 @@ import { totalRepairSupplyUnits } from '@/game/baseStorage';
 import { isFirstContactAnalysisPending } from '@/game/firstContactAftermath';
 import { isCommandPressurePending } from '@/game/commandPressure';
 import { isAbyssalExpansionModelsPending } from '@/game/abyssalExpansionModels';
+import { isEngineeringStressResponsePending } from '@/game/engineeringStressResponse';
 import { moduleLevel } from '@/game/submarineStats';
 import { formatThreatLabel, threatForHigherIsBetter } from '@/game/threatLevels';
 import { getSubmarineStatus } from '@/game/statusHelpers';
@@ -31,6 +32,7 @@ export default function BaseScreen() {
   const firstContactReviewPending = isFirstContactAnalysisPending(state);
   const commandPressurePending = isCommandPressurePending(state);
   const expansionModelsPending = isAbyssalExpansionModelsPending(state);
+  const engineeringStressPending = isEngineeringStressResponsePending(state);
 
   return (
     <ScreenShell
@@ -93,6 +95,24 @@ export default function BaseScreen() {
               router.push({
                 pathname: '/story-mission-briefing' as never,
                 params: { missionId: 'abyssal_expansion_models' },
+              })
+            }
+          />
+        </PanelCard>
+      ) : null}
+      {engineeringStressPending ? (
+        <PanelCard variant="document" style={styles.consoleCard}>
+          <Text style={styles.cardTitle}>Engineering Stress Response</Text>
+          <Text style={styles.meta}>
+            Chief Engineer reports hull and engine stress beyond nominal models. Declare an
+            engineering posture — no dive authorized.
+          </Text>
+          <PrimaryButton
+            title="Open Engineering Stress Response"
+            onPress={() =>
+              router.push({
+                pathname: '/story-mission-briefing' as never,
+                params: { missionId: 'engineering_stress_response' },
               })
             }
           />

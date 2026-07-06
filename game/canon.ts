@@ -57,6 +57,7 @@ export type SpineEventId =
   | 'growing_ocean_anomaly'
   | 'command_pressure'
   | 'abyssal_expansion_models'
+  | 'engineering_stress_response'
   | 'military_escalation'
   | 'intergalactic_war'
   | 'civilization_collapse'
@@ -76,6 +77,7 @@ export const SPINE_EVENT_ERA: Record<SpineEventId, CanonEra> = {
   growing_ocean_anomaly: 'anomaly_growth',
   command_pressure: 'anomaly_growth',
   abyssal_expansion_models: 'anomaly_growth',
+  engineering_stress_response: 'anomaly_growth',
   military_escalation: 'war',
   intergalactic_war: 'war',
   civilization_collapse: 'collapse',

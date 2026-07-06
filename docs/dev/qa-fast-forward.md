@@ -1,6 +1,6 @@
 # QA Fast-Forward Helper
 
-Internal dev tools for reaching major story states without replaying the full P1.0–P1.8 spine.
+Internal dev tools for reaching major story states without replaying the full P1.0–P1.9 spine.
 
 ## In-app (development builds only)
 
@@ -13,13 +13,13 @@ Open **Settings → Developer / QA**. All controls are gated behind `__DEV__`.
 | **QA: Advance to Growing Ocean monitoring ready** | Through First Contact Analysis; monitoring dive launchable |
 | **QA: Advance to Command Pressure ready** | Growing Ocean monitoring complete; strategic decision pending |
 | **QA: Advance to Abyssal Expansion Models ready** | Command Pressure resolved (controlled observation); model priority pending |
+| **QA: Advance to Engineering Stress Response ready** | Abyssal Expansion Models resolved (current drift); engineering posture pending |
 
 Helpers:
 - Use valid reducer / resolution paths
 - Clear active dive and pending debrief state
-- Do **not** auto-start dives or auto-resolve pending decisions (except Command Pressure auto-resolve on the Expansion Models helper only)
-
-**P1.9 Engineering Stress Response** — helper to be added when P1.9 merges to main.
+- Do **not** auto-start dives
+- Auto-resolve prior decision only where noted (Command Pressure on Expansion Models helper; model priority on Engineering Stress helper)
 
 ## Programmatic (tests)
 
@@ -30,27 +30,18 @@ import {
   advanceQaToMonitoringReady,
   advanceQaToCommandPressureReady,
   advanceQaToAbyssalExpansionModelsReady,
+  advanceQaToEngineeringStressResponseReady,
 } from '@/game/qaProgression';
 
 // or via reducer:
-// reduceGame(state, { type: 'QA_FAST_FORWARD_TO_DEAD_BEACON' })
-// reduceGame(state, { type: 'QA_FAST_FORWARD_TO_RETURN_DIVE' })
-// reduceGame(state, { type: 'QA_FAST_FORWARD_TO_MONITORING' })
-// reduceGame(state, { type: 'QA_FAST_FORWARD_TO_COMMAND_PRESSURE' })
-// reduceGame(state, { type: 'QA_FAST_FORWARD_TO_EXPANSION_MODELS' })
+// reduceGame(state, { type: 'QA_FAST_FORWARD_TO_ENGINEERING_STRESS' })
 ```
 
-## Command Pressure ready (P1.7 testing)
+## Engineering Stress Response ready (P1.9 testing)
 
-1. Settings → **QA: Advance to Command Pressure ready**
-2. Open **Command Pressure** from Mission Select or base hub banner
-3. Select one strategic posture — no dive launches
-
-## Abyssal Expansion Models ready (P1.8 testing)
-
-1. Settings → **QA: Advance to Abyssal Expansion Models ready**
-2. Open **Abyssal Expansion Models** from Mission Select or base hub banner
-3. Prioritize one expansion model — no dive launches
+1. Settings → **QA: Advance to Engineering Stress Response ready**
+2. Open **Engineering Stress Response** from Mission Select or the base hub banner
+3. Select one engineering posture — no dive launches
 
 ## Not for production players
 

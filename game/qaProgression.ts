@@ -1,6 +1,10 @@
 import { REVEAL_LEVEL } from '@/game/canon';
-import { isAbyssalExpansionModelsPending } from '@/game/abyssalExpansionModels';
+import {
+  isAbyssalExpansionModelsPending,
+  resolveAbyssalExpansionModels,
+} from '@/game/abyssalExpansionModels';
 import { isCommandPressurePending, resolveCommandPressure } from '@/game/commandPressure';
+import { isEngineeringStressResponsePending } from '@/game/engineeringStressResponse';
 import { resolveDeadBeaconDataDecision } from '@/game/deadBeaconDecision';
 import { resolveFirstContactAnalysis } from '@/game/firstContactAftermath';
 import { MONITORING_DRIFT_DEPTH_FRACTION } from '@/game/growingOceanAnomaly';
@@ -224,6 +228,30 @@ export function advanceQaToAbyssalExpansionModelsReady(
   }
   if (!isMissionUnlocked(next, 'abyssal_expansion_models')) {
     throw new Error('QA fast-forward failed: Abyssal Expansion Models mission not unlocked');
+  }
+
+  return next;
+}
+
+/**
+ * Dev/QA helper — advances a save to post–P1.8 where Engineering Stress Response
+ * is pending. Resolves Abyssal Expansion Models with current drift; does not pick an engineering posture.
+ */
+export function advanceQaToEngineeringStressResponseReady(
+  state: GameState = createInitialGameState(),
+): GameState {
+  let next = advanceQaToAbyssalExpansionModelsReady(state);
+  next = resolveAbyssalExpansionModels(next, 'prioritize_current_drift');
+  next = clearActiveDiveState(next);
+
+  if (!next.completedSpineEvents.includes('abyssal_expansion_models')) {
+    throw new Error('QA fast-forward failed: Abyssal Expansion Models not complete');
+  }
+  if (!isEngineeringStressResponsePending(next)) {
+    throw new Error('QA fast-forward failed: Engineering Stress Response is not pending');
+  }
+  if (!isMissionUnlocked(next, 'engineering_stress_response')) {
+    throw new Error('QA fast-forward failed: Engineering Stress Response mission not unlocked');
   }
 
   return next;

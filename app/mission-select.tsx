@@ -45,6 +45,11 @@ import {
   commandPressureActionCopy,
   commandPressureLockCopy,
 } from '@/game/commandPressure';
+import {
+  descentAuthorizationLockCopy,
+  engineeringStressResponseActionCopy,
+  engineeringStressResponseLockCopy,
+} from '@/game/engineeringStressResponse';
 import { STORY_MISSION_DEFINITIONS, type MissionDefinition } from '@/data/storyMissions';
 import type { TrialStatus } from '@/types';
 
@@ -97,7 +102,15 @@ function storyMissionBadge(def: MissionDefinition, completed: boolean, locked: b
     if (locked) return { text: 'Locked', style: styles.badgeLocked };
     return { text: 'Analysis required', style: styles.badgeAvailable };
   }
+  if (def.id === 'engineering_stress_response') {
+    if (completed) return { text: 'Completed', style: styles.badgeDone };
+    if (locked) return { text: 'Locked', style: styles.badgeLocked };
+    return { text: 'Engineering review', style: styles.badgeAvailable };
+  }
   if (def.id === 'expansion_model_deployment_hold') {
+    return { text: 'On hold', style: styles.badgeLocked };
+  }
+  if (def.id === 'descent_authorization_hold') {
     return { text: 'On hold', style: styles.badgeLocked };
   }
   if (def.isPlaceholder) return { text: 'Locked', style: styles.badgeLocked };
@@ -133,8 +146,14 @@ function storyMissionAction(
   if (def.id === 'abyssal_expansion_models') {
     return abyssalExpansionModelsActionCopy(state);
   }
+  if (def.id === 'engineering_stress_response') {
+    return engineeringStressResponseActionCopy(state);
+  }
   if (def.id === 'expansion_model_deployment_hold') {
     return 'Deployment threshold not met';
+  }
+  if (def.id === 'descent_authorization_hold') {
+    return 'Deployment profile not yet authorized';
   }
   if (def.isPlaceholder) return 'Authorization requirements not met';
   if (completed) return 'Review briefing';
@@ -309,8 +328,12 @@ export default function MissionSelectScreen() {
                     <Text style={styles.requirement}>{commandPressureLockCopy(state)}</Text>
                   ) : locked && def.id === 'abyssal_expansion_models' ? (
                     <Text style={styles.requirement}>{abyssalExpansionModelsLockCopy(state)}</Text>
+                  ) : locked && def.id === 'engineering_stress_response' ? (
+                    <Text style={styles.requirement}>{engineeringStressResponseLockCopy(state)}</Text>
                   ) : def.id === 'expansion_model_deployment_hold' && !locked ? (
                     <Text style={styles.requirement}>{expansionModelDeploymentLockCopy(state)}</Text>
+                  ) : def.id === 'descent_authorization_hold' && !locked ? (
+                    <Text style={styles.requirement}>{descentAuthorizationLockCopy(state)}</Text>
                   ) : locked && def.id === 'operation_dead_beacon' ? (
                     <Text style={styles.requirement}>
                       Complete Operational Integration and await DBX-03 signal tasking.
@@ -320,7 +343,9 @@ export default function MissionSelectScreen() {
                       Complete prior story requirements to unlock.
                     </Text>
                   ) : null}
-                  {def.isPlaceholder && def.id !== 'expansion_model_deployment_hold' ? (
+                  {def.isPlaceholder &&
+                  def.id !== 'expansion_model_deployment_hold' &&
+                  def.id !== 'descent_authorization_hold' ? (
                     <Text style={styles.requirement}>
                       Hull Reinforcement Mk I authorization required.
                     </Text>

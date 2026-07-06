@@ -114,6 +114,11 @@ export default function SettingsScreen() {
             variant="ghost"
             onPress={() => dispatch({ type: 'QA_FAST_FORWARD_TO_EXPANSION_MODELS' })}
           />
+          <PrimaryButton
+            title="QA: Advance to Engineering Stress Response ready"
+            variant="ghost"
+            onPress={() => dispatch({ type: 'QA_FAST_FORWARD_TO_ENGINEERING_STRESS' })}
+          />
         </PanelCard>
       ) : null}
       <PanelCard>

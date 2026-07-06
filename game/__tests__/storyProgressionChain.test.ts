@@ -4,13 +4,11 @@ import {
   isAbyssalExpansionModelsPending,
   resolveAbyssalExpansionModels,
   STORY_FLAG_MODEL_CURRENT_DRIFT,
-  STORY_FLAG_MODEL_RESONANCE_FIELD,
 } from '@/game/abyssalExpansionModels';
 import {
   canResolveCommandPressure,
   isCommandPressurePending,
   resolveCommandPressure,
-  STORY_FLAG_CONTROLLED_OBSERVATION,
 } from '@/game/commandPressure';
 import {
   canResolveFirstContactAnalysis,
@@ -30,8 +28,16 @@ import { createInitialGameState } from '@/game/initialGame';
 import { reduceGame } from '@/game/gameReducer';
 import { upsertTrialProgress } from '@/game/trialProgression';
 import {
+  canResolveEngineeringStressResponse,
+  isEngineeringStressResponsePending,
+  resolveEngineeringStressResponse,
+  STORY_FLAG_ENGINEERING_OPERATIONAL_LIMITS,
+  STORY_FLAG_ENGINEERING_SHIELDING_REVIEW,
+} from '@/game/engineeringStressResponse';
+import {
   advanceQaToAbyssalExpansionModelsReady,
   advanceQaToCommandPressureReady,
+  advanceQaToEngineeringStressResponseReady,
 } from '@/game/qaProgression';
 import {
   applyStoryDiveResolution,
@@ -278,7 +284,7 @@ describe('story progression chain (P1.5 regression)', () => {
   });
 });
 
-const EXPECTED_SPINE_THROUGH_P1_8: readonly string[] = [
+const EXPECTED_SPINE_THROUGH_P1_9: readonly string[] = [
   'experimental_trials_complete',
   'operational_integration',
   'operation_dead_beacon',
@@ -288,6 +294,7 @@ const EXPECTED_SPINE_THROUGH_P1_8: readonly string[] = [
   'growing_ocean_anomaly',
   'command_pressure',
   'abyssal_expansion_models',
+  'engineering_stress_response',
 ];
 
 function completeGrowingOceanMonitoringViaDive(state: GameState): GameState {
@@ -319,8 +326,8 @@ function completeGrowingOceanMonitoringViaDive(state: GameState): GameState {
   return reduceGame(next, { type: 'RETURN_TO_BASE' });
 }
 
-describe('story progression chain (P1.10 regression through P1.8)', () => {
-  it('simulates full path from new game through Abyssal Expansion Models', () => {
+describe('story progression chain (P1.10 regression through P1.9)', () => {
+  it('simulates full path from new game through Engineering Stress Response', () => {
     let state = createInitialGameState();
 
     state = completeAllTrials(state);
@@ -340,19 +347,19 @@ describe('story progression chain (P1.10 regression through P1.8)', () => {
     expect(isAbyssalExpansionModelsPending(state)).toBe(true);
 
     state = resolveAbyssalExpansionModels(state, 'prioritize_current_drift');
+    expect(isEngineeringStressResponsePending(state)).toBe(true);
 
-    for (const eventId of EXPECTED_SPINE_THROUGH_P1_8) {
+    state = resolveEngineeringStressResponse(state, 'impose_operational_limits');
+
+    for (const eventId of EXPECTED_SPINE_THROUGH_P1_9) {
       expect(state.completedSpineEvents).toContain(eventId);
     }
-    expect(state.completedSpineEvents.filter((e) => e === 'abyssal_expansion_models')).toHaveLength(1);
-    expect(state.storyFlags).toContain(STORY_FLAG_DEAD_BEACON_DATA);
-    expect(state.storyFlags).toContain(STORY_FLAG_HULL_REINFORCEMENT_MK1);
-    expect(state.storyFlags).toContain(STORY_FLAG_FIRST_CONTACT_ANALYSIS);
-    expect(state.storyFlags).toContain(STORY_FLAG_ANOMALY_MONITORING_PREP);
-    expect(state.storyFlags).toContain(STORY_FLAG_CONTROLLED_OBSERVATION);
+    expect(state.completedSpineEvents.filter((e) => e === 'engineering_stress_response')).toHaveLength(1);
     expect(state.storyFlags).toContain(STORY_FLAG_MODEL_CURRENT_DRIFT);
+    expect(state.storyFlags).toContain(STORY_FLAG_ENGINEERING_OPERATIONAL_LIMITS);
     expect(state.completedSpineEvents).not.toContain('military_escalation');
     expect(isMissionUnlocked(state, 'expansion_model_deployment_hold')).toBe(true);
+    expect(isMissionUnlocked(state, 'descent_authorization_hold')).toBe(true);
   });
 
   it('decision phases are idempotent via reducer double-dispatch', () => {
@@ -398,8 +405,15 @@ describe('story progression chain (P1.10 regression through P1.8)', () => {
     expect(canResolveAbyssalExpansionModels(state)).toBe(false);
     expect(state.resources.scrap).toBe(scrapAfterModel);
     expect(state.resources.researchData).toBe(researchAfterModel);
-    expect(state.completedSpineEvents.filter((e) => e === 'command_pressure')).toHaveLength(1);
-    expect(state.completedSpineEvents.filter((e) => e === 'abyssal_expansion_models')).toHaveLength(1);
+
+    state = reduceGame(state, { type: 'RESOLVE_ENGINEERING_STRESS_RESPONSE', choice: 'impose_operational_limits' });
+    const afterFirstEngineering = state;
+    const scrapAfterEngineering = state.resources.scrap;
+    state = reduceGame(state, { type: 'RESOLVE_ENGINEERING_STRESS_RESPONSE', choice: 'authorize_stress_audit' });
+    expect(state).toBe(afterFirstEngineering);
+    expect(canResolveEngineeringStressResponse(state)).toBe(false);
+    expect(state.resources.scrap).toBe(scrapAfterEngineering);
+    expect(state.completedSpineEvents.filter((e) => e === 'engineering_stress_response')).toHaveLength(1);
   });
 
   it('QA helpers produce valid states without duplicate spine entries', () => {
@@ -409,26 +423,30 @@ describe('story progression chain (P1.10 regression through P1.8)', () => {
 
     const expansionReady = advanceQaToAbyssalExpansionModelsReady();
     expect(isAbyssalExpansionModelsPending(expansionReady)).toBe(true);
-    expect(expansionReady.completedSpineEvents).toContain('growing_ocean_anomaly');
-    expect(expansionReady.completedSpineEvents).toContain('command_pressure');
     expect(new Set(expansionReady.completedSpineEvents).size).toBe(
       expansionReady.completedSpineEvents.length,
     );
+
+    const engineeringReady = advanceQaToEngineeringStressResponseReady();
+    expect(isEngineeringStressResponsePending(engineeringReady)).toBe(true);
+    expect(engineeringReady.completedSpineEvents).toContain('abyssal_expansion_models');
+    expect(new Set(engineeringReady.completedSpineEvents).size).toBe(
+      engineeringReady.completedSpineEvents.length,
+    );
   });
 
-  it('save v6 migration remains stable after full P1.8 chain', () => {
-    let state = advanceQaToAbyssalExpansionModelsReady();
-    state = resolveAbyssalExpansionModels(state, 'prioritize_resonance_field');
+  it('save v6 migration remains stable after full P1.9 chain', () => {
+    let state = advanceQaToEngineeringStressResponseReady();
+    state = resolveEngineeringStressResponse(state, 'accelerate_shielding_review');
 
     const migrated = migrateGameState({ ...state, version: 5 } as unknown as GameState);
     expect(migrated).not.toBeNull();
     expect(migrated!.version).toBe(GAME_STATE_VERSION);
-    expect(migrated!.completedSpineEvents).toContain('abyssal_expansion_models');
+    expect(migrated!.completedSpineEvents).toContain('engineering_stress_response');
     expect(migrated!.storyFlags).toEqual(
       expect.arrayContaining([
-        STORY_FLAG_DEAD_BEACON_DATA,
-        STORY_FLAG_CONTROLLED_OBSERVATION,
-        STORY_FLAG_MODEL_RESONANCE_FIELD,
+        STORY_FLAG_MODEL_CURRENT_DRIFT,
+        STORY_FLAG_ENGINEERING_SHIELDING_REVIEW,
       ]),
     );
   });

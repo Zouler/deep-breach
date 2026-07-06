@@ -140,9 +140,14 @@ import {
   resolveCommandPressure,
 } from '@/game/commandPressure';
 import {
+  isEngineeringStressResponseChoice,
+  resolveEngineeringStressResponse,
+} from '@/game/engineeringStressResponse';
+import {
   advanceQaToAbyssalExpansionModelsReady,
   advanceQaToCommandPressureReady,
   advanceQaToDeadBeaconReady,
+  advanceQaToEngineeringStressResponseReady,
   advanceQaToMonitoringReady,
   advanceQaToReturnDiveReady,
 } from '@/game/qaProgression';
@@ -207,11 +212,13 @@ export type GameAction =
   | { type: 'RESOLVE_FIRST_CONTACT_ANALYSIS'; choice: string }
   | { type: 'RESOLVE_COMMAND_PRESSURE'; choice: string }
   | { type: 'RESOLVE_ABYSSAL_EXPANSION_MODELS'; choice: string }
+  | { type: 'RESOLVE_ENGINEERING_STRESS_RESPONSE'; choice: string }
   | { type: 'QA_FAST_FORWARD_TO_DEAD_BEACON' }
   | { type: 'QA_FAST_FORWARD_TO_RETURN_DIVE' }
   | { type: 'QA_FAST_FORWARD_TO_MONITORING' }
   | { type: 'QA_FAST_FORWARD_TO_COMMAND_PRESSURE' }
   | { type: 'QA_FAST_FORWARD_TO_EXPANSION_MODELS' }
+  | { type: 'QA_FAST_FORWARD_TO_ENGINEERING_STRESS' }
   | { type: 'SET_REVEAL_LEVEL'; revealLevel: number }
   | {
       type: 'APPLY_ROBERTS_DELTA';
@@ -1359,6 +1366,12 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       if (next === state) return state;
       return touch(next);
     }
+    case 'RESOLVE_ENGINEERING_STRESS_RESPONSE': {
+      if (!isEngineeringStressResponseChoice(action.choice)) return state;
+      const next = resolveEngineeringStressResponse(state, action.choice);
+      if (next === state) return state;
+      return touch(next);
+    }
     case 'QA_FAST_FORWARD_TO_DEAD_BEACON': {
       try {
         const next = advanceQaToDeadBeaconReady(state);
@@ -1394,6 +1407,14 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
     case 'QA_FAST_FORWARD_TO_EXPANSION_MODELS': {
       try {
         const next = advanceQaToAbyssalExpansionModelsReady(state);
+        return touch(next);
+      } catch {
+        return state;
+      }
+    }
+    case 'QA_FAST_FORWARD_TO_ENGINEERING_STRESS': {
+      try {
+        const next = advanceQaToEngineeringStressResponseReady(state);
         return touch(next);
       } catch {
         return state;
