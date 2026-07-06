@@ -15,6 +15,7 @@ import { useGame } from '@/context/GameContext';
 import { totalRepairSupplyUnits } from '@/game/baseStorage';
 import { isFirstContactAnalysisPending } from '@/game/firstContactAftermath';
 import { isCommandPressurePending } from '@/game/commandPressure';
+import { isAbyssalExpansionModelsPending } from '@/game/abyssalExpansionModels';
 import { moduleLevel } from '@/game/submarineStats';
 import { formatThreatLabel, threatForHigherIsBetter } from '@/game/threatLevels';
 import { getSubmarineStatus } from '@/game/statusHelpers';
@@ -29,6 +30,7 @@ export default function BaseScreen() {
   const hullBand = formatThreatLabel(threatForHigherIsBetter(submarine.hullIntegrityPercent));
   const firstContactReviewPending = isFirstContactAnalysisPending(state);
   const commandPressurePending = isCommandPressurePending(state);
+  const expansionModelsPending = isAbyssalExpansionModelsPending(state);
 
   return (
     <ScreenShell
@@ -73,6 +75,24 @@ export default function BaseScreen() {
               router.push({
                 pathname: '/story-mission-briefing' as never,
                 params: { missionId: 'command_pressure' },
+              })
+            }
+          />
+        </PanelCard>
+      ) : null}
+      {expansionModelsPending ? (
+        <PanelCard variant="document" style={styles.consoleCard}>
+          <Text style={styles.cardTitle}>Abyssal Expansion Models</Text>
+          <Text style={styles.meta}>
+            Research has drafted competing expansion models. Prioritize one hypothesis for the next
+            analysis cycle — no dive authorized.
+          </Text>
+          <PrimaryButton
+            title="Open Expansion Models"
+            onPress={() =>
+              router.push({
+                pathname: '/story-mission-briefing' as never,
+                params: { missionId: 'abyssal_expansion_models' },
               })
             }
           />

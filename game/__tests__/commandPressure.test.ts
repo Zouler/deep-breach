@@ -138,11 +138,11 @@ describe('commandPressure P1.7', () => {
     expect(isCommandPressurePending(state)).toBe(false);
   });
 
-  it('unlocks abyssal expansion review placeholder after resolution', () => {
+  it('unlocks abyssal expansion models after resolution', () => {
     let state = withGrowingOceanComplete(createInitialGameState());
-    expect(isMissionUnlocked(state, 'abyssal_expansion_review')).toBe(false);
+    expect(isMissionUnlocked(state, 'abyssal_expansion_models')).toBe(false);
     state = resolveCommandPressure(state, 'controlled_observation');
-    expect(isMissionUnlocked(state, 'abyssal_expansion_review')).toBe(true);
+    expect(isMissionUnlocked(state, 'abyssal_expansion_models')).toBe(true);
   });
 
   it('save v6 still loads without migration bump', () => {

@@ -132,10 +132,18 @@ import {
   recordGrowingOceanMonitoringScan,
 } from '@/game/growingOceanAnomaly';
 import {
+  isAbyssalExpansionModelChoice,
+  resolveAbyssalExpansionModels,
+} from '@/game/abyssalExpansionModels';
+import {
   isCommandPressureChoice,
   resolveCommandPressure,
 } from '@/game/commandPressure';
-import { advanceQaToCommandPressureReady, advanceQaToMonitoringReady } from '@/game/qaProgression';
+import {
+  advanceQaToAbyssalExpansionModelsReady,
+  advanceQaToCommandPressureReady,
+  advanceQaToMonitoringReady,
+} from '@/game/qaProgression';
 import {
   applyStoryDiveResolution,
   applyStoryMissionCompletion,
@@ -196,8 +204,10 @@ export type GameAction =
   | { type: 'RESOLVE_DEAD_BEACON_DATA_DECISION'; choice: string }
   | { type: 'RESOLVE_FIRST_CONTACT_ANALYSIS'; choice: string }
   | { type: 'RESOLVE_COMMAND_PRESSURE'; choice: string }
+  | { type: 'RESOLVE_ABYSSAL_EXPANSION_MODELS'; choice: string }
   | { type: 'QA_FAST_FORWARD_TO_MONITORING' }
   | { type: 'QA_FAST_FORWARD_TO_COMMAND_PRESSURE' }
+  | { type: 'QA_FAST_FORWARD_TO_EXPANSION_MODELS' }
   | { type: 'SET_REVEAL_LEVEL'; revealLevel: number }
   | {
       type: 'APPLY_ROBERTS_DELTA';
@@ -1339,6 +1349,12 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       if (next === state) return state;
       return touch(next);
     }
+    case 'RESOLVE_ABYSSAL_EXPANSION_MODELS': {
+      if (!isAbyssalExpansionModelChoice(action.choice)) return state;
+      const next = resolveAbyssalExpansionModels(state, action.choice);
+      if (next === state) return state;
+      return touch(next);
+    }
     case 'QA_FAST_FORWARD_TO_MONITORING': {
       try {
         const next = advanceQaToMonitoringReady(state);
@@ -1350,6 +1366,14 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
     case 'QA_FAST_FORWARD_TO_COMMAND_PRESSURE': {
       try {
         const next = advanceQaToCommandPressureReady(state);
+        return touch(next);
+      } catch {
+        return state;
+      }
+    }
+    case 'QA_FAST_FORWARD_TO_EXPANSION_MODELS': {
+      try {
+        const next = advanceQaToAbyssalExpansionModelsReady(state);
         return touch(next);
       } catch {
         return state;

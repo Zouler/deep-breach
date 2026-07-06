@@ -27,6 +27,8 @@ export interface MissionUnlockConditions {
   requireAllTrialsComplete?: boolean;
   /** Story flag ids that must be present (P1.2 grants deadBeaconData, hull_reinforcement_mk1). */
   requiredFlags?: string[];
+  /** At least one listed story flag must be present (P1.8 after strategic response). */
+  requiredAnyFlags?: string[];
 }
 
 export interface MissionRewardStub {
@@ -421,46 +423,107 @@ export const STORY_MISSION_DEFINITIONS: MissionDefinition[] = [
       scrap: 0,
       researchData: 0,
     },
-    nextUnlocks: ['abyssal_expansion_review'],
+    nextUnlocks: ['abyssal_expansion_models'],
   },
   {
-    id: 'abyssal_expansion_review',
-    title: 'Abyssal Expansion Review',
-    subtitle: 'Command modeling · restricted hold',
+    id: 'abyssal_expansion_models',
+    title: 'Abyssal Expansion Models',
+    subtitle: 'Research analysis · competing hypotheses',
+    category: 'story_spine',
+    canonEraRequired: 'anomaly_growth',
+    revealLevelRequired: REVEAL_LEVEL.ANOMALY_GROWTH,
+    spineEventId: 'abyssal_expansion_models',
+    isSpineMission: true,
+    description:
+      'Base-side review of three competing models for how the anomaly footprint may be expanding. None are conclusive — the player prioritizes one for the next analysis cycle.',
+    briefing: {
+      kicker: 'Research Analysis · Expansion Modeling',
+      title: 'Abyssal Expansion Models',
+      subtitle: 'Research Lead · Sensor correlation cell',
+      body: [
+        `Commander ${id.commanderName},`,
+        '',
+        'Passive monitoring and your strategic posture decision have produced enough data for Research to draft competing expansion models. None fit all instruments. None are deployment-ready.',
+        '',
+        'Three internal models are presented below. You must prioritize one for the next analysis cycle. This is not a dive authorization and not a classification decision.',
+        '',
+        'Command expects a clear modeling direction on record. Research expects honesty about uncertainty. Engineering expects survivability constraints in every frame.',
+      ],
+      leadLines: [
+        {
+          speakerId: 'research_lead',
+          text: 'Commander, we can describe the footprint three different ways and fail three different sanity checks. Pick the model we resource first — not the model you believe.',
+        },
+        {
+          speakerId: 'chief_engineer',
+          text: 'Whichever model you prioritize, I need hull-stress projections attached before the next descent is even discussed. The ocean is not waiting for our math.',
+        },
+      ],
+      classification: 'Clearance: RESTRICTED/DBX-07/PHOS · Expansion Modeling',
+    },
+    objectives: [
+      'Review Current Drift, Resonance Field, and Biological Contamination models.',
+      'Prioritize one model for the next analysis cycle.',
+    ],
+    restrictions: [
+      'No dive authorized — base-side analysis priority only.',
+      'No anomaly explanation or organism identification at this stage.',
+    ],
+    successSummary:
+      'Expansion model priority logged. Next analysis cycle weighted accordingly — deployment threshold not met.',
+    failureSummary: 'Model priority deferred — competing hypotheses remain unassigned.',
+    unlockConditions: {
+      requiredSpineEvents: ['command_pressure'],
+      requiredAnyFlags: [
+        'command_escalation',
+        'controlled_observation',
+        'emergency_withdrawal_protocols',
+      ],
+    },
+    rewards: {
+      scrap: 0,
+      researchData: 0,
+    },
+    nextUnlocks: ['expansion_model_deployment_hold'],
+  },
+  {
+    id: 'expansion_model_deployment_hold',
+    title: 'Expansion Model Deployment',
+    subtitle: 'Command threshold · restricted hold',
     category: 'story_spine',
     canonEraRequired: 'anomaly_growth',
     revealLevelRequired: REVEAL_LEVEL.ANOMALY_GROWTH,
     isSpineMission: true,
     isPlaceholder: true,
     description:
-      'DBX Program Command is reviewing abyssal expansion models derived from passive monitoring. Tasking remains on restricted hold.',
+      'Model confidence remains below deployment threshold. Command has not authorized operational deployment of any expansion model.',
     briefing: {
-      kicker: 'Operational Hold · Command Review',
-      title: 'Abyssal Expansion Review',
-      subtitle: 'DBX Program Command · modeling cell',
+      kicker: 'Operational Hold · Model Deployment',
+      title: 'Expansion Model Deployment',
+      subtitle: 'DBX Program Command · threshold review',
       body: [
         `Commander ${id.commanderName},`,
         '',
-        'Your strategic posture decision has been logged. DBX Program Command is now reviewing abyssal expansion models against the monitoring package.',
+        'Your model priority has been logged. Research continues correlation work under the selected hypothesis weighting.',
         '',
-        'No further dive authorization has been issued. Sensor watch continues under restricted classification. Research and Engineering remain on standby pending Command disposition.',
+        'Model confidence remains below deployment threshold. Command has not authorized field deployment of any expansion model or derivative tasking.',
         '',
-        'This assignment remains locked until Command completes its review cycle.',
+        'DBX-07 holds position under restricted watch. No further operational launch has been issued.',
       ],
       leadLines: [
         {
           speakerId: 'xo',
-          text: 'Command is treating the models as sensitive — not shareable at DBX-07 clearance. We hold position and maintain watch. No tasking yet.',
+          text: 'Command is treating deployment as a threshold problem — not a narrative problem. We wait for confidence metrics we do not yet have.',
         },
       ],
-      classification: 'Clearance: RESTRICTED/DBX-07/PHOS · Modeling Hold',
+      classification: 'Clearance: RESTRICTED/DBX-07/PHOS · Deployment Hold',
     },
-    objectives: ['Await Command review of abyssal expansion models.'],
+    objectives: ['Await Command threshold review for expansion model deployment.'],
     restrictions: ['No dive or operational launch authorized at this stage.'],
-    successSummary: 'Command review pending — tasking not yet issued.',
-    failureSummary: 'Review cycle incomplete.',
+    successSummary: 'Deployment hold active — threshold review pending.',
+    failureSummary: 'Threshold review incomplete.',
     unlockConditions: {
-      requiredSpineEvents: ['command_pressure'],
+      requiredSpineEvents: ['abyssal_expansion_models'],
     },
     rewards: {
       scrap: 0,

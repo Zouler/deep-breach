@@ -1,5 +1,6 @@
 import { REVEAL_LEVEL } from '@/game/canon';
-import { isCommandPressurePending } from '@/game/commandPressure';
+import { isAbyssalExpansionModelsPending } from '@/game/abyssalExpansionModels';
+import { isCommandPressurePending, resolveCommandPressure } from '@/game/commandPressure';
 import { resolveDeadBeaconDataDecision } from '@/game/deadBeaconDecision';
 import { resolveFirstContactAnalysis } from '@/game/firstContactAftermath';
 import { MONITORING_DRIFT_DEPTH_FRACTION } from '@/game/growingOceanAnomaly';
@@ -164,6 +165,35 @@ export function advanceQaToCommandPressureReady(state: GameState = createInitial
   }
   if (!isMissionUnlocked(next, 'command_pressure')) {
     throw new Error('QA fast-forward failed: Command Pressure mission not unlocked');
+  }
+
+  return next;
+}
+
+/**
+ * Dev/QA helper — advances a save to post–P1.7 where Abyssal Expansion Models analysis
+ * is pending. Resolves Command Pressure with controlled observation; does not pick a model.
+ */
+export function advanceQaToAbyssalExpansionModelsReady(
+  state: GameState = createInitialGameState(),
+): GameState {
+  let next = advanceQaToCommandPressureReady(state);
+  next = resolveCommandPressure(next, 'controlled_observation');
+  next = {
+    ...next,
+    dive: null,
+    lastMissionOutcome: null,
+    pendingOfflineReport: null,
+  };
+
+  if (!next.completedSpineEvents.includes('command_pressure')) {
+    throw new Error('QA fast-forward failed: Command Pressure not complete');
+  }
+  if (!isAbyssalExpansionModelsPending(next)) {
+    throw new Error('QA fast-forward failed: Abyssal Expansion Models is not pending');
+  }
+  if (!isMissionUnlocked(next, 'abyssal_expansion_models')) {
+    throw new Error('QA fast-forward failed: Abyssal Expansion Models mission not unlocked');
   }
 
   return next;

@@ -20,6 +20,14 @@ import {
   type FirstContactAnalysisChoice,
 } from '@/game/firstContactAftermath';
 import {
+  ABYSSAL_EXPANSION_MODEL_BRIEFS,
+  ABYSSAL_EXPANSION_MODEL_OPTIONS,
+  isAbyssalExpansionModelsPending,
+  MODEL_DEPLOYMENT_THRESHOLD_COPY,
+  strategicPostureFlavorForState,
+  type AbyssalExpansionModelChoice,
+} from '@/game/abyssalExpansionModels';
+import {
   COMMAND_PRESSURE_OPTIONS,
   isCommandPressurePending,
   type CommandPressureChoice,
@@ -57,8 +65,11 @@ export default function StoryMissionBriefingScreen() {
   const analysisPending = isFirstContactAnalysisPending(state);
   const analysisResolved = hasStoryFlag(state, STORY_FLAG_FIRST_CONTACT_ANALYSIS);
   const commandPressurePending = isCommandPressureMission && isCommandPressurePending(state);
-  const commandPressureResolved =
-    isCommandPressureMission && state.completedSpineEvents.includes('command_pressure');
+  const isExpansionModelsMission = def.id === 'abyssal_expansion_models';
+  const expansionModelsPending = isExpansionModelsMission && isAbyssalExpansionModelsPending(state);
+  const expansionModelsResolved =
+    isExpansionModelsMission && state.completedSpineEvents.includes('abyssal_expansion_models');
+  const postureFlavor = isExpansionModelsMission ? strategicPostureFlavorForState(state) : null;
 
   const onAnalysisDecision = (choice: FirstContactAnalysisChoice) => {
     if (!analysisPending) return;
@@ -66,9 +77,18 @@ export default function StoryMissionBriefingScreen() {
     router.replace('/mission-select');
   };
 
+  const commandPressureResolved =
+    isCommandPressureMission && state.completedSpineEvents.includes('command_pressure');
+
   const onCommandPressureDecision = (choice: CommandPressureChoice) => {
     if (!commandPressurePending) return;
     dispatch({ type: 'RESOLVE_COMMAND_PRESSURE', choice });
+    router.replace('/mission-select');
+  };
+
+  const onExpansionModelsDecision = (choice: AbyssalExpansionModelChoice) => {
+    if (!expansionModelsPending) return;
+    dispatch({ type: 'RESOLVE_ABYSSAL_EXPANSION_MODELS', choice });
     router.replace('/mission-select');
   };
   const isDiveAssignment = def.isDiveMission === true;
@@ -123,6 +143,24 @@ export default function StoryMissionBriefingScreen() {
               </>
             ) : null}
           </PanelCard>
+
+          {isExpansionModelsMission && postureFlavor ? (
+            <PanelCard variant="document" style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>Strategic posture context</Text>
+              <Text style={styles.listItemMuted}>{postureFlavor.briefingLine}</Text>
+            </PanelCard>
+          ) : null}
+
+          {isExpansionModelsMission ? (
+            <PanelCard variant="document" style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>Competing expansion models</Text>
+              {ABYSSAL_EXPANSION_MODEL_BRIEFS.map((brief) => (
+                <Text key={brief} style={styles.listItemMuted}>
+                  • {brief}
+                </Text>
+              ))}
+            </PanelCard>
+          ) : null}
 
           {def.objectives.length > 0 ? (
             <PanelCard variant="document" style={styles.sectionCard}>
@@ -182,10 +220,8 @@ export default function StoryMissionBriefingScreen() {
           {def.id === 'growing_ocean_anomaly_prep' && !unlocked && !completed ? (
             <Text style={styles.placeholderNote}>{growingOceanMissionLockCopy(state)}</Text>
           ) : null}
-          {def.id === 'abyssal_expansion_review' ? (
-            <Text style={styles.placeholderNote}>
-              Command is reviewing abyssal expansion models. Tasking remains on restricted hold.
-            </Text>
+          {def.id === 'expansion_model_deployment_hold' ? (
+            <Text style={styles.placeholderNote}>{MODEL_DEPLOYMENT_THRESHOLD_COPY}</Text>
           ) : null}
           {isAnalysisMission && analysisResolved ? (
             <Text style={styles.resolvedNote}>
@@ -227,9 +263,24 @@ export default function StoryMissionBriefingScreen() {
               ))}
               <PrimaryButton title="Back to schedule" variant="ghost" onPress={() => router.back()} />
             </>
+          ) : isExpansionModelsMission && expansionModelsPending && unlocked ? (
+            <>
+              <Text style={styles.lockedHint}>
+                Prioritize one model for the next analysis cycle. None are deployment-ready.
+              </Text>
+              {ABYSSAL_EXPANSION_MODEL_OPTIONS.map((option) => (
+                <PrimaryButton
+                  key={option.id}
+                  title={option.label}
+                  variant="ghost"
+                  onPress={() => onExpansionModelsDecision(option.id)}
+                />
+              ))}
+              <PrimaryButton title="Back to schedule" variant="ghost" onPress={() => router.back()} />
+            </>
           ) : def.isPlaceholder ? (
             <PrimaryButton title="Return to schedule" variant="ghost" onPress={() => router.back()} />
-          ) : completed || commandPressureResolved ? (
+          ) : completed || commandPressureResolved || expansionModelsResolved ? (
             <PrimaryButton title="Back to schedule" variant="ghost" onPress={() => router.back()} />
           ) : unlocked && isDiveAssignment ? (
             <>
