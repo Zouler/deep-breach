@@ -45,6 +45,8 @@ export interface MissionDefinition {
   revealLevelRequired: RevealLevel;
   /** Primary spine event recorded when this assignment is completed. */
   spineEventId?: SpineEventId;
+  /** When set, mission is complete when this story flag is present (P1.4 analysis). */
+  completionFlag?: string;
   isSpineMission: boolean;
   /** When true, shown as locked placeholder with no dive gameplay. */
   isPlaceholder?: boolean;
@@ -240,6 +242,108 @@ export const STORY_MISSION_DEFINITIONS: MissionDefinition[] = [
     rewards: {
       scrap: 55,
       researchData: 40,
+    },
+    nextUnlocks: ['first_contact_analysis'],
+  },
+  {
+    id: 'first_contact_analysis',
+    title: 'First Contact Analysis',
+    subtitle: 'Command review · restricted telemetry',
+    category: 'story_spine',
+    canonEraRequired: 'dead_beacon',
+    revealLevelRequired: REVEAL_LEVEL.ANOMALY_CONFIRMED,
+    completionFlag: 'first_contact_analysis',
+    isSpineMission: true,
+    description:
+      'Base-side review of contradictory first-contact telemetry from the DBX-03 loss zone. Command and Research await authorization for the next preparation step.',
+    briefing: {
+      kicker: 'Command Review · Post-First Contact',
+      title: 'First Contact Analysis',
+      subtitle: 'DBX Program Command · Research liaison',
+      body: [
+        `Commander ${id.commanderName},`,
+        '',
+        'DBX-07 has returned from controlled site verification with a restricted contact dataset. The readings confirm an unexplained phenomenon — not a sensor fault, not a recoverable wreck signature, and not explainable under current models.',
+        '',
+        'Research has compiled five primary findings from the telemetry. Each contradicts adjacent instruments or known physics. Command has not issued a formal classification beyond RESTRICTED/DBX-07/PHOS.',
+        '',
+        'Your authorization is required before Research, Command, or Sensor can proceed to the next preparation phase. No further dive is authorized at this stage.',
+      ],
+      leadLines: [
+        {
+          speakerId: 'research_lead',
+          text: 'Commander, I will not call this an anomaly in the official record until we understand the error budget — but the error budget is what failed. The ocean is doing something our models cannot absorb.',
+        },
+        {
+          speakerId: 'xo',
+          text: 'Command is treating this as first contact with an unknown physical effect. They want a disposition decision, not speculation. Recommend we authorize one clear next step and keep the crew off rumor channels.',
+        },
+      ],
+      classification: 'Clearance: RESTRICTED/DBX-07/PHOS · First Contact Review',
+    },
+    objectives: [
+      'Review contradictory first-contact sensor findings.',
+      'Authorize Research analysis, Command reporting, or monitoring preparation.',
+    ],
+    restrictions: [
+      'No dive authorized — base-side analysis and disposition only.',
+      'Full anomaly explanation not available at this stage.',
+    ],
+    successSummary:
+      'First contact analysis authorized. Passive monitoring preparation logged; Growing Ocean Anomaly tasking pending.',
+    failureSummary: 'Analysis deferred — first contact data remains in restricted hold.',
+    unlockConditions: {
+      requiredSpineEvents: ['first_anomaly_contact', 'return_to_dbx03_site'],
+    },
+    rewards: {
+      scrap: 0,
+      researchData: 0,
+      flags: ['first_contact_analysis', 'anomaly_monitoring_prep'],
+    },
+    nextUnlocks: ['growing_ocean_anomaly_prep'],
+  },
+  {
+    id: 'growing_ocean_anomaly_prep',
+    title: 'Growing Ocean Anomaly',
+    subtitle: 'Strategic monitoring · preparation phase',
+    category: 'story_spine',
+    canonEraRequired: 'anomaly_growth',
+    revealLevelRequired: REVEAL_LEVEL.ANOMALY_GROWTH,
+    isSpineMission: true,
+    isPlaceholder: true,
+    description:
+      'Research and Command are preparing passive monitoring of an active, expanding ocean phenomenon. Full tasking is not yet authorized.',
+    briefing: {
+      kicker: 'Operational Assignment · Preparation',
+      title: 'Growing Ocean Anomaly',
+      subtitle: 'Passive watch · strategic assessment pending',
+      body: [
+        `Commander ${id.commanderName},`,
+        '',
+        'Following first contact analysis, DBX Program Command has acknowledged that the phenomenon near the DBX-03 sector exhibits signs of active influence beyond the immediate contact zone.',
+        '',
+        'Passive monitoring parameters are being drafted. Research notes expanding interference footprints in archived satellite gravimetry — preliminary, unverified, and insufficient for operational tasking.',
+        '',
+        'Full Growing Ocean Anomaly operations remain locked pending Command authorization. Stand by.',
+      ],
+      leadLines: [
+        {
+          speakerId: 'research_lead',
+          text: 'The footprint may be growing. I stress may — we do not have enough baselines. Command will not let us say more until the monitoring protocol is live.',
+        },
+      ],
+      classification: 'Clearance: Strategic Prep · DBX Program',
+    },
+    objectives: ['Await Command authorization for Growing Ocean Anomaly tasking.'],
+    restrictions: ['Placeholder — no playable mission at this stage.'],
+    successSummary: 'Not yet available.',
+    failureSummary: 'Not yet available.',
+    unlockConditions: {
+      requiredFlags: ['anomaly_monitoring_prep'],
+    },
+    rewards: {
+      scrap: 0,
+      researchData: 0,
     },
     nextUnlocks: [],
   },

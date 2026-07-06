@@ -49,7 +49,9 @@ export function getMissionDefinition(missionId: string): MissionDefinition | und
 
 export function isStoryMissionCompleted(state: GameState, missionId: string): boolean {
   const def = getMissionDefinition(missionId);
-  if (!def?.spineEventId) return false;
+  if (!def) return false;
+  if (def.completionFlag) return hasStoryFlag(state, def.completionFlag);
+  if (!def.spineEventId) return false;
   return hasCompletedSpineEvent(state, def.spineEventId);
 }
 
