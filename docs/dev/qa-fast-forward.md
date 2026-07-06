@@ -17,23 +17,33 @@ This action:
 ## Programmatic (tests)
 
 ```typescript
-import { advanceQaToMonitoringReady, advanceQaToCommandPressureReady } from '@/game/qaProgression';
+import { advanceQaToMonitoringReady, advanceQaToCommandPressureReady, advanceQaToAbyssalExpansionModelsReady } from '@/game/qaProgression';
 
 const monitoringReady = advanceQaToMonitoringReady();
 // or: reduceGame(state, { type: 'QA_FAST_FORWARD_TO_MONITORING' })
 
 const commandPressureReady = advanceQaToCommandPressureReady();
 // or: reduceGame(state, { type: 'QA_FAST_FORWARD_TO_COMMAND_PRESSURE' })
+
+const expansionModelsReady = advanceQaToAbyssalExpansionModelsReady();
+// or: reduceGame(state, { type: 'QA_FAST_FORWARD_TO_EXPANSION_MODELS' })
 ```
 
 ## Command Pressure ready (P1.7 testing)
 
 1. Open **Settings**.
-2. Under **Developer / QA**, tap **QA: Advance to Command Pressure ready**.
-3. Open **Mission Select → Operational assignments → Command Pressure** (or use the base hub banner).
+2. Tap **QA: Advance to Command Pressure ready**.
+3. Open **Command Pressure** from Mission Select or the base hub banner.
 4. Select one strategic posture — no dive launches.
 
-This action completes Growing Ocean monitoring via valid reducer paths and leaves the strategic decision pending.
+## Abyssal Expansion Models ready (P1.8 testing)
+
+1. Open **Settings**.
+2. Under **Developer / QA**, tap **QA: Advance to Abyssal Expansion Models ready**.
+3. Open **Mission Select → Operational assignments → Abyssal Expansion Models** (or use the base hub banner).
+4. Prioritize one expansion model — no dive launches.
+
+This action completes Command Pressure (controlled observation) and leaves the model priority decision pending.
 
 ## Not for production players
 

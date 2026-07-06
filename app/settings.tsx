@@ -97,6 +97,11 @@ export default function SettingsScreen() {
             variant="ghost"
             onPress={() => dispatch({ type: 'QA_FAST_FORWARD_TO_COMMAND_PRESSURE' })}
           />
+          <PrimaryButton
+            title="QA: Advance to Abyssal Expansion Models ready"
+            variant="ghost"
+            onPress={() => dispatch({ type: 'QA_FAST_FORWARD_TO_EXPANSION_MODELS' })}
+          />
         </PanelCard>
       ) : null}
       <PanelCard>

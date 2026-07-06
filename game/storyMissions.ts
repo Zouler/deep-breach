@@ -78,6 +78,12 @@ function meetsUnlockConditions(state: GameState, def: MissionDefinition): boolea
   if (cond.requiredFlags?.some((flag) => !stateHasStoryFlag(state, flag))) {
     return false;
   }
+  if (
+    cond.requiredAnyFlags?.length &&
+    !cond.requiredAnyFlags.some((flag) => stateHasStoryFlag(state, flag))
+  ) {
+    return false;
+  }
   return true;
 }
 
