@@ -21,6 +21,7 @@ import {
 import { withSyncedLegacyEconomy } from '@/game/baseStorage';
 import { hasStoryFlag as hasStoryFlagFromState } from '@/game/deadBeaconDecision';
 import { buildAnomalyContactDebrief } from '@/game/anomalyContact';
+import { buildGrowingOceanMonitoringDebrief } from '@/game/growingOceanAnomaly';
 import { isStoryDiveReconSuccessful } from '@/game/storyMissionObjectives';
 import { withStoryBeat } from '@/game/storyBeats';
 import { applyRobertsUpdate } from '@/game/roberts';
@@ -172,6 +173,8 @@ const DEAD_BEACON_COMPLETION_SCRAP = 45;
 const DEAD_BEACON_COMPLETION_RESEARCH = 25;
 const RETURN_CONTACT_COMPLETION_SCRAP = 55;
 const RETURN_CONTACT_COMPLETION_RESEARCH = 40;
+const GROWING_OCEAN_COMPLETION_SCRAP = 35;
+const GROWING_OCEAN_COMPLETION_RESEARCH = 55;
 
 /**
  * Apply story dive resolution after terminal outcome is recorded.
@@ -254,6 +257,46 @@ export function applyStoryDiveResolution(
         title: 'Return to DBX-03 Site — first contact logged',
         summaryText:
           'Controlled return dive complete. Command confirms contact with an unexplained phenomenon; sensor data remains contradictory and restricted.',
+        speakerId: 'research_lead',
+        missionId: assignmentId,
+        diveStartedAt: dive.startedAt,
+      });
+    }
+  }
+
+  if (assignmentId === 'growing_ocean_anomaly_prep') {
+    const monitoring = buildGrowingOceanMonitoringDebrief(dive);
+    debrief = {
+      reconComplete: false,
+      headline: monitoring.headline,
+      summaryLine: monitoring.summaryLine,
+      monitoringComplete: monitoring.monitoringComplete,
+    };
+    if (monitoring.monitoringComplete && def.spineEventId) {
+      next = completeSpineEventIfValid(next, def.spineEventId);
+      next = {
+        ...withSyncedLegacyEconomy({
+          ...next,
+          baseStorage: {
+            ...next.baseStorage,
+            scrap: next.baseStorage.scrap + GROWING_OCEAN_COMPLETION_SCRAP,
+            researchData: next.baseStorage.researchData + GROWING_OCEAN_COMPLETION_RESEARCH,
+          },
+        }),
+      };
+      next = {
+        ...next,
+        roberts: applyRobertsUpdate(next.roberts, {
+          delta: { stress: 2, obsession: 1, commandReputation: 1 },
+          stance: 'cautious',
+        }),
+      };
+      next = withStoryBeat(next, {
+        type: 'mission_complete',
+        importance: 'high',
+        title: 'Growing Ocean Anomaly — monitoring logged',
+        summaryText:
+          'Passive monitoring dive complete. Command confirms the phenomenon is recurring outside the DBX-03 zone. Research reports repeatable sensor drift without classification.',
         speakerId: 'research_lead',
         missionId: assignmentId,
         diveStartedAt: dive.startedAt,

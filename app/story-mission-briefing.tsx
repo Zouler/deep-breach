@@ -12,11 +12,11 @@ import { returnMissionLockCopy, hasStoryFlag } from '@/game/deadBeaconDecision';
 import {
   FIRST_CONTACT_ANALYSIS_FINDINGS,
   FIRST_CONTACT_ANALYSIS_OPTIONS,
-  growingOceanPlaceholderCopy,
   isFirstContactAnalysisPending,
   STORY_FLAG_FIRST_CONTACT_ANALYSIS,
   type FirstContactAnalysisChoice,
 } from '@/game/firstContactAftermath';
+import { growingOceanMissionLockCopy } from '@/game/growingOceanAnomaly';
 import { getMissionDefinition, isMissionUnlocked, isStoryMissionCompleted } from '@/game/storyMissions';
 
 function speakerLabel(speakerId: string): string {
@@ -44,7 +44,6 @@ export default function StoryMissionBriefingScreen() {
 
   const b = def.briefing;
   const isAnalysisMission = def.id === 'first_contact_analysis';
-  const isGrowingOceanPlaceholder = def.id === 'growing_ocean_anomaly_prep';
   const analysisPending = isFirstContactAnalysisPending(state);
   const analysisResolved = hasStoryFlag(state, STORY_FLAG_FIRST_CONTACT_ANALYSIS);
 
@@ -144,10 +143,11 @@ export default function StoryMissionBriefingScreen() {
             <Text style={styles.placeholderNote}>
               {def.id === 'operation_dead_beacon_return'
                 ? returnMissionLockCopy(state)
-                : isGrowingOceanPlaceholder
-                  ? growingOceanPlaceholderCopy(state)
-                  : 'This operation remains locked. Hull Reinforcement Mk I is required before launch.'}
+                : 'This operation remains locked. Hull Reinforcement Mk I is required before launch.'}
             </Text>
+          ) : null}
+          {def.id === 'growing_ocean_anomaly_prep' && !unlocked && !completed ? (
+            <Text style={styles.placeholderNote}>{growingOceanMissionLockCopy(state)}</Text>
           ) : null}
           {isAnalysisMission && analysisResolved ? (
             <Text style={styles.resolvedNote}>
@@ -185,7 +185,13 @@ export default function StoryMissionBriefingScreen() {
                 <Text style={styles.lockedHint}>Debrief pending — review the last run before launching.</Text>
               ) : null}
               <PrimaryButton
-                title={def.id === 'operation_dead_beacon_return' ? 'Launch return dive' : 'Launch recon'}
+                title={
+                  def.id === 'operation_dead_beacon_return'
+                    ? 'Launch return dive'
+                    : def.id === 'growing_ocean_anomaly_prep'
+                      ? 'Launch monitoring dive'
+                      : 'Launch recon'
+                }
                 onPress={onLaunchRecon}
                 disabled={activeBlocking || debriefBlocking}
               />

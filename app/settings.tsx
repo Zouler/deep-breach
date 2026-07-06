@@ -79,6 +79,20 @@ export default function SettingsScreen() {
         <Text style={styles.small}>Review XO-style operational summaries without raw event dumps.</Text>
         <PrimaryButton title="Captain’s Log" variant="ghost" onPress={() => router.push('/captains-log')} />
       </PanelCard>
+      {__DEV__ ? (
+        <PanelCard>
+          <Text style={styles.label}>Developer / QA</Text>
+          <Text style={styles.small}>
+            Fast-forward the save to post–First Contact Analysis (Growing Ocean monitoring ready).
+            Does not start a dive. For internal testing only — not part of normal gameplay.
+          </Text>
+          <PrimaryButton
+            title="QA: Advance to Growing Ocean monitoring ready"
+            variant="ghost"
+            onPress={() => dispatch({ type: 'QA_FAST_FORWARD_TO_MONITORING' })}
+          />
+        </PanelCard>
+      ) : null}
       <PanelCard>
         <Text style={styles.label}>Danger zone</Text>
         <Text style={styles.small}>

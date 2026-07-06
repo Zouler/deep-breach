@@ -128,6 +128,11 @@ import {
   recordAnomalyContactScan,
 } from '@/game/anomalyContact';
 import {
+  applyGrowingOceanMonitoringTick,
+  recordGrowingOceanMonitoringScan,
+} from '@/game/growingOceanAnomaly';
+import { advanceQaToMonitoringReady } from '@/game/qaProgression';
+import {
   applyStoryDiveResolution,
   applyStoryMissionCompletion,
   canStartStoryDiveMission,
@@ -186,6 +191,7 @@ export type GameAction =
   | { type: 'COMPLETE_STORY_MISSION'; missionId: string }
   | { type: 'RESOLVE_DEAD_BEACON_DATA_DECISION'; choice: string }
   | { type: 'RESOLVE_FIRST_CONTACT_ANALYSIS'; choice: string }
+  | { type: 'QA_FAST_FORWARD_TO_MONITORING' }
   | { type: 'SET_REVEAL_LEVEL'; revealLevel: number }
   | {
       type: 'APPLY_ROBERTS_DELTA';
@@ -509,6 +515,12 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         roomContext: roomContextFromGameState(state),
       });
       nextDive = applyAnomalyContactTick({
+        dive: nextDive,
+        mission,
+        deltaMs: action.deltaMs,
+        now: action.now,
+      });
+      nextDive = applyGrowingOceanMonitoringTick({
         dive: nextDive,
         mission,
         deltaMs: action.deltaMs,
@@ -988,6 +1000,7 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         scansPerformed: d0.scansPerformed + 1,
       };
       nextDive = recordAnomalyContactScan(nextDive);
+      nextDive = recordGrowingOceanMonitoringScan(nextDive);
       if (result.kind === 'found') {
         nextDive = {
           ...nextDive,
@@ -1313,6 +1326,14 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       const next = resolveFirstContactAnalysis(state, action.choice);
       if (next === state) return state;
       return touch(next);
+    }
+    case 'QA_FAST_FORWARD_TO_MONITORING': {
+      try {
+        const next = advanceQaToMonitoringReady(state);
+        return touch(next);
+      } catch {
+        return state;
+      }
     }
     case 'SET_REVEAL_LEVEL': {
       const revealLevel = clampRevealLevelForEra(state.canonEra, action.revealLevel);

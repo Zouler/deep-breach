@@ -161,7 +161,7 @@ describe('firstContactAftermath P1.4', () => {
     }
   });
 
-  it('unlocks growing ocean placeholder after resolution', () => {
+  it('unlocks growing ocean monitoring after resolution', () => {
     let state = withP13Complete(createInitialGameState());
     expect(isMissionUnlocked(state, 'growing_ocean_anomaly_prep')).toBe(false);
     state = resolveFirstContactAnalysis(state, 'forward_to_command');

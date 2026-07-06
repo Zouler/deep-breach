@@ -204,6 +204,11 @@ export default function MissionResultScreen() {
               the next preparation step.
             </Text>
           ) : null}
+          {outcome.storyDebrief.monitoringComplete ? (
+            <Text style={[styles.line, styles.unlockLine, { marginTop: 8 }]}>
+              Passive monitoring logged — phenomenon confirmed recurring outside DBX-03 zone.
+            </Text>
+          ) : null}
           {dataDecisionResolved && outcome.storyDebrief.dataDecisionHeadline ? (
             <>
               <Text style={[styles.line, styles.unlockLine, { marginTop: 10 }]}>

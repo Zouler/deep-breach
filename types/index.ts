@@ -420,6 +420,14 @@ export interface DiveSession {
   anomalyContactScans?: number;
   /** First anomaly contact event logged this dive. */
   anomalyFirstContactLogged?: boolean;
+  /** P1.6 monitoring dive — signal drift window active. */
+  monitoringDriftActive?: boolean;
+  /** Baseline scans in the monitoring zone before drift. */
+  monitoringBaselineScans?: number;
+  /** Scans performed after monitoring drift began. */
+  monitoringDriftScans?: number;
+  /** Signal drift start event logged this dive. */
+  monitoringDriftLogged?: boolean;
 }
 
 export interface MissionOutcome {

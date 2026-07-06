@@ -183,6 +183,10 @@ export function createDiveSessionForMission(
     anomalyInterferenceActive: false,
     anomalyContactScans: 0,
     anomalyFirstContactLogged: false,
+    monitoringDriftActive: false,
+    monitoringBaselineScans: 0,
+    monitoringDriftScans: 0,
+    monitoringDriftLogged: false,
   };
   return initializePacingGaps(base, mission);
 }

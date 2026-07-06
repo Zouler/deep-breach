@@ -30,8 +30,11 @@ import { returnMissionActionCopy, returnMissionLockCopy } from '@/game/deadBeaco
 import {
   firstContactAnalysisActionCopy,
   firstContactAnalysisLockCopy,
-  growingOceanPlaceholderCopy,
 } from '@/game/firstContactAftermath';
+import {
+  growingOceanMissionActionCopy,
+  growingOceanMissionLockCopy,
+} from '@/game/growingOceanAnomaly';
 import { STORY_MISSION_DEFINITIONS, type MissionDefinition } from '@/data/storyMissions';
 import type { TrialStatus } from '@/types';
 
@@ -70,8 +73,9 @@ function actionLabel(status: TrialStatus, isExperimental: boolean): string {
 
 function storyMissionBadge(def: MissionDefinition, completed: boolean, locked: boolean) {
   if (def.id === 'growing_ocean_anomaly_prep') {
+    if (completed) return { text: 'Completed', style: styles.badgeDone };
     if (locked) return { text: 'Locked', style: styles.badgeLocked };
-    return { text: 'Preparation', style: styles.badgeProgress };
+    return { text: 'Available', style: styles.badgeAvailable };
   }
   if (def.isPlaceholder) return { text: 'Locked', style: styles.badgeLocked };
   if (completed) return { text: 'Completed', style: styles.badgeDone };
@@ -96,7 +100,9 @@ function storyMissionAction(
     return firstContactAnalysisActionCopy(state);
   }
   if (def.id === 'growing_ocean_anomaly_prep') {
-    return 'View preparation status';
+    if (completed) return 'Review briefing';
+    if (locked) return growingOceanMissionActionCopy(state);
+    return 'Launch monitoring dive';
   }
   if (def.isPlaceholder) return 'Requirements not met';
   if (completed) return 'Review briefing';
@@ -253,6 +259,8 @@ export default function MissionSelectScreen() {
                     <Text style={styles.requirement}>{returnMissionLockCopy(state)}</Text>
                   ) : locked && def.id === 'first_contact_analysis' ? (
                     <Text style={styles.requirement}>{firstContactAnalysisLockCopy(state)}</Text>
+                  ) : locked && def.id === 'growing_ocean_anomaly_prep' ? (
+                    <Text style={styles.requirement}>{growingOceanMissionLockCopy(state)}</Text>
                   ) : locked && def.id === 'operation_dead_beacon' ? (
                     <Text style={styles.requirement}>
                       Complete Operational Integration and await DBX-03 signal tasking.
@@ -262,9 +270,7 @@ export default function MissionSelectScreen() {
                       Complete prior story requirements to unlock.
                     </Text>
                   ) : null}
-                  {def.isPlaceholder && def.id === 'growing_ocean_anomaly_prep' ? (
-                    <Text style={styles.requirement}>{growingOceanPlaceholderCopy(state)}</Text>
-                  ) : def.isPlaceholder ? (
+                  {def.isPlaceholder ? (
                     <Text style={styles.requirement}>
                       Hull Reinforcement Mk I authorization required.
                     </Text>
