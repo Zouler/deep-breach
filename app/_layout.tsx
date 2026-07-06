@@ -61,7 +61,7 @@ export default function RootLayout() {
           screenOptions={{
             headerStyle: { backgroundColor: theme.bgElevated },
             headerTintColor: theme.text,
-            headerTitleStyle: { fontWeight: '700' },
+            headerTitleStyle: { fontWeight: '800', fontSize: 15 },
             contentStyle: { backgroundColor: theme.bg },
           }}
         >

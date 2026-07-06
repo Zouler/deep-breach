@@ -6,7 +6,7 @@ import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
 import { GAME_ASSETS } from '@/constants/assets';
-import { theme } from '@/constants/theme';
+import { theme, monoData } from '@/constants/theme';
 import { EXPERIMENTAL_TRIAL_SET } from '@/data/experimentalTrials';
 import { NARRATIVE_UI } from '@/data/storyBriefings';
 import { useGame } from '@/context/GameContext';
@@ -474,9 +474,10 @@ const styles = StyleSheet.create({
     minWidth: 76,
   },
   heroValue: {
-    color: theme.accent,
+    color: theme.instrumentCyan,
     fontSize: 24,
     fontWeight: '900',
+    ...monoData,
   },
   heroLabel: {
     color: theme.textMuted,

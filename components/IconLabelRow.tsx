@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { SafeIcon } from '@/components/SafeIcon';
-import { theme } from '@/constants/theme';
+import { monoData, theme } from '@/constants/theme';
 import type { ImageSourcePropType } from 'react-native';
 
 type Props = {
@@ -23,7 +23,7 @@ export function IconLabelRow({
     <View style={[styles.row, emphasize && styles.rowEmph]}>
       <SafeIcon source={icon} size={iconSize} style={styles.icon} />
       <View style={styles.textCol}>
-        <Text style={styles.label}>{label}</Text>
+        <Text style={styles.label}>{label.toUpperCase()}</Text>
         <Text style={styles.value}>{value}</Text>
       </View>
     </View>
@@ -39,12 +39,12 @@ const styles = StyleSheet.create({
   },
   rowEmph: {
     borderLeftWidth: 3,
-    borderLeftColor: theme.accent,
+    borderLeftColor: theme.instrumentCyan,
     paddingLeft: 10,
     marginLeft: -2,
   },
   icon: { marginRight: 2 },
   textCol: { flex: 1 },
-  label: { color: theme.textMuted, fontSize: 12, marginBottom: 2 },
-  value: { color: theme.text, fontWeight: '700' },
+  label: { color: theme.mutedSteel, fontSize: 10, marginBottom: 2, letterSpacing: 0.5 },
+  value: { color: theme.paperBone, fontWeight: '700', ...monoData, fontSize: 15 },
 });

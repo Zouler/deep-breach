@@ -1,4 +1,12 @@
-import { Pressable, StyleSheet, Text, View, type ImageSourcePropType, type PressableProps, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type ImageSourcePropType,
+  type PressableProps,
+  type ViewStyle,
+} from 'react-native';
 
 import { SafeIcon } from '@/components/SafeIcon';
 import { theme } from '@/constants/theme';
@@ -7,9 +15,10 @@ type Props = Omit<PressableProps, 'children' | 'style'> & {
   title: string;
   variant?: 'primary' | 'ghost' | 'danger';
   style?: ViewStyle;
-  /** Optional leading icon (mobile-game affordance). */
   iconLeft?: ImageSourcePropType;
   iconLeftSize?: number;
+  /** When false, label keeps original casing (e.g. proper nouns). Default true. */
+  uppercase?: boolean;
 };
 
 export function PrimaryButton({
@@ -18,8 +27,10 @@ export function PrimaryButton({
   style,
   iconLeft,
   iconLeftSize = 22,
+  uppercase = true,
   ...rest
 }: Props) {
+  const label = uppercase ? title.toUpperCase() : title;
   return (
     <Pressable
       style={({ pressed }) => [
@@ -27,11 +38,12 @@ export function PrimaryButton({
         variant === 'primary' && styles.primary,
         variant === 'ghost' && styles.ghost,
         variant === 'danger' && styles.danger,
-        pressed && { opacity: 0.85 },
+        pressed && styles.pressed,
         style,
       ]}
       {...rest}
     >
+      {variant === 'primary' ? <View style={styles.statusTick} /> : null}
       <View style={styles.inner}>
         {iconLeft ? (
           <SafeIcon source={iconLeft} size={iconLeftSize} style={{ marginRight: 10 }} />
@@ -39,11 +51,11 @@ export function PrimaryButton({
         <Text
           style={[
             styles.text,
-            variant === 'ghost' && { color: theme.text },
-            variant === 'danger' && { color: '#fff' },
+            variant === 'ghost' && styles.textGhost,
+            variant === 'danger' && styles.textDanger,
           ]}
         >
-          {title}
+          {label}
         </Text>
       </View>
     </Pressable>
@@ -55,24 +67,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
   },
   base: {
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    minHeight: 46,
+    borderRadius: theme.radiusInstrument,
     borderWidth: 1,
+    overflow: 'hidden',
+  },
+  statusTick: {
+    width: 4,
+    backgroundColor: theme.instrumentCyan,
   },
   primary: {
-    backgroundColor: theme.accentDim,
-    borderColor: theme.accent,
+    backgroundColor: theme.panelRailBg,
+    borderColor: theme.instrumentCyan,
   },
   ghost: {
     backgroundColor: 'transparent',
-    borderColor: theme.border,
+    borderColor: theme.mutedSteel,
   },
   danger: {
-    backgroundColor: '#7f1d1d',
-    borderColor: theme.danger,
+    backgroundColor: '#450a0acc',
+    borderColor: theme.emergencyRed,
   },
-  text: { color: theme.text, fontWeight: '700', letterSpacing: 0.3 },
+  pressed: { opacity: 0.88 },
+  text: {
+    color: theme.instrumentCyan,
+    fontFamily: theme.fontMono,
+    fontWeight: '700',
+    fontSize: 12,
+    letterSpacing: 1.1,
+  },
+  textGhost: { color: theme.paperBone },
+  textDanger: { color: '#fecaca' },
 });
