@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   ImageBackground,
   StyleSheet,
   Text,
@@ -12,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarracudaGamesIntro } from '@/components/BarracudaGamesIntro';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { GAME_ASSETS } from '@/constants/assets';
-import { theme } from '@/constants/theme';
+import { monoData, theme } from '@/constants/theme';
 import { useGame } from '@/context/GameContext';
 
 export default function StartScreen() {
@@ -29,8 +30,8 @@ export default function StartScreen() {
   if (!hydrated) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color={theme.accent} size="large" />
-        <Text style={styles.loadingText}>Pressurizing systems…</Text>
+        <ActivityIndicator color={theme.instrumentCyan} size="large" />
+        <Text style={styles.loadingText}>[ SYS ] Pressurizing hull systems…</Text>
       </View>
     );
   }
@@ -43,18 +44,20 @@ export default function StartScreen() {
         resizeMode="cover"
       >
         <View style={styles.scrim} />
+        <View style={styles.scanlines} pointerEvents="none" />
         <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
           <View style={styles.content}>
             <View style={styles.hero}>
-              <View style={styles.wordmark}>
-                <Text style={styles.wordmarkDeep}>DEEP</Text>
-                <Text style={styles.wordmarkBreach}>
-                  BRE
-                  <Text style={styles.wordmarkAccent}>A</Text>
-                  CH
-                </Text>
-              </View>
-              <Text style={styles.subtitle}>Act 1 — Experimental Trials · deep-sea prototype command</Text>
+              <Text style={styles.classification}>DBX PROGRAM — RESTRICTED</Text>
+              <Image
+                source={GAME_ASSETS.logoDeepBreach}
+                style={styles.logo}
+                resizeMode="contain"
+                accessibilityLabel="Deep Breach"
+              />
+              <Text style={styles.subtitle}>
+                Act 1 · Experimental Trials · classified prototype command
+              </Text>
             </View>
 
             <View style={styles.actions}>
@@ -85,7 +88,12 @@ const styles = StyleSheet.create({
   bg: { flex: 1, width: '100%', height: '100%' },
   scrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(2, 8, 18, 0.74)',
+    backgroundColor: 'rgba(2, 8, 18, 0.78)',
+  },
+  scanlines: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: `rgba(34, 211, 238, ${theme.scanlineOpacity})`,
+    opacity: 0.35,
   },
   safe: { flex: 1 },
   content: {
@@ -99,47 +107,30 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 36,
+    paddingTop: 28,
     paddingBottom: 18,
   },
-  wordmark: {
-    width: '60%',
-    maxWidth: 320,
-    alignItems: 'center',
-  },
-  wordmarkDeep: {
-    color: theme.text,
-    fontSize: 54,
+  classification: {
+    color: theme.phosphorAmber,
+    fontFamily: theme.fontMono,
+    fontSize: 11,
     fontWeight: '900',
-    letterSpacing: 8,
-    lineHeight: 56,
-    textShadowColor: 'rgba(56, 189, 248, 0.35)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 14,
+    letterSpacing: 2.2,
+    marginBottom: 18,
   },
-  wordmarkBreach: {
-    color: theme.text,
-    fontSize: 34,
-    fontWeight: '800',
-    letterSpacing: 10,
-    lineHeight: 38,
-    marginTop: 6,
-    textShadowColor: 'rgba(56, 189, 248, 0.25)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 12,
-  },
-  wordmarkAccent: {
-    color: '#ff3b30',
-    textShadowColor: 'rgba(255, 59, 48, 0.55)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
+  logo: {
+    width: '72%',
+    maxWidth: 340,
+    height: 120,
+    marginBottom: 12,
   },
   subtitle: {
     color: theme.textMuted,
-    fontSize: 14,
-    letterSpacing: 0.6,
+    fontSize: 13,
+    letterSpacing: 0.5,
     textAlign: 'center',
-    marginTop: 14,
+    marginTop: 8,
+    paddingHorizontal: 12,
   },
   actions: {
     gap: 10,
@@ -152,5 +143,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
   },
-  loadingText: { color: theme.textMuted },
+  loadingText: { color: theme.textMuted, ...monoData, fontSize: 12 },
 });

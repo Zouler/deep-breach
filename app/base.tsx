@@ -1,13 +1,14 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { CommandTile } from '@/components/CommandTile';
 import { IconLabelRow } from '@/components/IconLabelRow';
 import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
 import { GAME_ASSETS } from '@/constants/assets';
-import { theme } from '@/constants/theme';
+import { monoData, theme } from '@/constants/theme';
 import { NARRATIVE_UI } from '@/data/storyBriefings';
 import { SUBMARINE_IDENTITY } from '@/data/submarine';
 import { useGame } from '@/context/GameContext';
@@ -29,7 +30,11 @@ export default function BaseScreen() {
 
   return (
     <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.7}>
-      <SectionHeader title={nu.title} subtitle={nu.subtitle} />
+      <SectionHeader
+        title={nu.title}
+        subtitle={nu.subtitle}
+        kicker="DBX-07 · Command Hub"
+      />
       {firstContactReviewPending ? (
         <PanelCard style={styles.consoleCard}>
           <Text style={styles.cardTitle}>First Contact — Command Review</Text>
@@ -88,7 +93,7 @@ export default function BaseScreen() {
           {SUBMARINE_IDENTITY.displayName} · condition
         </Text>
         <Text style={styles.statusLine}>{subStatus.label}</Text>
-        <Text style={styles.meta}>
+        <Text style={styles.metaMono}>
           Hull {Math.round(submarine.hullIntegrityPercent)}% · band {hullBand}
         </Text>
       </PanelCard>
@@ -141,31 +146,60 @@ export default function BaseScreen() {
         )}
       </PanelCard>
       <Text style={styles.navLabel}>Operations</Text>
-      <PrimaryButton title="Repair Dock" onPress={() => router.push('/repair-dock' as never)} />
-      <PrimaryButton
-        title="Command Briefings"
-        variant="ghost"
-        onPress={() => router.push('/command-briefings' as never)}
-      />
-      <PrimaryButton
-        title="Campaigns / Service Record"
-        variant="ghost"
-        onPress={() => router.push('/campaigns' as never)}
-      />
-      <PrimaryButton title="Trial schedule" onPress={() => router.push('/mission-select')} />
-      <PrimaryButton title="Upgrades" variant="ghost" onPress={() => router.push('/upgrades')} />
-      <PrimaryButton title="Crew" variant="ghost" onPress={() => router.push('/crew')} />
-      <PrimaryButton title="Inventory" variant="ghost" onPress={() => router.push('/inventory')} />
-      {state.dive?.status === 'active' ? (
-        <PrimaryButton title="Resume Dive" variant="ghost" onPress={() => router.push('/dive')} />
-      ) : null}
-      {state.dive && state.dive.status !== 'active' ? (
-        <PrimaryButton
-          title="Open Trial Report"
-          variant="ghost"
-          onPress={() => router.push('/mission-result')}
+      <View style={styles.commandGrid}>
+        <CommandTile
+          title="Repair Dock"
+          subtitle="Hull & supply staging"
+          emphasis
+          onPress={() => router.push('/repair-dock' as never)}
         />
-      ) : null}
+        <CommandTile
+          title="Trial schedule"
+          subtitle="Experimental & operational"
+          emphasis
+          onPress={() => router.push('/mission-select')}
+        />
+        <CommandTile
+          title="Command Briefings"
+          subtitle="Department status"
+          onPress={() => router.push('/command-briefings' as never)}
+        />
+        <CommandTile
+          title="Upgrades"
+          subtitle="Module refit"
+          onPress={() => router.push('/upgrades')}
+        />
+        <CommandTile
+          title="Crew"
+          subtitle="Roster & assignments"
+          onPress={() => router.push('/crew')}
+        />
+        <CommandTile
+          title="Inventory"
+          subtitle="Expedition loadout"
+          onPress={() => router.push('/inventory')}
+        />
+        <CommandTile
+          title="Service Record"
+          subtitle="Campaign overview"
+          onPress={() => router.push('/campaigns' as never)}
+        />
+        {state.dive?.status === 'active' ? (
+          <CommandTile
+            title="Resume Dive"
+            subtitle="Active trial in progress"
+            emphasis
+            onPress={() => router.push('/dive')}
+          />
+        ) : null}
+        {state.dive && state.dive.status !== 'active' ? (
+          <CommandTile
+            title="Trial Report"
+            subtitle="Debrief pending"
+            onPress={() => router.push('/mission-result')}
+          />
+        ) : null}
+      </View>
     </ScreenShell>
   );
 }
@@ -184,6 +218,7 @@ const styles = StyleSheet.create({
   cardTitle: { color: theme.text, fontWeight: '700', marginBottom: 10 },
   statusLine: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   meta: { color: theme.textMuted },
+  metaMono: { color: theme.textMuted, ...monoData, fontSize: 13 },
   moduleRow: { marginBottom: 8 },
   moduleName: { color: theme.text, fontWeight: '600' },
   moduleMeta: { color: theme.textMuted, fontSize: 12, marginTop: 2 },
@@ -191,12 +226,20 @@ const styles = StyleSheet.create({
   crewRow: { marginBottom: 10 },
   crewName: { color: theme.text, fontWeight: '600' },
   navLabel: {
-    color: theme.textMuted,
-    letterSpacing: 1.2,
+    color: theme.phosphorAmber,
+    letterSpacing: 1.4,
     textTransform: 'uppercase',
-    fontSize: 12,
-    marginTop: 4,
-    marginBottom: 2,
+    fontSize: 10,
+    fontFamily: theme.fontMono,
+    fontWeight: '800',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  commandGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 8,
   },
   muted: { color: theme.textMuted, fontStyle: 'italic' },
 });

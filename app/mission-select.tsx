@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PanelCard } from '@/components/PanelCard';
 import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
-import { theme } from '@/constants/theme';
+import { monoData, theme } from '@/constants/theme';
 import {
   EXPERIMENTAL_TRIAL_MISSION_IDS,
   EXPERIMENTAL_TRIAL_SET,
@@ -171,9 +171,15 @@ export default function MissionSelectScreen() {
                 ) : null}
               </View>
               {m.trialPurpose ? <Text style={styles.purpose}>{m.trialPurpose}</Text> : null}
-              <Text style={styles.meta}>Target depth: {m.targetDepthM}m</Text>
-              <Text style={styles.meta}>Est. duration: {m.durationMinutes} min (active)</Text>
-              <Text style={styles.meta}>Risk: {m.risk}</Text>
+              <Text style={styles.meta}>
+                Target depth: <Text style={styles.metaData}>{m.targetDepthM}m</Text>
+              </Text>
+              <Text style={styles.meta}>
+                Est. duration: <Text style={styles.metaData}>{m.durationMinutes} min</Text> (active)
+              </Text>
+              <Text style={styles.meta}>
+                Risk: <Text style={styles.metaData}>{m.risk}</Text>
+              </Text>
               <Text style={styles.reward}>Expected: {m.expectedRewardsText}</Text>
               {upcomingModifier ? (
                 <View
@@ -338,6 +344,7 @@ const styles = StyleSheet.create({
   badgeRetry: { color: theme.warning },
   purpose: { color: theme.textMuted, fontSize: 13, lineHeight: 18, marginBottom: 8 },
   meta: { color: theme.textMuted, marginBottom: 2 },
+  metaData: { ...monoData, color: theme.instrumentCyan, fontWeight: '700' },
   reward: { color: theme.accent, marginTop: 6 },
   modifierTag: {
     marginTop: 8,

@@ -20,7 +20,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { SafeIcon } from '@/components/SafeIcon';
 import { ScreenShell } from '@/components/ScreenShell';
 import { GAME_ASSETS } from '@/constants/assets';
-import { theme } from '@/constants/theme';
+import { monoData, theme } from '@/constants/theme';
 import { diveTrialTipsForMission } from '@/data/storyBriefings';
 import { useGame } from '@/context/GameContext';
 import { filterCrewAlertActionsForState } from '@/game/crewAlertActions';
@@ -531,7 +531,13 @@ const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: theme.bg },
   scrollPad: { paddingTop: 6, paddingBottom: 14 },
   hero: { color: theme.accent, fontSize: 40, fontWeight: '800', marginBottom: 8 },
-  depthHero: { color: theme.accent, fontSize: 44, fontWeight: '900', marginBottom: 4 },
+  depthHero: {
+    color: theme.instrumentCyan,
+    fontSize: 44,
+    fontWeight: '900',
+    marginBottom: 4,
+    ...monoData,
+  },
   label: { color: theme.textMuted, marginBottom: 4 },
   meta: { color: theme.textMuted, marginBottom: 2 },
   small: { color: theme.textMuted, fontSize: 12, lineHeight: 18 },
@@ -541,7 +547,7 @@ const styles = StyleSheet.create({
   modifierLineEasier: { color: theme.ok },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   topTitle: { color: theme.text, fontWeight: '900', letterSpacing: 0.5 },
-  topMeta: { color: theme.textMuted, marginTop: 4, fontSize: 12 },
+  topMeta: { color: theme.textMuted, marginTop: 4, fontSize: 12, ...monoData },
   conditionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -574,15 +580,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#450a0a44',
   },
   pillLabel: { color: theme.textMuted, fontSize: 11, textTransform: 'uppercase' },
-  pillValue: { color: theme.text, fontWeight: '700', marginTop: 4, fontSize: 12 },
+  pillValue: { color: theme.paperBone, fontWeight: '700', marginTop: 4, fontSize: 12, ...monoData },
   debug: { color: theme.textMuted, fontSize: 11, marginTop: 6 },
   returnRow: { marginTop: 4, marginBottom: 8 },
   navMapRow: { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' },
   navMapBtn: { flex: 1, minWidth: 120 },
   navLine: { color: theme.text, fontWeight: '700', fontSize: 13, marginTop: 2 },
-  navMeta: { color: theme.textMuted, fontSize: 12, marginTop: 4 },
+  navMeta: { color: theme.textMuted, fontSize: 12, marginTop: 4, ...monoData },
   navIntent: { color: theme.accent, fontSize: 12, fontWeight: '800', marginTop: 6 },
-  repairStockLine: { fontSize: 14, fontWeight: '900', marginTop: 4 },
+  repairStockLine: { fontSize: 14, fontWeight: '900', marginTop: 4, ...monoData },
   repairStockOk: { color: theme.ok },
   repairStockLow: { color: theme.warning },
   repairStockEmpty: { color: theme.warning },
