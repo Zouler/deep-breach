@@ -72,7 +72,9 @@ export default function SettingsScreen() {
       </PanelCard>
       <PanelCard>
         <Text style={styles.label}>Story</Text>
-        <Text style={styles.small}>Campaign overview and future acts (visual only in MVP).</Text>
+        <Text style={styles.small}>
+          Campaign overview and service record for DBX-07 operational history.
+        </Text>
         <PrimaryButton title="Campaigns / Service Record" variant="ghost" onPress={() => router.push('/campaigns' as never)} />
       </PanelCard>
       <PanelCard>
@@ -87,6 +89,16 @@ export default function SettingsScreen() {
             Fast-forward saves for internal story testing. Does not start dives or auto-resolve
             decisions. For internal testing only — not part of normal gameplay.
           </Text>
+          <PrimaryButton
+            title="QA: Advance to Dead Beacon ready"
+            variant="ghost"
+            onPress={() => dispatch({ type: 'QA_FAST_FORWARD_TO_DEAD_BEACON' })}
+          />
+          <PrimaryButton
+            title="QA: Advance to Return to DBX-03 ready"
+            variant="ghost"
+            onPress={() => dispatch({ type: 'QA_FAST_FORWARD_TO_RETURN_DIVE' })}
+          />
           <PrimaryButton
             title="QA: Advance to Growing Ocean monitoring ready"
             variant="ghost"

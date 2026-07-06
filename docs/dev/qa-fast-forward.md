@@ -1,50 +1,57 @@
 # QA Fast-Forward Helper
 
-Internal dev tool for reaching the **Growing Ocean Anomaly monitoring-ready** state without replaying the full P1.0–P1.4 spine (~90–150 minutes).
+Internal dev tools for reaching major story states without replaying the full P1.0–P1.8 spine.
 
 ## In-app (development builds only)
 
-1. Open **Settings**.
-2. Under **Developer / QA**, tap **QA: Advance to Growing Ocean monitoring ready**.
-3. Open **Mission Select → Operational assignments → Growing Ocean Anomaly**.
-4. Launch the passive monitoring dive.
+Open **Settings → Developer / QA**. All controls are gated behind `__DEV__`.
 
-This action:
-- Completes Experimental Trials through First Contact Aftermath via valid reducer paths
-- Clears any active dive and pending mission result
-- Does **not** mark `growing_ocean_anomaly` or start a dive automatically
+| Button | Target state |
+|--------|----------------|
+| **QA: Advance to Dead Beacon ready** | Experimental Trials + Operational Integration complete; Operation Dead Beacon recon launchable |
+| **QA: Advance to Return to DBX-03 ready** | Dead Beacon recon + P1.2 data decision resolved; return dive launchable |
+| **QA: Advance to Growing Ocean monitoring ready** | Through First Contact Analysis; monitoring dive launchable |
+| **QA: Advance to Command Pressure ready** | Growing Ocean monitoring complete; strategic decision pending |
+| **QA: Advance to Abyssal Expansion Models ready** | Command Pressure resolved (controlled observation); model priority pending |
+
+Helpers:
+- Use valid reducer / resolution paths
+- Clear active dive and pending debrief state
+- Do **not** auto-start dives or auto-resolve pending decisions (except Command Pressure auto-resolve on the Expansion Models helper only)
+
+**P1.9 Engineering Stress Response** — helper to be added when P1.9 merges to main.
 
 ## Programmatic (tests)
 
 ```typescript
-import { advanceQaToMonitoringReady, advanceQaToCommandPressureReady, advanceQaToAbyssalExpansionModelsReady } from '@/game/qaProgression';
+import {
+  advanceQaToDeadBeaconReady,
+  advanceQaToReturnDiveReady,
+  advanceQaToMonitoringReady,
+  advanceQaToCommandPressureReady,
+  advanceQaToAbyssalExpansionModelsReady,
+} from '@/game/qaProgression';
 
-const monitoringReady = advanceQaToMonitoringReady();
-// or: reduceGame(state, { type: 'QA_FAST_FORWARD_TO_MONITORING' })
-
-const commandPressureReady = advanceQaToCommandPressureReady();
-// or: reduceGame(state, { type: 'QA_FAST_FORWARD_TO_COMMAND_PRESSURE' })
-
-const expansionModelsReady = advanceQaToAbyssalExpansionModelsReady();
-// or: reduceGame(state, { type: 'QA_FAST_FORWARD_TO_EXPANSION_MODELS' })
+// or via reducer:
+// reduceGame(state, { type: 'QA_FAST_FORWARD_TO_DEAD_BEACON' })
+// reduceGame(state, { type: 'QA_FAST_FORWARD_TO_RETURN_DIVE' })
+// reduceGame(state, { type: 'QA_FAST_FORWARD_TO_MONITORING' })
+// reduceGame(state, { type: 'QA_FAST_FORWARD_TO_COMMAND_PRESSURE' })
+// reduceGame(state, { type: 'QA_FAST_FORWARD_TO_EXPANSION_MODELS' })
 ```
 
 ## Command Pressure ready (P1.7 testing)
 
-1. Open **Settings**.
-2. Tap **QA: Advance to Command Pressure ready**.
-3. Open **Command Pressure** from Mission Select or the base hub banner.
-4. Select one strategic posture — no dive launches.
+1. Settings → **QA: Advance to Command Pressure ready**
+2. Open **Command Pressure** from Mission Select or base hub banner
+3. Select one strategic posture — no dive launches
 
 ## Abyssal Expansion Models ready (P1.8 testing)
 
-1. Open **Settings**.
-2. Under **Developer / QA**, tap **QA: Advance to Abyssal Expansion Models ready**.
-3. Open **Mission Select → Operational assignments → Abyssal Expansion Models** (or use the base hub banner).
-4. Prioritize one expansion model — no dive launches.
-
-This action completes Command Pressure (controlled observation) and leaves the model priority decision pending.
+1. Settings → **QA: Advance to Abyssal Expansion Models ready**
+2. Open **Abyssal Expansion Models** from Mission Select or base hub banner
+3. Prioritize one expansion model — no dive launches
 
 ## Not for production players
 
-The Settings control is gated behind `__DEV__` and is not part of normal gameplay progression.
+The Settings controls are gated behind `__DEV__` and are not part of normal gameplay progression.

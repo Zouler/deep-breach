@@ -1,5 +1,18 @@
 import { REVEAL_LEVEL } from '@/game/canon';
 import {
+  canResolveAbyssalExpansionModels,
+  isAbyssalExpansionModelsPending,
+  resolveAbyssalExpansionModels,
+  STORY_FLAG_MODEL_CURRENT_DRIFT,
+  STORY_FLAG_MODEL_RESONANCE_FIELD,
+} from '@/game/abyssalExpansionModels';
+import {
+  canResolveCommandPressure,
+  isCommandPressurePending,
+  resolveCommandPressure,
+  STORY_FLAG_CONTROLLED_OBSERVATION,
+} from '@/game/commandPressure';
+import {
   canResolveFirstContactAnalysis,
   isFirstContactAnalysisPending,
   resolveFirstContactAnalysis,
@@ -17,6 +30,10 @@ import { createInitialGameState } from '@/game/initialGame';
 import { reduceGame } from '@/game/gameReducer';
 import { upsertTrialProgress } from '@/game/trialProgression';
 import {
+  advanceQaToAbyssalExpansionModelsReady,
+  advanceQaToCommandPressureReady,
+} from '@/game/qaProgression';
+import {
   applyStoryDiveResolution,
   canStartStoryDiveMission,
   getAvailableMissions,
@@ -25,6 +42,7 @@ import {
   isStoryMissionCompleted,
   markExperimentalTrialsCompleteIfNeeded,
 } from '@/game/storyMissions';
+import { MONITORING_DRIFT_DEPTH_FRACTION } from '@/game/growingOceanAnomaly';
 import { buildMissionOutcome } from '@/game/missionOutcome';
 import { ANOMALY_CONTACT_MIN_DEPTH_FRACTION } from '@/game/anomalyContact';
 import { DEAD_BEACON_RECON_MIN_DEPTH_FRACTION } from '@/game/storyMissionObjectives';
@@ -257,5 +275,161 @@ describe('story progression chain (P1.5 regression)', () => {
     expect(getAvailableMissions(afterTrials).some((m) => m.id === 'operational_integration')).toBe(true);
     expect(getAvailableMissions(afterTrials).some((m) => m.id === 'operation_dead_beacon')).toBe(false);
     expect(getAvailableMissions(afterIntegration).some((m) => m.id === 'operation_dead_beacon')).toBe(true);
+  });
+});
+
+const EXPECTED_SPINE_THROUGH_P1_8: readonly string[] = [
+  'experimental_trials_complete',
+  'operational_integration',
+  'operation_dead_beacon',
+  'hull_reinforcement_mk1',
+  'first_anomaly_contact',
+  'return_to_dbx03_site',
+  'growing_ocean_anomaly',
+  'command_pressure',
+  'abyssal_expansion_models',
+];
+
+function completeGrowingOceanMonitoringViaDive(state: GameState): GameState {
+  let next = reduceGame(state, { type: 'START_MISSION', missionId: GROWING_OCEAN_ANOMALY_MISSION_ID });
+  next = reduceGame(next, { type: 'SCAN_AREA', now: next.dive!.startedAt + 1_000 });
+  next = reduceGame(next, { type: 'SCAN_AREA', now: next.dive!.startedAt + 2_000 });
+  const mission = next.missions.find((m) => m.id === GROWING_OCEAN_ANOMALY_MISSION_ID)!;
+  const successfulDive = {
+    ...next.dive!,
+    currentDepthM: next.dive!.targetDepthM * MONITORING_DRIFT_DEPTH_FRACTION,
+    missionElapsedMs: next.dive!.missionDurationMs,
+    monitoringDriftActive: true,
+    monitoringBaselineScans: 1,
+    monitoringDriftScans: 1,
+    status: 'success' as const,
+    hullIntegrityPercent: 75,
+  };
+  const lastMissionOutcome = buildMissionOutcome(
+    { ...successfulDive, outcomeRecorded: true },
+    mission,
+    next.submarine,
+    null,
+  );
+  next = applyStoryDiveResolution(
+    { ...next, dive: { ...successfulDive, outcomeRecorded: true }, lastMissionOutcome },
+    mission,
+    successfulDive,
+  );
+  return reduceGame(next, { type: 'RETURN_TO_BASE' });
+}
+
+describe('story progression chain (P1.10 regression through P1.8)', () => {
+  it('simulates full path from new game through Abyssal Expansion Models', () => {
+    let state = createInitialGameState();
+
+    state = completeAllTrials(state);
+    state = reduceGame(state, { type: 'COMPLETE_STORY_MISSION', missionId: 'operational_integration' });
+    state = completeDeadBeaconReconViaDive(state);
+    expect(isDeadBeaconDataDecisionPending(state)).toBe(true);
+
+    state = resolveDeadBeaconDataDecision(state, 'report_official');
+    state = reduceGame(state, { type: 'RETURN_TO_BASE' });
+    state = completeReturnContactViaDive(state);
+    state = reduceGame(state, { type: 'RETURN_TO_BASE' });
+    state = resolveFirstContactAnalysis(state, 'prepare_monitoring');
+    state = completeGrowingOceanMonitoringViaDive(state);
+    expect(isCommandPressurePending(state)).toBe(true);
+
+    state = resolveCommandPressure(state, 'controlled_observation');
+    expect(isAbyssalExpansionModelsPending(state)).toBe(true);
+
+    state = resolveAbyssalExpansionModels(state, 'prioritize_current_drift');
+
+    for (const eventId of EXPECTED_SPINE_THROUGH_P1_8) {
+      expect(state.completedSpineEvents).toContain(eventId);
+    }
+    expect(state.completedSpineEvents.filter((e) => e === 'abyssal_expansion_models')).toHaveLength(1);
+    expect(state.storyFlags).toContain(STORY_FLAG_DEAD_BEACON_DATA);
+    expect(state.storyFlags).toContain(STORY_FLAG_HULL_REINFORCEMENT_MK1);
+    expect(state.storyFlags).toContain(STORY_FLAG_FIRST_CONTACT_ANALYSIS);
+    expect(state.storyFlags).toContain(STORY_FLAG_ANOMALY_MONITORING_PREP);
+    expect(state.storyFlags).toContain(STORY_FLAG_CONTROLLED_OBSERVATION);
+    expect(state.storyFlags).toContain(STORY_FLAG_MODEL_CURRENT_DRIFT);
+    expect(state.completedSpineEvents).not.toContain('military_escalation');
+    expect(isMissionUnlocked(state, 'expansion_model_deployment_hold')).toBe(true);
+  });
+
+  it('decision phases are idempotent via reducer double-dispatch', () => {
+    let state = createInitialGameState();
+    state = completeAllTrials(state);
+    state = reduceGame(state, { type: 'COMPLETE_STORY_MISSION', missionId: 'operational_integration' });
+    state = completeDeadBeaconReconViaDive(state);
+
+    const scrapBeforeDeadBeacon = state.resources.scrap;
+    state = reduceGame(state, { type: 'RESOLVE_DEAD_BEACON_DATA_DECISION', choice: 'report_official' });
+    const afterFirstDeadBeacon = state;
+    state = reduceGame(state, { type: 'RESOLVE_DEAD_BEACON_DATA_DECISION', choice: 'withhold_review' });
+    expect(state).toBe(afterFirstDeadBeacon);
+    expect(state.storyFlags.filter((f) => f === STORY_FLAG_DEAD_BEACON_DATA)).toHaveLength(1);
+    expect(state.resources.scrap).toBe(scrapBeforeDeadBeacon);
+
+    state = reduceGame(state, { type: 'RETURN_TO_BASE' });
+    state = completeReturnContactViaDive(state);
+    state = reduceGame(state, { type: 'RETURN_TO_BASE' });
+
+    state = reduceGame(state, { type: 'RESOLVE_FIRST_CONTACT_ANALYSIS', choice: 'prepare_monitoring' });
+    const afterFirstAnalysis = state;
+    state = reduceGame(state, { type: 'RESOLVE_FIRST_CONTACT_ANALYSIS', choice: 'forward_to_command' });
+    expect(state).toBe(afterFirstAnalysis);
+
+    state = completeGrowingOceanMonitoringViaDive(state);
+    state = reduceGame(state, { type: 'RESOLVE_COMMAND_PRESSURE', choice: 'controlled_observation' });
+    const afterFirstCommand = state;
+    const scrapAfterFirstCommand = state.resources.scrap;
+    const researchAfterFirstCommand = state.resources.researchData;
+    state = reduceGame(state, { type: 'RESOLVE_COMMAND_PRESSURE', choice: 'report_up_chain' });
+    expect(state).toBe(afterFirstCommand);
+    expect(canResolveCommandPressure(state)).toBe(false);
+    expect(state.resources.scrap).toBe(scrapAfterFirstCommand);
+    expect(state.resources.researchData).toBe(researchAfterFirstCommand);
+
+    state = reduceGame(state, { type: 'RESOLVE_ABYSSAL_EXPANSION_MODELS', choice: 'prioritize_current_drift' });
+    const afterFirstModel = state;
+    const scrapAfterModel = state.resources.scrap;
+    const researchAfterModel = state.resources.researchData;
+    state = reduceGame(state, { type: 'RESOLVE_ABYSSAL_EXPANSION_MODELS', choice: 'prioritize_resonance_field' });
+    expect(state).toBe(afterFirstModel);
+    expect(canResolveAbyssalExpansionModels(state)).toBe(false);
+    expect(state.resources.scrap).toBe(scrapAfterModel);
+    expect(state.resources.researchData).toBe(researchAfterModel);
+    expect(state.completedSpineEvents.filter((e) => e === 'command_pressure')).toHaveLength(1);
+    expect(state.completedSpineEvents.filter((e) => e === 'abyssal_expansion_models')).toHaveLength(1);
+  });
+
+  it('QA helpers produce valid states without duplicate spine entries', () => {
+    const commandReady = advanceQaToCommandPressureReady();
+    expect(isCommandPressurePending(commandReady)).toBe(true);
+    expect(new Set(commandReady.completedSpineEvents).size).toBe(commandReady.completedSpineEvents.length);
+
+    const expansionReady = advanceQaToAbyssalExpansionModelsReady();
+    expect(isAbyssalExpansionModelsPending(expansionReady)).toBe(true);
+    expect(expansionReady.completedSpineEvents).toContain('growing_ocean_anomaly');
+    expect(expansionReady.completedSpineEvents).toContain('command_pressure');
+    expect(new Set(expansionReady.completedSpineEvents).size).toBe(
+      expansionReady.completedSpineEvents.length,
+    );
+  });
+
+  it('save v6 migration remains stable after full P1.8 chain', () => {
+    let state = advanceQaToAbyssalExpansionModelsReady();
+    state = resolveAbyssalExpansionModels(state, 'prioritize_resonance_field');
+
+    const migrated = migrateGameState({ ...state, version: 5 } as unknown as GameState);
+    expect(migrated).not.toBeNull();
+    expect(migrated!.version).toBe(GAME_STATE_VERSION);
+    expect(migrated!.completedSpineEvents).toContain('abyssal_expansion_models');
+    expect(migrated!.storyFlags).toEqual(
+      expect.arrayContaining([
+        STORY_FLAG_DEAD_BEACON_DATA,
+        STORY_FLAG_CONTROLLED_OBSERVATION,
+        STORY_FLAG_MODEL_RESONANCE_FIELD,
+      ]),
+    );
   });
 });

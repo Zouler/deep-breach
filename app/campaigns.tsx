@@ -109,7 +109,9 @@ export default function CampaignsScreen() {
       </PanelCard>
 
       <Text style={styles.sectionLabel}>Reserved retrofit designations</Text>
-      <Text style={styles.sectionHint}>Story planning only — not available in MVP.</Text>
+      <Text style={styles.sectionHint}>
+        Classified retrofit designations — authorization pending Command review.
+      </Text>
       <PanelCard style={styles.loreCard}>
         {DBX_FUTURE_ACT_VARIANTS.map((row) => (
           <Text key={row.act} style={styles.futureLine}>

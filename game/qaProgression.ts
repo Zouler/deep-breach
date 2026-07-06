@@ -23,13 +23,8 @@ import {
 import { EXPERIMENTAL_TRIAL_MISSION_IDS } from '@/data/experimentalTrials';
 import type { GameState } from '@/types';
 
-/**
- * Dev/QA helper — advances a save to the post-P1.4 state where Growing Ocean
- * Anomaly monitoring is ready to launch. Does not auto-start a dive.
- */
-export function advanceQaToMonitoringReady(state: GameState = createInitialGameState()): GameState {
+function completeExperimentalTrialsAndIntegration(state: GameState): GameState {
   let next = state;
-
   for (const trialId of EXPERIMENTAL_TRIAL_MISSION_IDS) {
     next = upsertTrialProgress(next, {
       trialId,
@@ -40,11 +35,14 @@ export function advanceQaToMonitoringReady(state: GameState = createInitialGameS
   }
   next = markExperimentalTrialsCompleteIfNeeded(next);
   next = reduceGame(next, { type: 'COMPLETE_STORY_MISSION', missionId: 'operational_integration' });
+  return next;
+}
 
-  next = reduceGame(next, { type: 'START_MISSION', missionId: OPERATION_DEAD_BEACON_MISSION_ID });
+function completeDeadBeaconRecon(state: GameState): GameState {
+  let next = reduceGame(state, { type: 'START_MISSION', missionId: OPERATION_DEAD_BEACON_MISSION_ID });
   next = reduceGame(next, { type: 'SCAN_AREA', now: next.dive!.startedAt + 1_000 });
-  let mission = next.missions.find((m) => m.id === OPERATION_DEAD_BEACON_MISSION_ID)!;
-  let successfulDive = {
+  const mission = next.missions.find((m) => m.id === OPERATION_DEAD_BEACON_MISSION_ID)!;
+  const successfulDive = {
     ...next.dive!,
     currentDepthM: next.dive!.targetDepthM * DEAD_BEACON_RECON_MIN_DEPTH_FRACTION,
     missionElapsedMs: next.dive!.missionDurationMs,
@@ -52,24 +50,24 @@ export function advanceQaToMonitoringReady(state: GameState = createInitialGameS
     status: 'success' as const,
     hullIntegrityPercent: 80,
   };
-  let lastMissionOutcome = buildMissionOutcome(
+  const lastMissionOutcome = buildMissionOutcome(
     { ...successfulDive, outcomeRecorded: true },
     mission,
     next.submarine,
     null,
   );
-  next = applyStoryDiveResolution(
+  return applyStoryDiveResolution(
     { ...next, dive: { ...successfulDive, outcomeRecorded: true }, lastMissionOutcome },
     mission,
     successfulDive,
   );
-  next = resolveDeadBeaconDataDecision(next, 'report_official');
-  next = reduceGame(next, { type: 'RETURN_TO_BASE' });
+}
 
-  next = reduceGame(next, { type: 'START_MISSION', missionId: OPERATION_DEAD_BEACON_RETURN_MISSION_ID });
+function completeReturnContactDive(state: GameState): GameState {
+  let next = reduceGame(state, { type: 'START_MISSION', missionId: OPERATION_DEAD_BEACON_RETURN_MISSION_ID });
   next = reduceGame(next, { type: 'SCAN_AREA', now: next.dive!.startedAt + 1_000 });
-  mission = next.missions.find((m) => m.id === OPERATION_DEAD_BEACON_RETURN_MISSION_ID)!;
-  successfulDive = {
+  const mission = next.missions.find((m) => m.id === OPERATION_DEAD_BEACON_RETURN_MISSION_ID)!;
+  const successfulDive = {
     ...next.dive!,
     currentDepthM: next.dive!.targetDepthM * ANOMALY_CONTACT_MIN_DEPTH_FRACTION,
     missionElapsedMs: next.dive!.missionDurationMs,
@@ -79,39 +77,17 @@ export function advanceQaToMonitoringReady(state: GameState = createInitialGameS
     status: 'success' as const,
     hullIntegrityPercent: 70,
   };
-  lastMissionOutcome = buildMissionOutcome(
+  const lastMissionOutcome = buildMissionOutcome(
     { ...successfulDive, outcomeRecorded: true },
     mission,
     next.submarine,
     null,
   );
-  next = applyStoryDiveResolution(
+  return applyStoryDiveResolution(
     { ...next, dive: { ...successfulDive, outcomeRecorded: true }, lastMissionOutcome },
     mission,
     successfulDive,
   );
-  next = reduceGame(next, { type: 'RETURN_TO_BASE' });
-  next = resolveFirstContactAnalysis(next, 'prepare_monitoring');
-
-  next = {
-    ...next,
-    dive: null,
-    lastMissionOutcome: null,
-    pendingOfflineReport: null,
-  };
-
-  if (next.canonEra !== 'anomaly_growth') {
-    next = { ...next, canonEra: 'anomaly_growth' };
-  }
-  if (next.revealLevel < REVEAL_LEVEL.ANOMALY_GROWTH) {
-    next = { ...next, revealLevel: REVEAL_LEVEL.ANOMALY_GROWTH };
-  }
-
-  if (!isMissionUnlocked(next, 'growing_ocean_anomaly_prep')) {
-    throw new Error('QA fast-forward failed: Growing Ocean Anomaly is not unlocked');
-  }
-
-  return next;
 }
 
 function completeGrowingOceanMonitoring(state: GameState): GameState {
@@ -143,6 +119,70 @@ function completeGrowingOceanMonitoring(state: GameState): GameState {
   return reduceGame(next, { type: 'RETURN_TO_BASE' });
 }
 
+function clearActiveDiveState(state: GameState): GameState {
+  return {
+    ...state,
+    dive: null,
+    lastMissionOutcome: null,
+    pendingOfflineReport: null,
+  };
+}
+
+/**
+ * Dev/QA helper — post–Operational Integration; Operation Dead Beacon recon is launchable.
+ */
+export function advanceQaToDeadBeaconReady(state: GameState = createInitialGameState()): GameState {
+  const next = completeExperimentalTrialsAndIntegration(state);
+  if (!isMissionUnlocked(next, 'operation_dead_beacon')) {
+    throw new Error('QA fast-forward failed: Operation Dead Beacon is not unlocked');
+  }
+  return next;
+}
+
+/**
+ * Dev/QA helper — post–P1.2 data disposition; Return to DBX-03 Site dive is launchable.
+ */
+export function advanceQaToReturnDiveReady(state: GameState = createInitialGameState()): GameState {
+  let next = completeExperimentalTrialsAndIntegration(state);
+  next = completeDeadBeaconRecon(next);
+  next = resolveDeadBeaconDataDecision(next, 'report_official');
+  next = reduceGame(next, { type: 'RETURN_TO_BASE' });
+
+  if (!isMissionUnlocked(next, 'operation_dead_beacon_return')) {
+    throw new Error('QA fast-forward failed: Return to DBX-03 Site is not unlocked');
+  }
+  return clearActiveDiveState(next);
+}
+
+/**
+ * Dev/QA helper — advances a save to the post-P1.4 state where Growing Ocean
+ * Anomaly monitoring is ready to launch. Does not auto-start a dive.
+ */
+export function advanceQaToMonitoringReady(state: GameState = createInitialGameState()): GameState {
+  let next = completeExperimentalTrialsAndIntegration(state);
+  next = completeDeadBeaconRecon(next);
+  next = resolveDeadBeaconDataDecision(next, 'report_official');
+  next = reduceGame(next, { type: 'RETURN_TO_BASE' });
+  next = completeReturnContactDive(next);
+  next = reduceGame(next, { type: 'RETURN_TO_BASE' });
+  next = resolveFirstContactAnalysis(next, 'prepare_monitoring');
+
+  next = clearActiveDiveState(next);
+
+  if (next.canonEra !== 'anomaly_growth') {
+    next = { ...next, canonEra: 'anomaly_growth' };
+  }
+  if (next.revealLevel < REVEAL_LEVEL.ANOMALY_GROWTH) {
+    next = { ...next, revealLevel: REVEAL_LEVEL.ANOMALY_GROWTH };
+  }
+
+  if (!isMissionUnlocked(next, 'growing_ocean_anomaly_prep')) {
+    throw new Error('QA fast-forward failed: Growing Ocean Anomaly is not unlocked');
+  }
+
+  return next;
+}
+
 /**
  * Dev/QA helper — advances a save to post–Growing Ocean success where Command Pressure
  * strategic response is pending. Does not auto-resolve the decision.
@@ -150,12 +190,7 @@ function completeGrowingOceanMonitoring(state: GameState): GameState {
 export function advanceQaToCommandPressureReady(state: GameState = createInitialGameState()): GameState {
   let next = advanceQaToMonitoringReady(state);
   next = completeGrowingOceanMonitoring(next);
-  next = {
-    ...next,
-    dive: null,
-    lastMissionOutcome: null,
-    pendingOfflineReport: null,
-  };
+  next = clearActiveDiveState(next);
 
   if (!next.completedSpineEvents.includes('growing_ocean_anomaly')) {
     throw new Error('QA fast-forward failed: Growing Ocean Anomaly not complete');
@@ -179,12 +214,7 @@ export function advanceQaToAbyssalExpansionModelsReady(
 ): GameState {
   let next = advanceQaToCommandPressureReady(state);
   next = resolveCommandPressure(next, 'controlled_observation');
-  next = {
-    ...next,
-    dive: null,
-    lastMissionOutcome: null,
-    pendingOfflineReport: null,
-  };
+  next = clearActiveDiveState(next);
 
   if (!next.completedSpineEvents.includes('command_pressure')) {
     throw new Error('QA fast-forward failed: Command Pressure not complete');
