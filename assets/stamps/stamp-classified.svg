@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256">
+  <g transform="rotate(-2.5 256 128)" opacity="0.9">
+    <rect x="36" y="72" width="440" height="112" rx="6" fill="none" stroke="#b45309" stroke-width="5" opacity="0.75"/>
+    <rect x="44" y="80" width="424" height="96" rx="4" fill="#7f1d1d22"/>
+    <text x="256" y="142" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="48" letter-spacing="10" fill="#dc2626" opacity="0.88">CLASSIFIED</text>
+  </g>
+</svg>

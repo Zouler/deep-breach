@@ -1,91 +1,93 @@
 # Visual Phase B — Asset Status
 
-**Phase:** B.3 P0 Asset Integration  
-**Branch:** `feature/visual-phase-b-p0-integration`  
+**Phase:** B.4 P1 Art Preparation  
+**Branch:** `feature/visual-phase-b-p1-art-pack`  
 **Spec:** [`phase-b-asset-production-pack.md`](./phase-b-asset-production-pack.md)  
-**Prompts & review:** [`phase-b-background-prompts.md`](./phase-b-background-prompts.md)  
+**P1 prompts:** [`phase-b-p1-art-prompts.md`](./phase-b-p1-art-prompts.md)  
+**P1 review:** [`phase-b-p1-art-review.md`](./phase-b-p1-art-review.md)  
 **Last updated:** 2026-07-06  
 
 ---
 
 ## Summary
 
-| Category | Created | Integrated | Pending |
-|----------|---------|------------|---------|
-| Derived branding | 4 | 4 (`app.json`) | wordmark P2 |
-| Scanline overlay | 1 | **Yes** (`ScreenShell`) | — |
-| Optimized item icons | 8 | **Yes** (`constants/assets.ts`) | WebP re-export optional |
-| P0 backgrounds | 3 | **Yes** (screen map below) | — |
-| Room plates | 0 | — | 4 P1 |
-| Portraits | 0 | — | 5 P1 |
-| Command tile icons | 0 | — | 6 P1 |
-| Classification stamps | 0 | — | 3 P1 |
+| Category | Created (B.4) | Integrated | Ready for integration |
+|----------|---------------|------------|----------------------|
+| P0 backgrounds | 3 | Yes (B.3) | — |
+| Scanline overlay | 1 | Yes (B.3) | — |
+| Optimized item icons | 8 | Yes (B.3) | — |
+| **Portraits** | **5** | No | **Pending art review** |
+| **Room plates** | **4** | No | **Pending art review** |
+| **Command tile icons** | **6 SVG** | No | **Yes** (SVG — review tint on device) |
+| **Classification stamps** | **3 WebP + 3 SVG source** | No | **Yes** (programmatic text) |
+| P2 extras | — | — | sonar room, wordmark, dive HUD, etc. |
+
+**Regeneration:** `npm install sharp --no-save && node scripts/prepare-phase-b-p1-art.mjs`
 
 ---
 
-## Integration Map (B.3)
+## P0 Integration (B.3 — unchanged)
 
-### Backgrounds
-
-| Asset | Screens | Scrim |
-|-------|---------|-------|
-| `commandHubBackground` | `base`, `mission-select`, `campaigns`, `crew`, `upgrades` | 0.58–0.60 |
-| `briefingRoomBackground` | `story-mission-briefing`, `command-briefings`, `assignment-briefing`, `assignment-memo` | 0.62–0.64 |
-| `captainsLogBackground` | `captains-log`, `settings` | 0.62–0.65 |
-| `baseRepairDockBg` | `repair-dock`, `base-storage`, `inventory` (base), `mission-result` | unchanged |
-| `diveScreenBg` | `dive`, `inventory` (dive), `room/[roomId]` | unchanged |
-
-### Scanline overlay (`scanlineOverlay` prop on `ScreenShell`)
-
-Enabled on: `base`, `mission-select`, `story-mission-briefing`, `dive`, `mission-result`  
-Opacity: `theme.scanlineOpacity` (0.035) · tile repeat · `pointerEvents="none"`
-
-### Optimized item icons
-
-All `GAME_ASSETS.icons.*` now resolve to `assets/icons/items-optimized/icon-*.png` (256×256).  
-Original masters in `assets/icons/` remain untouched and unbundled.
-
-### Asset registry (`constants/assets.ts`)
-
-- `commandHubBackground`
-- `briefingRoomBackground`
-- `captainsLogBackground`
-- `scanlineNoiseOverlay`
-- `icons.*` → optimized set
+See prior sections in git history. Backgrounds, overlay, and optimized icons remain wired per B.3 map.
 
 ---
 
-## Manual Visual QA Checklist
+## P1 Assets Created (B.4)
 
-Run on device or simulator after merge:
+### Portraits — `assets/images/portraits/`
 
-- [ ] **Base screen** — command hub background visible; tiles and panels readable; not over-darkened
-- [ ] **Mission select** — command hub background; trial cards readable
-- [ ] **Story briefing** — briefing room background; memo panels readable
-- [ ] **Command briefings** — briefing room background; department cards readable
-- [ ] **Captain’s Log** — uses captain’s log background (not repair dock)
-- [ ] **Settings** — captain’s log / archive tone
-- [ ] **Item icons** — render correctly in base resources, dive HUD, repair dock, mission result
-- [ ] **Scanline overlay** — subtle on base/dive/briefing/result; not noisy; touches work
-- [ ] **Title / splash / app icon** — unchanged (`app/index`, cold start)
-- [ ] **Repair dock / mission result** — still use repair-dock plate where intended
+| File | Source method | Dimensions | Size | Ready |
+|------|---------------|------------|------|-------|
+| `portrait-roberts-neutral.webp` | AI source → sharp crop | 768×768 | 51 KB | Pending review |
+| `portrait-xo-neutral.webp` | AI source → sharp crop | 768×768 | 36 KB | Pending review |
+| `portrait-engineer-neutral.webp` | AI source → sharp crop | 768×768 | 65 KB | Pending review |
+| `portrait-navigator-neutral.webp` | AI source → sharp crop | 768×768 | 49 KB | Pending review |
+| `portrait-scientist-neutral.webp` | AI source → sharp crop | 768×768 | 42 KB | Pending review |
+
+### Room plates — `assets/images/rooms/`
+
+| File | Source method | Dimensions | Size | Ready |
+|------|---------------|------------|------|-------|
+| `bg-room-bridge.webp` | AI source → letterbox + vignette | 1080×2340 | 49 KB | Pending review |
+| `bg-room-engine.webp` | AI source → letterbox + vignette | 1080×2340 | 53 KB | Pending review |
+| `bg-room-lab.webp` | AI source → letterbox + vignette | 1080×2340 | 89 KB | Pending review |
+| `bg-room-cargo.webp` | AI source → letterbox + vignette | 1080×2340 | 56 KB | Pending review |
+
+### Command tile icons — `assets/icons/command/`
+
+| File | Source method | ViewBox | Size | Ready |
+|------|---------------|---------|------|-------|
+| `icon-dock.svg` | Hand-authored SVG | 24×24 | 363 B | Yes |
+| `icon-missions.svg` | Hand-authored SVG | 24×24 | 391 B | Yes |
+| `icon-crew.svg` | Hand-authored SVG | 24×24 | 355 B | Yes |
+| `icon-inventory.svg` | Hand-authored SVG | 24×24 | 301 B | Yes |
+| `icon-upgrades.svg` | Hand-authored SVG | 24×24 | 337 B | Yes |
+| `icon-log.svg` | Hand-authored SVG | 24×24 | 289 B | Yes |
+
+### Classification stamps — `assets/stamps/`
+
+| File | Source method | Dimensions | Size | Ready |
+|------|---------------|------------|------|-------|
+| `stamp-classified.webp` | SVG → sharp export | 512×256 | 12 KB | Yes |
+| `stamp-cleared.webp` | SVG → sharp export | 512×256 | 8 KB | Yes |
+| `stamp-vessel-lost.webp` | SVG → sharp export | 512×256 | 10 KB | Yes |
+| `stamp-*.svg` | Programmatic (source masters) | 512×256 | <1 KB each | Yes — editable source |
 
 ---
 
-## Assets Deferred (P1+)
+## Deferred / Not in B.4
 
-| Priority | Asset | Reason |
-|----------|-------|--------|
-| P1 | Room plates ×4 | AI art |
-| P1 | Portraits ×5 | AI art |
-| P1 | Command tile icons ×6 | Glyph design |
-| P1 | Classification stamps ×3 | Intentional text stamps |
-| P2 | Wordmark, sonar room, gauge bezel, dive HUD wire-up | Per production pack |
+| Asset | Reason |
+|-------|--------|
+| Sensor / Logistics portraits | P2 per production pack |
+| Sonar room plate | P2 |
+| Production-pack PNG tile icons | Superseded by SVG command set |
+| `stamp-restricted` / `stamp-dbx-program` / `stamp-phos-restricted` names | B.4 uses classified/cleared/vessel-lost semantic set — map at integration |
 
 ---
 
 ## Next Steps
 
-1. **Device playtest** — run manual QA checklist above
-2. **P1 art pass** — portraits + room plates + command tile icons + stamps
-3. **Optional** — re-export item icons as WebP for further bundle savings
+1. **Manual art review** — [`phase-b-p1-art-review.md`](./phase-b-p1-art-review.md)
+2. **Phase B.5 integration PR** — wire portraits, room plates, command SVGs, stamps per prompts doc §Integration notes
+3. **Device QA** — face at 64px, rooms behind room HUD, icons on base grid
