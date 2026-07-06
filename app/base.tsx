@@ -14,6 +14,7 @@ import { SUBMARINE_IDENTITY } from '@/data/submarine';
 import { useGame } from '@/context/GameContext';
 import { totalRepairSupplyUnits } from '@/game/baseStorage';
 import { isFirstContactAnalysisPending } from '@/game/firstContactAftermath';
+import { isCommandPressurePending } from '@/game/commandPressure';
 import { moduleLevel } from '@/game/submarineStats';
 import { formatThreatLabel, threatForHigherIsBetter } from '@/game/threatLevels';
 import { getSubmarineStatus } from '@/game/statusHelpers';
@@ -27,6 +28,7 @@ export default function BaseScreen() {
   const subStatus = getSubmarineStatus(submarine);
   const hullBand = formatThreatLabel(threatForHigherIsBetter(submarine.hullIntegrityPercent));
   const firstContactReviewPending = isFirstContactAnalysisPending(state);
+  const commandPressurePending = isCommandPressurePending(state);
 
   return (
     <ScreenShell
@@ -53,6 +55,24 @@ export default function BaseScreen() {
               router.push({
                 pathname: '/story-mission-briefing' as never,
                 params: { missionId: 'first_contact_analysis' },
+              })
+            }
+          />
+        </PanelCard>
+      ) : null}
+      {commandPressurePending ? (
+        <PanelCard variant="document" style={styles.consoleCard}>
+          <Text style={styles.cardTitle}>Command Pressure — Strategic Response</Text>
+          <Text style={styles.meta}>
+            Growing Ocean monitoring is complete. Command, Research, and Engineering await your
+            strategic posture decision — no dive authorized.
+          </Text>
+          <PrimaryButton
+            title="Open Command Pressure"
+            onPress={() =>
+              router.push({
+                pathname: '/story-mission-briefing' as never,
+                params: { missionId: 'command_pressure' },
               })
             }
           />

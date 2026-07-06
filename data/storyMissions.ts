@@ -361,6 +361,111 @@ export const STORY_MISSION_DEFINITIONS: MissionDefinition[] = [
       scrap: 35,
       researchData: 55,
     },
+    nextUnlocks: ['command_pressure'],
+  },
+  {
+    id: 'command_pressure',
+    title: 'Command Pressure',
+    subtitle: 'Strategic response · post-monitoring',
+    category: 'story_spine',
+    canonEraRequired: 'anomaly_growth',
+    revealLevelRequired: REVEAL_LEVEL.ANOMALY_GROWTH,
+    spineEventId: 'command_pressure',
+    isSpineMission: true,
+    description:
+      'Base-side command conference after passive monitoring confirms the phenomenon is expanding. Command, Research, and Engineering disagree on the next posture — no dive authorized.',
+    briefing: {
+      kicker: 'Command Conference · Post-Monitoring',
+      title: 'Command Pressure',
+      subtitle: 'DBX Program Command · department leads',
+      body: [
+        `Commander ${id.commanderName},`,
+        '',
+        'Passive monitoring confirms the footprint is no longer isolated to the DBX-03 loss zone. Command, Research, and Engineering now disagree on what DBX-07 should do next.',
+        '',
+        'Command wants containment and formal reporting. Research wants more data before any conclusion is filed. Engineering warns that repeated exposure is stressing the submarine beyond normal failure models.',
+        '',
+        'This is not a dive authorization. It is a strategic posture decision. Roberts recommends procedural caution — the phenomenon remains unexplained and restricted.',
+      ],
+      leadLines: [
+        {
+          speakerId: 'xo',
+          text: 'Commander, liaison channels are open and every department is writing a different recommendation. Command wants escalation. Research wants time. Engineering wants us to stop pretending the hull is abstract.',
+        },
+        {
+          speakerId: 'research_lead',
+          text: 'The monitoring package is repeatable but not classifiable. I cannot support panic tasking or silent reporting — only a clear posture we can defend in the record.',
+        },
+        {
+          speakerId: 'chief_engineer',
+          text: 'Mk I shielding is accumulating micro-stress outside modeled tolerance. Another descent without a declared posture is not engineering-approved — it is hope dressed as procedure.',
+        },
+      ],
+      classification: 'Clearance: RESTRICTED/DBX-07/PHOS · Strategic Posture Review',
+    },
+    objectives: [
+      'Review department recommendations after Growing Ocean monitoring.',
+      'Select one strategic posture: escalation, observation, or withdrawal preparation.',
+    ],
+    restrictions: [
+      'No dive authorized — base-side decision only.',
+      'Full anomaly explanation not available at this stage.',
+    ],
+    successSummary:
+      'Strategic posture logged. Command Pressure decision recorded under restricted classification.',
+    failureSummary: 'Decision deferred — department recommendations remain unresolved.',
+    unlockConditions: {
+      requiredSpineEvents: ['growing_ocean_anomaly'],
+    },
+    rewards: {
+      scrap: 0,
+      researchData: 0,
+    },
+    nextUnlocks: ['abyssal_expansion_review'],
+  },
+  {
+    id: 'abyssal_expansion_review',
+    title: 'Abyssal Expansion Review',
+    subtitle: 'Command modeling · restricted hold',
+    category: 'story_spine',
+    canonEraRequired: 'anomaly_growth',
+    revealLevelRequired: REVEAL_LEVEL.ANOMALY_GROWTH,
+    isSpineMission: true,
+    isPlaceholder: true,
+    description:
+      'DBX Program Command is reviewing abyssal expansion models derived from passive monitoring. Tasking remains on restricted hold.',
+    briefing: {
+      kicker: 'Operational Hold · Command Review',
+      title: 'Abyssal Expansion Review',
+      subtitle: 'DBX Program Command · modeling cell',
+      body: [
+        `Commander ${id.commanderName},`,
+        '',
+        'Your strategic posture decision has been logged. DBX Program Command is now reviewing abyssal expansion models against the monitoring package.',
+        '',
+        'No further dive authorization has been issued. Sensor watch continues under restricted classification. Research and Engineering remain on standby pending Command disposition.',
+        '',
+        'This assignment remains locked until Command completes its review cycle.',
+      ],
+      leadLines: [
+        {
+          speakerId: 'xo',
+          text: 'Command is treating the models as sensitive — not shareable at DBX-07 clearance. We hold position and maintain watch. No tasking yet.',
+        },
+      ],
+      classification: 'Clearance: RESTRICTED/DBX-07/PHOS · Modeling Hold',
+    },
+    objectives: ['Await Command review of abyssal expansion models.'],
+    restrictions: ['No dive or operational launch authorized at this stage.'],
+    successSummary: 'Command review pending — tasking not yet issued.',
+    failureSummary: 'Review cycle incomplete.',
+    unlockConditions: {
+      requiredSpineEvents: ['command_pressure'],
+    },
+    rewards: {
+      scrap: 0,
+      researchData: 0,
+    },
     nextUnlocks: [],
   },
 ];

@@ -17,11 +17,23 @@ This action:
 ## Programmatic (tests)
 
 ```typescript
-import { advanceQaToMonitoringReady } from '@/game/qaProgression';
+import { advanceQaToMonitoringReady, advanceQaToCommandPressureReady } from '@/game/qaProgression';
 
-const ready = advanceQaToMonitoringReady();
+const monitoringReady = advanceQaToMonitoringReady();
 // or: reduceGame(state, { type: 'QA_FAST_FORWARD_TO_MONITORING' })
+
+const commandPressureReady = advanceQaToCommandPressureReady();
+// or: reduceGame(state, { type: 'QA_FAST_FORWARD_TO_COMMAND_PRESSURE' })
 ```
+
+## Command Pressure ready (P1.7 testing)
+
+1. Open **Settings**.
+2. Under **Developer / QA**, tap **QA: Advance to Command Pressure ready**.
+3. Open **Mission Select → Operational assignments → Command Pressure** (or use the base hub banner).
+4. Select one strategic posture — no dive launches.
+
+This action completes Growing Ocean monitoring via valid reducer paths and leaves the strategic decision pending.
 
 ## Not for production players
 

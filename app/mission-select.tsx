@@ -36,6 +36,11 @@ import {
   growingOceanMissionActionCopy,
   growingOceanMissionLockCopy,
 } from '@/game/growingOceanAnomaly';
+import {
+  abyssalExpansionReviewLockCopy,
+  commandPressureActionCopy,
+  commandPressureLockCopy,
+} from '@/game/commandPressure';
 import { STORY_MISSION_DEFINITIONS, type MissionDefinition } from '@/data/storyMissions';
 import type { TrialStatus } from '@/types';
 
@@ -78,6 +83,14 @@ function storyMissionBadge(def: MissionDefinition, completed: boolean, locked: b
     if (locked) return { text: 'Locked', style: styles.badgeLocked };
     return { text: 'Available', style: styles.badgeAvailable };
   }
+  if (def.id === 'command_pressure') {
+    if (completed) return { text: 'Completed', style: styles.badgeDone };
+    if (locked) return { text: 'Locked', style: styles.badgeLocked };
+    return { text: 'Decision required', style: styles.badgeAvailable };
+  }
+  if (def.id === 'abyssal_expansion_review') {
+    return { text: 'On hold', style: styles.badgeLocked };
+  }
   if (def.isPlaceholder) return { text: 'Locked', style: styles.badgeLocked };
   if (completed) return { text: 'Completed', style: styles.badgeDone };
   if (locked) return { text: 'Locked', style: styles.badgeLocked };
@@ -104,6 +117,12 @@ function storyMissionAction(
     if (completed) return 'Review briefing';
     if (locked) return growingOceanMissionActionCopy(state);
     return 'Launch monitoring dive';
+  }
+  if (def.id === 'command_pressure') {
+    return commandPressureActionCopy(state);
+  }
+  if (def.id === 'abyssal_expansion_review') {
+    return 'Command review pending';
   }
   if (def.isPlaceholder) return 'Requirements not met';
   if (completed) return 'Review briefing';
@@ -274,6 +293,10 @@ export default function MissionSelectScreen() {
                     <Text style={styles.requirement}>{firstContactAnalysisLockCopy(state)}</Text>
                   ) : locked && def.id === 'growing_ocean_anomaly_prep' ? (
                     <Text style={styles.requirement}>{growingOceanMissionLockCopy(state)}</Text>
+                  ) : locked && def.id === 'command_pressure' ? (
+                    <Text style={styles.requirement}>{commandPressureLockCopy(state)}</Text>
+                  ) : def.id === 'abyssal_expansion_review' && !locked ? (
+                    <Text style={styles.requirement}>{abyssalExpansionReviewLockCopy(state)}</Text>
                   ) : locked && def.id === 'operation_dead_beacon' ? (
                     <Text style={styles.requirement}>
                       Complete Operational Integration and await DBX-03 signal tasking.
@@ -283,7 +306,7 @@ export default function MissionSelectScreen() {
                       Complete prior story requirements to unlock.
                     </Text>
                   ) : null}
-                  {def.isPlaceholder ? (
+                  {def.isPlaceholder && def.id !== 'abyssal_expansion_review' ? (
                     <Text style={styles.requirement}>
                       Hull Reinforcement Mk I authorization required.
                     </Text>

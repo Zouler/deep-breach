@@ -19,6 +19,11 @@ import {
   STORY_FLAG_FIRST_CONTACT_ANALYSIS,
   type FirstContactAnalysisChoice,
 } from '@/game/firstContactAftermath';
+import {
+  COMMAND_PRESSURE_OPTIONS,
+  isCommandPressurePending,
+  type CommandPressureChoice,
+} from '@/game/commandPressure';
 import { growingOceanMissionLockCopy } from '@/game/growingOceanAnomaly';
 import { getMissionDefinition, isMissionUnlocked, isStoryMissionCompleted } from '@/game/storyMissions';
 import { portraitForSpeakerId } from '@/game/portraitAssets';
@@ -48,12 +53,22 @@ export default function StoryMissionBriefingScreen() {
 
   const b = def.briefing;
   const isAnalysisMission = def.id === 'first_contact_analysis';
+  const isCommandPressureMission = def.id === 'command_pressure';
   const analysisPending = isFirstContactAnalysisPending(state);
   const analysisResolved = hasStoryFlag(state, STORY_FLAG_FIRST_CONTACT_ANALYSIS);
+  const commandPressurePending = isCommandPressureMission && isCommandPressurePending(state);
+  const commandPressureResolved =
+    isCommandPressureMission && state.completedSpineEvents.includes('command_pressure');
 
   const onAnalysisDecision = (choice: FirstContactAnalysisChoice) => {
     if (!analysisPending) return;
     dispatch({ type: 'RESOLVE_FIRST_CONTACT_ANALYSIS', choice });
+    router.replace('/mission-select');
+  };
+
+  const onCommandPressureDecision = (choice: CommandPressureChoice) => {
+    if (!commandPressurePending) return;
+    dispatch({ type: 'RESOLVE_COMMAND_PRESSURE', choice });
     router.replace('/mission-select');
   };
   const isDiveAssignment = def.isDiveMission === true;
@@ -167,6 +182,11 @@ export default function StoryMissionBriefingScreen() {
           {def.id === 'growing_ocean_anomaly_prep' && !unlocked && !completed ? (
             <Text style={styles.placeholderNote}>{growingOceanMissionLockCopy(state)}</Text>
           ) : null}
+          {def.id === 'abyssal_expansion_review' ? (
+            <Text style={styles.placeholderNote}>
+              Command is reviewing abyssal expansion models. Tasking remains on restricted hold.
+            </Text>
+          ) : null}
           {isAnalysisMission && analysisResolved ? (
             <Text style={styles.resolvedNote}>
               Analysis complete — monitoring preparation logged. Growing Ocean Anomaly tasking pending.
@@ -191,9 +211,25 @@ export default function StoryMissionBriefingScreen() {
               ))}
               <PrimaryButton title="Back to schedule" variant="ghost" onPress={() => router.back()} />
             </>
+          ) : isCommandPressureMission && commandPressurePending && unlocked ? (
+            <>
+              <Text style={styles.lockedHint}>
+                Select one strategic posture. No dive will launch — this decision is logged for
+                Command and department leads.
+              </Text>
+              {COMMAND_PRESSURE_OPTIONS.map((option) => (
+                <PrimaryButton
+                  key={option.id}
+                  title={option.label}
+                  variant="ghost"
+                  onPress={() => onCommandPressureDecision(option.id)}
+                />
+              ))}
+              <PrimaryButton title="Back to schedule" variant="ghost" onPress={() => router.back()} />
+            </>
           ) : def.isPlaceholder ? (
             <PrimaryButton title="Return to schedule" variant="ghost" onPress={() => router.back()} />
-          ) : completed ? (
+          ) : completed || commandPressureResolved ? (
             <PrimaryButton title="Back to schedule" variant="ghost" onPress={() => router.back()} />
           ) : unlocked && isDiveAssignment ? (
             <>

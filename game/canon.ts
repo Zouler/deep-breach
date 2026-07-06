@@ -55,6 +55,7 @@ export type SpineEventId =
   | 'hull_reinforcement_mk1'
   | 'return_to_dbx03_site'
   | 'growing_ocean_anomaly'
+  | 'command_pressure'
   | 'military_escalation'
   | 'intergalactic_war'
   | 'civilization_collapse'
@@ -72,6 +73,7 @@ export const SPINE_EVENT_ERA: Record<SpineEventId, CanonEra> = {
   hull_reinforcement_mk1: 'dead_beacon',
   return_to_dbx03_site: 'dead_beacon',
   growing_ocean_anomaly: 'anomaly_growth',
+  command_pressure: 'anomaly_growth',
   military_escalation: 'war',
   intergalactic_war: 'war',
   civilization_collapse: 'collapse',

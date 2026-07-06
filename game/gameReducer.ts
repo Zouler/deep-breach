@@ -131,7 +131,11 @@ import {
   applyGrowingOceanMonitoringTick,
   recordGrowingOceanMonitoringScan,
 } from '@/game/growingOceanAnomaly';
-import { advanceQaToMonitoringReady } from '@/game/qaProgression';
+import {
+  isCommandPressureChoice,
+  resolveCommandPressure,
+} from '@/game/commandPressure';
+import { advanceQaToCommandPressureReady, advanceQaToMonitoringReady } from '@/game/qaProgression';
 import {
   applyStoryDiveResolution,
   applyStoryMissionCompletion,
@@ -191,7 +195,9 @@ export type GameAction =
   | { type: 'COMPLETE_STORY_MISSION'; missionId: string }
   | { type: 'RESOLVE_DEAD_BEACON_DATA_DECISION'; choice: string }
   | { type: 'RESOLVE_FIRST_CONTACT_ANALYSIS'; choice: string }
+  | { type: 'RESOLVE_COMMAND_PRESSURE'; choice: string }
   | { type: 'QA_FAST_FORWARD_TO_MONITORING' }
+  | { type: 'QA_FAST_FORWARD_TO_COMMAND_PRESSURE' }
   | { type: 'SET_REVEAL_LEVEL'; revealLevel: number }
   | {
       type: 'APPLY_ROBERTS_DELTA';
@@ -1327,9 +1333,23 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       if (next === state) return state;
       return touch(next);
     }
+    case 'RESOLVE_COMMAND_PRESSURE': {
+      if (!isCommandPressureChoice(action.choice)) return state;
+      const next = resolveCommandPressure(state, action.choice);
+      if (next === state) return state;
+      return touch(next);
+    }
     case 'QA_FAST_FORWARD_TO_MONITORING': {
       try {
         const next = advanceQaToMonitoringReady(state);
+        return touch(next);
+      } catch {
+        return state;
+      }
+    }
+    case 'QA_FAST_FORWARD_TO_COMMAND_PRESSURE': {
+      try {
+        const next = advanceQaToCommandPressureReady(state);
         return touch(next);
       } catch {
         return state;
