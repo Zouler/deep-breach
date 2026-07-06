@@ -2,7 +2,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ClassificationStamp } from '@/components/ClassificationStamp';
 import { PanelCard } from '@/components/PanelCard';
+import { PortraitFrame } from '@/components/PortraitFrame';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
 import { theme } from '@/constants/theme';
@@ -19,6 +21,7 @@ import {
 } from '@/game/firstContactAftermath';
 import { growingOceanMissionLockCopy } from '@/game/growingOceanAnomaly';
 import { getMissionDefinition, isMissionUnlocked, isStoryMissionCompleted } from '@/game/storyMissions';
+import { portraitForSpeakerId } from '@/game/portraitAssets';
 
 function speakerLabel(speakerId: string): string {
   return CREW_LEADS_BY_ID[speakerId as keyof typeof CREW_LEADS_BY_ID]?.displayName ?? speakerId;
@@ -83,6 +86,7 @@ export default function StoryMissionBriefingScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          <ClassificationStamp variant="classified" width={120} />
           <Text style={styles.kicker}>{b.kicker}</Text>
           <Text style={styles.title}>{b.title}</Text>
           <Text style={styles.subtitle}>{b.subtitle}</Text>
@@ -138,12 +142,20 @@ export default function StoryMissionBriefingScreen() {
             </PanelCard>
           ) : null}
 
-          {b.leadLines.map((line) => (
+          {b.leadLines.map((line) => {
+            const portrait = portraitForSpeakerId(line.speakerId);
+            return (
             <PanelCard key={line.speakerId} style={styles.leadCard}>
+              <View style={styles.leadRow}>
+                {portrait ? <PortraitFrame source={portrait} size={56} /> : null}
+                <View style={styles.leadCopy}>
               <Text style={styles.leadKicker}>{speakerLabel(line.speakerId).toUpperCase()}</Text>
               <Text style={styles.leadText}>{line.text}</Text>
+                </View>
+              </View>
             </PanelCard>
-          ))}
+            );
+          })}
 
           {def.isPlaceholder ? (
             <Text style={styles.placeholderNote}>
@@ -254,6 +266,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(44, 217, 255, 0.25)',
     backgroundColor: theme.panelBgSoft,
   },
+  leadRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  leadCopy: { flex: 1, minWidth: 0 },
   leadKicker: {
     color: theme.accent,
     fontSize: 10,

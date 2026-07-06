@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { PanelCard } from '@/components/PanelCard';
+import { PortraitFrame } from '@/components/PortraitFrame';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
 import { SectionHeader } from '@/components/SectionHeader';
@@ -10,6 +11,7 @@ import { theme } from '@/constants/theme';
 import { STORY_SO_FAR_TEMPLATE } from '@/data/storyRecapTemplates';
 import { useGame } from '@/context/GameContext';
 import { formatCrewMessageDisplayName } from '@/game/crewMessagePresentation';
+import { robertsPortrait } from '@/game/portraitAssets';
 import type { StoryBeat, StoryBeatImportance } from '@/types';
 
 function importanceLabel(i: StoryBeatImportance): string {
@@ -52,7 +54,12 @@ export default function CaptainsLogScreen() {
       backgroundImage={GAME_ASSETS.captainsLogBackground}
       backgroundScrimOpacity={0.62}
     >
-      <SectionHeader title="Captain’s Log" subtitle="Narrative record · not a raw systems dump" />
+      <View style={styles.headerRow}>
+        <PortraitFrame source={robertsPortrait()} size={80} />
+        <View style={styles.headerText}>
+          <SectionHeader title="Captain’s Log" subtitle="Narrative record · not a raw systems dump" />
+        </View>
+      </View>
       <PanelCard style={styles.card}>
         <Text style={styles.cardHead}>Story so far</Text>
         <Text style={styles.storySoFar}>{STORY_SO_FAR_TEMPLATE}</Text>
@@ -79,6 +86,8 @@ export default function CaptainsLogScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 4 },
+  headerText: { flex: 1, minWidth: 0 },
   card: { marginBottom: 12 },
   cardHead: {
     color: theme.accent,

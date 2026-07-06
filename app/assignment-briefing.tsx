@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AssignmentMemoFrame } from '@/components/AssignmentMemoFrame';
+import { ClassificationStamp } from '@/components/ClassificationStamp';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ScreenShell } from '@/components/ScreenShell';
 import { GAME_ASSETS } from '@/constants/assets';
@@ -54,6 +55,7 @@ export default function AssignmentBriefingScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          <ClassificationStamp variant="classified" width={120} />
           <Text style={styles.screenHint}>Official memorandum · read carefully</Text>
           <AssignmentMemoFrame />
         </ScrollView>

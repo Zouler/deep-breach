@@ -4,9 +4,6 @@ import type { ImageSourcePropType } from 'react-native';
  * Central registry for gameplay visuals (Expo / Metro-friendly static requires).
  * Missing or bad images are handled at render time via SafeIcon (onError).
  *
- * Phase B P0: backgrounds, scanline overlay, optimized item icons (256×256).
- * Original icon masters remain in assets/icons/ — not imported here.
- *
  * @see docs/visual/phase-b-asset-production-pack.md
  */
 import baseRepairDockBg from '@/assets/images/base-repair-dock-bg.png';
@@ -20,6 +17,21 @@ import briefingRoomBackground from '@/assets/images/backgrounds/bg-briefing-room
 import captainsLogBackground from '@/assets/images/backgrounds/bg-captains-log.webp';
 import scanlineNoiseOverlay from '@/assets/images/overlays/overlay-scanline-noise.png';
 
+import bridgeRoomBackground from '@/assets/images/rooms/bg-room-bridge.webp';
+import engineRoomBackground from '@/assets/images/rooms/bg-room-engine.webp';
+import labRoomBackground from '@/assets/images/rooms/bg-room-lab.webp';
+import cargoRoomBackground from '@/assets/images/rooms/bg-room-cargo.webp';
+
+import portraitRobertsNeutral from '@/assets/images/portraits/portrait-roberts-neutral.webp';
+import portraitXoNeutral from '@/assets/images/portraits/portrait-xo-neutral.webp';
+import portraitEngineerNeutral from '@/assets/images/portraits/portrait-engineer-neutral.webp';
+import portraitNavigatorNeutral from '@/assets/images/portraits/portrait-navigator-neutral.webp';
+import portraitScientistNeutral from '@/assets/images/portraits/portrait-scientist-neutral.webp';
+
+import stampClassified from '@/assets/stamps/stamp-classified.webp';
+import stampCleared from '@/assets/stamps/stamp-cleared.webp';
+import stampVesselLost from '@/assets/stamps/stamp-vessel-lost.webp';
+
 import iconArtifact from '@/assets/icons/items-optimized/icon-artifact.png';
 import iconCrack from '@/assets/icons/items-optimized/icon-crack.png';
 import iconHullPatchKit from '@/assets/icons/items-optimized/icon-hull-patch-kit.png';
@@ -29,6 +41,8 @@ import iconResearchData from '@/assets/icons/items-optimized/icon-research-data.
 import iconScanArea from '@/assets/icons/items-optimized/icon-scan-area.png';
 import iconScrap from '@/assets/icons/items-optimized/icon-scrap.png';
 
+export type CommandIconKey = 'dock' | 'missions' | 'crew' | 'inventory' | 'upgrades' | 'log';
+
 export const GAME_ASSETS = {
   splashTitleBg: splashTitleBg as ImageSourcePropType,
   diveScreenBg: diveScreenBg as ImageSourcePropType,
@@ -37,6 +51,30 @@ export const GAME_ASSETS = {
   briefingRoomBackground: briefingRoomBackground as ImageSourcePropType,
   captainsLogBackground: captainsLogBackground as ImageSourcePropType,
   scanlineNoiseOverlay: scanlineNoiseOverlay as ImageSourcePropType,
+  bridgeRoomBackground: bridgeRoomBackground as ImageSourcePropType,
+  engineRoomBackground: engineRoomBackground as ImageSourcePropType,
+  labRoomBackground: labRoomBackground as ImageSourcePropType,
+  cargoRoomBackground: cargoRoomBackground as ImageSourcePropType,
+  portraits: {
+    robertsNeutral: portraitRobertsNeutral as ImageSourcePropType,
+    xoNeutral: portraitXoNeutral as ImageSourcePropType,
+    engineerNeutral: portraitEngineerNeutral as ImageSourcePropType,
+    navigatorNeutral: portraitNavigatorNeutral as ImageSourcePropType,
+    scientistNeutral: portraitScientistNeutral as ImageSourcePropType,
+  },
+  commandIcons: {
+    dock: 'dock',
+    missions: 'missions',
+    crew: 'crew',
+    inventory: 'inventory',
+    upgrades: 'upgrades',
+    log: 'log',
+  } as const satisfies Record<CommandIconKey, CommandIconKey>,
+  stamps: {
+    classified: stampClassified as ImageSourcePropType,
+    cleared: stampCleared as ImageSourcePropType,
+    vesselLost: stampVesselLost as ImageSourcePropType,
+  },
   logoDeepBreach: logoDeepBreach as ImageSourcePropType,
   logoDeepBreachIcon: logoDeepBreachIcon as ImageSourcePropType,
   icons: {

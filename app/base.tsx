@@ -156,37 +156,44 @@ export default function BaseScreen() {
           title="Repair Dock"
           subtitle="Hull & supply staging"
           emphasis
+          icon="dock"
           onPress={() => router.push('/repair-dock' as never)}
         />
         <CommandTile
           title="Trial schedule"
           subtitle="Experimental & operational"
           emphasis
+          icon="missions"
           onPress={() => router.push('/mission-select')}
         />
         <CommandTile
           title="Command Briefings"
           subtitle="Department status"
+          icon="log"
           onPress={() => router.push('/command-briefings' as never)}
         />
         <CommandTile
           title="Upgrades"
           subtitle="Module refit"
+          icon="upgrades"
           onPress={() => router.push('/upgrades')}
         />
         <CommandTile
           title="Crew"
           subtitle="Roster & assignments"
+          icon="crew"
           onPress={() => router.push('/crew')}
         />
         <CommandTile
           title="Inventory"
           subtitle="Expedition loadout"
+          icon="inventory"
           onPress={() => router.push('/inventory')}
         />
         <CommandTile
           title="Service Record"
           subtitle="Campaign overview"
+          icon="log"
           onPress={() => router.push('/campaigns' as never)}
         />
         {state.dive?.status === 'active' ? (

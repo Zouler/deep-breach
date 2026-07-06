@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ClassificationStamp } from '@/components/ClassificationStamp';
 import { IconLabelRow } from '@/components/IconLabelRow';
 import { PanelCard } from '@/components/PanelCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -74,6 +75,13 @@ export default function MissionResultScreen() {
 
   return (
     <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.74} scanlineOverlay>
+      {catastrophic ? (
+        <ClassificationStamp variant="vesselLost" width={150} />
+      ) : outcome.success ? (
+        <ClassificationStamp variant="cleared" width={130} />
+      ) : (
+        <ClassificationStamp variant="classified" width={120} />
+      )}
       <Text style={styles.docTitle}>{tr.docTitle}</Text>
       <Text style={[styles.title, { color: catastrophic ? theme.danger : headlineColor }]}>
         {catastrophic ? 'VESSEL LOST' : headlineText}
