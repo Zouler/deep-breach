@@ -414,6 +414,12 @@ export interface DiveSession {
   lastActionableBreachSignature?: string;
   /** Non-repair canon catalog items recovered this expedition. */
   expeditionCatalogItems?: Record<string, number>;
+  /** P1.3 return dive — contact interference zone active. */
+  anomalyInterferenceActive?: boolean;
+  /** Scans performed after anomaly interference began. */
+  anomalyContactScans?: number;
+  /** First anomaly contact event logged this dive. */
+  anomalyFirstContactLogged?: boolean;
 }
 
 export interface MissionOutcome {

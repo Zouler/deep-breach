@@ -185,10 +185,16 @@ export default function MissionResultScreen() {
           <Text style={styles.cardTitle}>Operational debrief</Text>
           <Text style={[styles.line, styles.unlockLine]}>{outcome.storyDebrief.headline}</Text>
           <Text style={styles.line}>{outcome.storyDebrief.summaryLine}</Text>
-          {!outcome.storyDebrief.reconComplete ? (
+          {!outcome.storyDebrief.reconComplete &&
+          outcome.storyDebrief.firstContactComplete === undefined ? (
             <Text style={[styles.line, styles.mutedNote]}>
               Standoff scan and depth requirements were not fully met. Command may re-task the
               reconnaissance package.
+            </Text>
+          ) : null}
+          {outcome.storyDebrief.firstContactComplete ? (
+            <Text style={[styles.line, styles.unlockLine, { marginTop: 8 }]}>
+              First anomaly contact logged — data restricted pending Command review.
             </Text>
           ) : null}
           {dataDecisionResolved && outcome.storyDebrief.dataDecisionHeadline ? (

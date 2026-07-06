@@ -1,5 +1,6 @@
 import type { CanonEra, RevealLevel, SpineEventId } from '@/game/canon';
 import { REVEAL_LEVEL } from '@/game/canon';
+import { OPERATION_DEAD_BEACON_RETURN_MISSION_ID } from '@/data/missions';
 import { SUBMARINE_IDENTITY } from '@/data/submarine';
 
 export type MissionCategory = 'experimental_trial' | 'operational_assignment' | 'story_spine';
@@ -184,44 +185,61 @@ export const STORY_MISSION_DEFINITIONS: MissionDefinition[] = [
   {
     id: 'operation_dead_beacon_return',
     title: 'Return to DBX-03 Site',
-    subtitle: 'Reinforced hull required · classified revisit',
+    subtitle: 'Reinforced hull · first contact verification',
     category: 'story_spine',
     canonEraRequired: 'dead_beacon',
     revealLevelRequired: REVEAL_LEVEL.ANOMALY_CONFIRMED,
     spineEventId: 'return_to_dbx03_site',
     isSpineMission: true,
-    isPlaceholder: true,
+    isDiveMission: true,
+    diveMissionId: OPERATION_DEAD_BEACON_RETURN_MISSION_ID,
     description:
-      'Second approach to the DBX-03 loss zone after Hull Reinforcement Mk I authorization. Gameplay reserved for a future milestone.',
+      'Controlled return to the DBX-03 loss zone under Hull Reinforcement Mk I to verify the site, gather readings through interference, and withdraw without recovery.',
     briefing: {
-      kicker: 'Operational Assignment · Locked',
+      kicker: 'Operational Assignment · First Contact',
       title: 'Return to DBX-03 Site',
-      subtitle: 'Hull Reinforcement Mk I required',
+      subtitle: 'Hull Reinforcement Mk I · controlled site verification',
       body: [
-        'This operation remains locked pending Hull Reinforcement Mk I authorization and anomaly shielding installation.',
+        `Commander ${id.commanderName},`,
         '',
-        'Engineering and Research must complete the reinforced hull treatment derived from Operation Dead Beacon data before DBX-07 can safely approach the contact zone again.',
+        'Hull Reinforcement Mk I is installed. DBX Program Command authorizes a controlled return to the DBX-03 loss zone — not for recovery, but to verify the site and collect readings under reinforced shielding.',
+        '',
+        'Expect elevated sensor interference as you approach the contact zone. Sonar returns may duplicate, pressure models may disagree with hull strain, and telemetry may arrive corrupted or delayed. Your orders are to reach the contact envelope, perform standoff scans after interference begins, gather what Research can use, and surface.',
+        '',
+        'Do not attempt DBX-03 recovery. Do not pursue unexplained contacts beyond authorized depth. Withdraw on command judgment if interference exceeds tolerance.',
       ],
       leadLines: [
         {
           speakerId: 'xo',
-          text: 'Commander, Command has the revisit on the board but we are not cleared to launch. Engineering needs the Mk I reinforcement package before we go back down there.',
+          text: 'Commander, Engineering confirms Mk I reinforcement is active. We are cleared to verify the site — not to solve it. I recommend we treat every sensor contradiction as real until proven otherwise.',
+        },
+        {
+          speakerId: 'research_lead',
+          text: 'The contact zone may produce impossible readings. That is the point of this dive — to document what the ocean is doing to our instruments, not to explain it yet.',
         },
       ],
-      classification: 'Clearance: Pending Hull Reinforcement Mk I',
+      classification: 'Clearance: First Contact Verification · DBX Program',
     },
-    objectives: ['Await Hull Reinforcement Mk I authorization.'],
-    restrictions: ['Operation locked — no launch authorized.'],
-    successSummary: 'Reserved for future deployment.',
-    failureSummary: 'Not available.',
+    objectives: [
+      'Approach the DBX-03 loss zone under reinforced hull.',
+      'Enter the contact interference envelope and perform post-interference scans.',
+      'Collect controlled readings for Research analysis.',
+      'Surface with verified contact telemetry.',
+    ],
+    restrictions: [
+      'Site verification only — no DBX-03 recovery authorized.',
+      'Withdraw if interference exceeds operational tolerance.',
+    ],
+    successSummary:
+      'First anomaly contact logged. Site verification data returned under restricted classification.',
+    failureSummary: 'Return incomplete — contact zone requirements not met.',
     unlockConditions: {
-      requiredSpineEvents: ['hull_reinforcement_mk1'],
-      requiredFlags: ['hull_reinforcement_mk1'],
+      requiredSpineEvents: ['operation_dead_beacon', 'hull_reinforcement_mk1'],
+      requiredFlags: ['deadBeaconData', 'hull_reinforcement_mk1'],
     },
     rewards: {
-      scrap: 120,
-      researchData: 60,
-      flags: ['hull_reinforcement_mk1'],
+      scrap: 55,
+      researchData: 40,
     },
     nextUnlocks: [],
   },

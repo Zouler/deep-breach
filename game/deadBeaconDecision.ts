@@ -161,17 +161,35 @@ export function resolveDeadBeaconDataDecision(
   return next;
 }
 
-/** Lock / status copy for Return to DBX-03 Site placeholder mission card. */
+/** Lock / status copy for Return to DBX-03 Site mission card. */
 export function returnMissionLockCopy(state: GameState): string {
-  if (hasStoryFlag(state, STORY_FLAG_HULL_REINFORCEMENT_MK1)) {
-    return 'Hull Reinforcement Mk I authorized — installation and revisit clearance pending.';
+  if (
+    hasStoryFlag(state, STORY_FLAG_DEAD_BEACON_DATA) &&
+    hasStoryFlag(state, STORY_FLAG_HULL_REINFORCEMENT_MK1)
+  ) {
+    return 'Return dive authorized — Hull Reinforcement Mk I installed.';
   }
-  return 'Hull Reinforcement Mk I authorization required.';
+  if (isDeadBeaconDataDecisionPending(state)) {
+    return 'Dead Beacon data unresolved — disposition decision required.';
+  }
+  if (!hasStoryFlag(state, STORY_FLAG_HULL_REINFORCEMENT_MK1)) {
+    return 'Hull reinforcement authorization required.';
+  }
+  return 'Complete prior story requirements to unlock.';
 }
 
 export function returnMissionActionCopy(state: GameState): string {
-  if (hasStoryFlag(state, STORY_FLAG_HULL_REINFORCEMENT_MK1)) {
-    return 'Review reinforcement status';
+  if (
+    hasStoryFlag(state, STORY_FLAG_DEAD_BEACON_DATA) &&
+    hasStoryFlag(state, STORY_FLAG_HULL_REINFORCEMENT_MK1)
+  ) {
+    return 'Launch return dive';
   }
-  return 'Hull Reinforcement Mk I required';
+  if (isDeadBeaconDataDecisionPending(state)) {
+    return 'Dead Beacon data unresolved';
+  }
+  if (!hasStoryFlag(state, STORY_FLAG_HULL_REINFORCEMENT_MK1)) {
+    return 'Hull reinforcement required';
+  }
+  return 'Locked';
 }

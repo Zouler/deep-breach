@@ -70,7 +70,7 @@ export const SPINE_EVENT_ERA: Record<SpineEventId, CanonEra> = {
   first_anomaly_contact: 'dead_beacon',
   correct_withdrawal: 'dead_beacon',
   hull_reinforcement_mk1: 'dead_beacon',
-  return_to_dbx03_site: 'anomaly_growth',
+  return_to_dbx03_site: 'dead_beacon',
   growing_ocean_anomaly: 'anomaly_growth',
   military_escalation: 'war',
   intergalactic_war: 'war',

@@ -133,7 +133,7 @@ export default function StoryMissionBriefingScreen() {
                 <Text style={styles.lockedHint}>Debrief pending — review the last run before launching.</Text>
               ) : null}
               <PrimaryButton
-                title="Launch recon"
+                title={def.id === 'operation_dead_beacon_return' ? 'Launch return dive' : 'Launch recon'}
                 onPress={onLaunchRecon}
                 disabled={activeBlocking || debriefBlocking}
               />

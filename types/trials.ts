@@ -42,4 +42,6 @@ export interface StoryDebriefAttachment {
   dataDecisionSummary?: string;
   /** True when recon succeeded but data disposition is still pending. */
   pendingDataDecision?: boolean;
+  /** P1.3 — first anomaly contact objectives met on return dive. */
+  firstContactComplete?: boolean;
 }

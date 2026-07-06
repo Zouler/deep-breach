@@ -1,6 +1,7 @@
 import type { Mission } from '@/types';
 
 export const OPERATION_DEAD_BEACON_MISSION_ID = 'operation_dead_beacon';
+export const OPERATION_DEAD_BEACON_RETURN_MISSION_ID = 'operation_dead_beacon_return';
 
 /** Playable operational dives launched from story assignments. */
 export const STORY_DIVE_MISSIONS: Mission[] = [
@@ -17,6 +18,20 @@ export const STORY_DIVE_MISSIONS: Mission[] = [
     specialEventChance: 0.18,
     trialPurpose:
       'Standoff reconnaissance of the DBX-03 distress signal sector — confirm source, scan wreckage, collect readings, return.',
+  },
+  {
+    id: OPERATION_DEAD_BEACON_RETURN_MISSION_ID,
+    name: 'Return to DBX-03 Site',
+    targetDepthM: 1200,
+    durationMinutes: 7,
+    risk: 'medium-high',
+    expectedRewardsText: 'Restricted research packets · low salvage · contact telemetry',
+    scrapRewardRange: [30, 55],
+    researchRewardRange: [14, 32],
+    treasureChance: 0.06,
+    specialEventChance: 0.28,
+    trialPurpose:
+      'Controlled return to the DBX-03 loss zone under Hull Reinforcement Mk I — verify the site, gather readings through interference, and withdraw. No recovery authorized.',
   },
 ];
 
