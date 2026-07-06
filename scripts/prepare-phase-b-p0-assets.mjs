@@ -137,7 +137,7 @@ async function createFavicon() {
 function createScanlineOverlayBuffer(width, height) {
   const channels = 4;
   const buffer = Buffer.alloc(width * height * channels);
-  const rng = mulberry32(0xdbx07);
+  const rng = mulberry32(900007);
 
   for (let y = 0; y < height; y++) {
     const lineAlpha = y % 4 === 0 ? 10 + (y % 8 === 0 ? 4 : 0) : 0;
