@@ -197,6 +197,12 @@ export default function MissionResultScreen() {
               First anomaly contact logged — data restricted pending Command review.
             </Text>
           ) : null}
+          {outcome.storyDebrief.firstContactComplete &&
+          !state.storyFlags?.includes('first_contact_analysis') ? (
+            <Text style={[styles.line, styles.mutedNote]}>
+              Return to base — First Contact Analysis is available under Operational assignments.
+            </Text>
+          ) : null}
           {dataDecisionResolved && outcome.storyDebrief.dataDecisionHeadline ? (
             <>
               <Text style={[styles.line, styles.unlockLine, { marginTop: 10 }]}>

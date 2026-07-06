@@ -12,6 +12,7 @@ import { NARRATIVE_UI } from '@/data/storyBriefings';
 import { SUBMARINE_IDENTITY } from '@/data/submarine';
 import { useGame } from '@/context/GameContext';
 import { totalRepairSupplyUnits } from '@/game/baseStorage';
+import { isFirstContactAnalysisPending } from '@/game/firstContactAftermath';
 import { moduleLevel } from '@/game/submarineStats';
 import { formatThreatLabel, threatForHigherIsBetter } from '@/game/threatLevels';
 import { getSubmarineStatus } from '@/game/statusHelpers';
@@ -24,10 +25,29 @@ export default function BaseScreen() {
   const hired = crew.filter((c) => c.hired);
   const subStatus = getSubmarineStatus(submarine);
   const hullBand = formatThreatLabel(threatForHigherIsBetter(submarine.hullIntegrityPercent));
+  const firstContactReviewPending = isFirstContactAnalysisPending(state);
 
   return (
     <ScreenShell scroll backgroundImage={GAME_ASSETS.baseRepairDockBg} backgroundScrimOpacity={0.7}>
       <SectionHeader title={nu.title} subtitle={nu.subtitle} />
+      {firstContactReviewPending ? (
+        <PanelCard style={styles.consoleCard}>
+          <Text style={styles.cardTitle}>First Contact — Command Review</Text>
+          <Text style={styles.meta}>
+            Restricted telemetry from the DBX-03 return dive requires analysis authorization.
+            Open Operational assignments to review findings and authorize the next preparation step.
+          </Text>
+          <PrimaryButton
+            title="Open First Contact Analysis"
+            onPress={() =>
+              router.push({
+                pathname: '/story-mission-briefing' as never,
+                params: { missionId: 'first_contact_analysis' },
+              })
+            }
+          />
+        </PanelCard>
+      ) : null}
       <Text style={styles.commanderLine}>{nu.commanderLine(commander.name, commander.title)}</Text>
       <PanelCard style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Resources</Text>

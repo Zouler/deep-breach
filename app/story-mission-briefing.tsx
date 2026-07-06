@@ -8,7 +8,15 @@ import { ScreenShell } from '@/components/ScreenShell';
 import { theme } from '@/constants/theme';
 import { CREW_LEADS_BY_ID } from '@/data/crewLeads';
 import { useGame } from '@/context/GameContext';
-import { returnMissionLockCopy } from '@/game/deadBeaconDecision';
+import { returnMissionLockCopy, hasStoryFlag } from '@/game/deadBeaconDecision';
+import {
+  FIRST_CONTACT_ANALYSIS_FINDINGS,
+  FIRST_CONTACT_ANALYSIS_OPTIONS,
+  growingOceanPlaceholderCopy,
+  isFirstContactAnalysisPending,
+  STORY_FLAG_FIRST_CONTACT_ANALYSIS,
+  type FirstContactAnalysisChoice,
+} from '@/game/firstContactAftermath';
 import { getMissionDefinition, isMissionUnlocked, isStoryMissionCompleted } from '@/game/storyMissions';
 
 function speakerLabel(speakerId: string): string {
@@ -35,6 +43,16 @@ export default function StoryMissionBriefingScreen() {
   }
 
   const b = def.briefing;
+  const isAnalysisMission = def.id === 'first_contact_analysis';
+  const isGrowingOceanPlaceholder = def.id === 'growing_ocean_anomaly_prep';
+  const analysisPending = isFirstContactAnalysisPending(state);
+  const analysisResolved = hasStoryFlag(state, STORY_FLAG_FIRST_CONTACT_ANALYSIS);
+
+  const onAnalysisDecision = (choice: FirstContactAnalysisChoice) => {
+    if (!analysisPending) return;
+    dispatch({ type: 'RESOLVE_FIRST_CONTACT_ANALYSIS', choice });
+    router.replace('/mission-select');
+  };
   const isDiveAssignment = def.isDiveMission === true;
   const diveMissionId = def.diveMissionId ?? def.id;
   const activeBlocking = state.dive?.status === 'active';
@@ -104,6 +122,17 @@ export default function StoryMissionBriefingScreen() {
             </PanelCard>
           ) : null}
 
+          {isAnalysisMission ? (
+            <PanelCard style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>Research findings — contradictory telemetry</Text>
+              {FIRST_CONTACT_ANALYSIS_FINDINGS.map((finding) => (
+                <Text key={finding} style={styles.listItemMuted}>
+                  • {finding}
+                </Text>
+              ))}
+            </PanelCard>
+          ) : null}
+
           {b.leadLines.map((line) => (
             <PanelCard key={line.speakerId} style={styles.leadCard}>
               <Text style={styles.leadKicker}>{speakerLabel(line.speakerId).toUpperCase()}</Text>
@@ -115,13 +144,36 @@ export default function StoryMissionBriefingScreen() {
             <Text style={styles.placeholderNote}>
               {def.id === 'operation_dead_beacon_return'
                 ? returnMissionLockCopy(state)
-                : 'This operation remains locked. Hull Reinforcement Mk I is required before launch.'}
+                : isGrowingOceanPlaceholder
+                  ? growingOceanPlaceholderCopy(state)
+                  : 'This operation remains locked. Hull Reinforcement Mk I is required before launch.'}
+            </Text>
+          ) : null}
+          {isAnalysisMission && analysisResolved ? (
+            <Text style={styles.resolvedNote}>
+              Analysis complete — monitoring preparation logged. Growing Ocean Anomaly tasking pending.
             </Text>
           ) : null}
         </ScrollView>
 
         <View style={[styles.bottomBar, { paddingBottom: Math.max(14, insets.bottom + 8) }]}>
-          {def.isPlaceholder ? (
+          {isAnalysisMission && analysisPending && unlocked ? (
+            <>
+              <Text style={styles.lockedHint}>
+                Select an authorization path. All options advance monitoring preparation — no full
+                explanation is available.
+              </Text>
+              {FIRST_CONTACT_ANALYSIS_OPTIONS.map((option) => (
+                <PrimaryButton
+                  key={option.id}
+                  title={option.label}
+                  variant="ghost"
+                  onPress={() => onAnalysisDecision(option.id)}
+                />
+              ))}
+              <PrimaryButton title="Back to schedule" variant="ghost" onPress={() => router.back()} />
+            </>
+          ) : def.isPlaceholder ? (
             <PrimaryButton title="Return to schedule" variant="ghost" onPress={() => router.back()} />
           ) : completed ? (
             <PrimaryButton title="Back to schedule" variant="ghost" onPress={() => router.back()} />
@@ -199,6 +251,7 @@ const styles = StyleSheet.create({
   },
   leadText: { color: theme.text, fontSize: 14, lineHeight: 21 },
   placeholderNote: { color: theme.warning, fontSize: 13, lineHeight: 18, marginTop: 4 },
+  resolvedNote: { color: theme.ok, fontSize: 13, lineHeight: 18, marginTop: 4, fontWeight: '600' },
   bottomBar: {
     borderTopWidth: 1,
     borderTopColor: theme.panelBorder,

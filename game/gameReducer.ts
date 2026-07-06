@@ -120,6 +120,10 @@ import {
   resolveDeadBeaconDataDecision,
 } from '@/game/deadBeaconDecision';
 import {
+  isFirstContactAnalysisChoice,
+  resolveFirstContactAnalysis,
+} from '@/game/firstContactAftermath';
+import {
   applyAnomalyContactTick,
   recordAnomalyContactScan,
 } from '@/game/anomalyContact';
@@ -181,6 +185,7 @@ export type GameAction =
   | { type: 'COMPLETE_SPINE_EVENT'; eventId: SpineEventId }
   | { type: 'COMPLETE_STORY_MISSION'; missionId: string }
   | { type: 'RESOLVE_DEAD_BEACON_DATA_DECISION'; choice: string }
+  | { type: 'RESOLVE_FIRST_CONTACT_ANALYSIS'; choice: string }
   | { type: 'SET_REVEAL_LEVEL'; revealLevel: number }
   | {
       type: 'APPLY_ROBERTS_DELTA';
@@ -1300,6 +1305,12 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
     case 'RESOLVE_DEAD_BEACON_DATA_DECISION': {
       if (!isDeadBeaconDataDecisionChoice(action.choice)) return state;
       const next = resolveDeadBeaconDataDecision(state, action.choice);
+      if (next === state) return state;
+      return touch(next);
+    }
+    case 'RESOLVE_FIRST_CONTACT_ANALYSIS': {
+      if (!isFirstContactAnalysisChoice(action.choice)) return state;
+      const next = resolveFirstContactAnalysis(state, action.choice);
       if (next === state) return state;
       return touch(next);
     }

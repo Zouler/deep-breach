@@ -27,6 +27,11 @@ import {
   isStoryMissionCompleted,
 } from '@/game/storyMissions';
 import { returnMissionActionCopy, returnMissionLockCopy } from '@/game/deadBeaconDecision';
+import {
+  firstContactAnalysisActionCopy,
+  firstContactAnalysisLockCopy,
+  growingOceanPlaceholderCopy,
+} from '@/game/firstContactAftermath';
 import { STORY_MISSION_DEFINITIONS, type MissionDefinition } from '@/data/storyMissions';
 import type { TrialStatus } from '@/types';
 
@@ -64,6 +69,10 @@ function actionLabel(status: TrialStatus, isExperimental: boolean): string {
 }
 
 function storyMissionBadge(def: MissionDefinition, completed: boolean, locked: boolean) {
+  if (def.id === 'growing_ocean_anomaly_prep') {
+    if (locked) return { text: 'Locked', style: styles.badgeLocked };
+    return { text: 'Coming soon', style: styles.badgeProgress };
+  }
   if (def.isPlaceholder) return { text: 'Locked', style: styles.badgeLocked };
   if (completed) return { text: 'Completed', style: styles.badgeDone };
   if (locked) return { text: 'Locked', style: styles.badgeLocked };
@@ -80,6 +89,14 @@ function storyMissionAction(
     if (completed) return 'Review briefing';
     if (locked) return returnMissionActionCopy(state);
     return 'Launch return dive';
+  }
+  if (def.id === 'first_contact_analysis') {
+    if (completed) return firstContactAnalysisActionCopy(state);
+    if (locked) return firstContactAnalysisActionCopy(state);
+    return firstContactAnalysisActionCopy(state);
+  }
+  if (def.id === 'growing_ocean_anomaly_prep') {
+    return 'Preparation phase';
   }
   if (def.isPlaceholder) return 'Hull Reinforcement Mk I required';
   if (completed) return 'Review briefing';
@@ -234,12 +251,16 @@ export default function MissionSelectScreen() {
                   <Text style={styles.meta}>{def.description}</Text>
                   {locked && def.id === 'operation_dead_beacon_return' ? (
                     <Text style={styles.requirement}>{returnMissionLockCopy(state)}</Text>
+                  ) : locked && def.id === 'first_contact_analysis' ? (
+                    <Text style={styles.requirement}>{firstContactAnalysisLockCopy(state)}</Text>
                   ) : locked && def.unlockConditions.requiredSpineEvents?.length ? (
                     <Text style={styles.requirement}>
                       Complete prior story requirements to unlock.
                     </Text>
                   ) : null}
-                  {def.isPlaceholder ? (
+                  {def.isPlaceholder && def.id === 'growing_ocean_anomaly_prep' ? (
+                    <Text style={styles.requirement}>{growingOceanPlaceholderCopy(state)}</Text>
+                  ) : def.isPlaceholder ? (
                     <Text style={styles.requirement}>
                       Hull Reinforcement Mk I authorization required.
                     </Text>
