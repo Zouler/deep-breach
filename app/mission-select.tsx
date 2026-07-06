@@ -76,8 +76,10 @@ function storyMissionAction(
   locked: boolean,
   state: ReturnType<typeof useGame>['state'],
 ): string {
-  if (def.id === 'operation_dead_beacon_return' && def.isPlaceholder) {
-    return returnMissionActionCopy(state);
+  if (def.id === 'operation_dead_beacon_return') {
+    if (completed) return 'Review briefing';
+    if (locked) return returnMissionActionCopy(state);
+    return 'Launch return dive';
   }
   if (def.isPlaceholder) return 'Hull Reinforcement Mk I required';
   if (completed) return 'Review briefing';
@@ -230,24 +232,22 @@ export default function MissionSelectScreen() {
                   </View>
                   <Text style={styles.purpose}>{def.subtitle}</Text>
                   <Text style={styles.meta}>{def.description}</Text>
-                  {locked && def.unlockConditions.requiredSpineEvents?.length ? (
+                  {locked && def.id === 'operation_dead_beacon_return' ? (
+                    <Text style={styles.requirement}>{returnMissionLockCopy(state)}</Text>
+                  ) : locked && def.unlockConditions.requiredSpineEvents?.length ? (
                     <Text style={styles.requirement}>
                       Complete prior story requirements to unlock.
                     </Text>
                   ) : null}
                   {def.isPlaceholder ? (
                     <Text style={styles.requirement}>
-                      {def.id === 'operation_dead_beacon_return'
-                        ? returnMissionLockCopy(state)
-                        : 'Hull Reinforcement Mk I authorization required.'}
+                      Hull Reinforcement Mk I authorization required.
                     </Text>
                   ) : null}
                   <Text
                     style={[
                       styles.actionHint,
-                      locked && !completed && !def.isPlaceholder
-                        ? styles.actionMuted
-                        : styles.actionAccent,
+                      locked && !completed ? styles.actionMuted : styles.actionAccent,
                     ]}
                   >
                     {action}

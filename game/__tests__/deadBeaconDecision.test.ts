@@ -120,7 +120,7 @@ describe('deadBeaconDecision P1.2', () => {
     expect(state.completedSpineEvents).not.toContain('military_escalation');
   });
 
-  it('unlocks return placeholder after resolution but does not enable gameplay', () => {
+  it('unlocks return mission after P1.2 resolution', () => {
     let state = completeDeadBeaconReconViaDive(withDeadBeaconReady(createInitialGameState()));
     expect(isMissionUnlocked(state, 'operation_dead_beacon_return')).toBe(false);
     state = resolveDeadBeaconDataDecision(state, 'report_official');

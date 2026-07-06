@@ -127,8 +127,6 @@ describe('storyMissions vertical slice', () => {
     expect(hasCompletedSpineEvent(state, 'operation_dead_beacon')).toBe(true);
     expect(isMissionUnlocked(state, 'operation_dead_beacon_return')).toBe(false);
     expect(hasStoryFlag(state, 'hull_reinforcement_mk1')).toBe(false);
-    const placeholder = getMissionDefinition('operation_dead_beacon_return')!;
-    expect(placeholder.isPlaceholder).toBe(true);
   });
 
   it('briefing acknowledgement alone does not complete Operation Dead Beacon', () => {

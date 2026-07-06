@@ -20,8 +20,10 @@ import {
 } from '@/game/canon';
 import { withSyncedLegacyEconomy } from '@/game/baseStorage';
 import { hasStoryFlag as hasStoryFlagFromState } from '@/game/deadBeaconDecision';
+import { buildAnomalyContactDebrief } from '@/game/anomalyContact';
 import { isStoryDiveReconSuccessful } from '@/game/storyMissionObjectives';
 import { withStoryBeat } from '@/game/storyBeats';
+import { applyRobertsUpdate } from '@/game/roberts';
 import { experimentalTrialsCompletedCount } from '@/game/trialProgression';
 import type { DiveSession, GameState, Mission, MissionOutcome } from '@/types';
 import type { StoryDebriefAttachment } from '@/types/trials';
@@ -166,6 +168,8 @@ function deadBeaconStoryDebrief(dive: DiveSession): StoryDebriefAttachment {
 /** Modest completion payout — P1.2 flag grants deferred. */
 const DEAD_BEACON_COMPLETION_SCRAP = 45;
 const DEAD_BEACON_COMPLETION_RESEARCH = 25;
+const RETURN_CONTACT_COMPLETION_SCRAP = 55;
+const RETURN_CONTACT_COMPLETION_RESEARCH = 40;
 
 /**
  * Apply story dive resolution after terminal outcome is recorded.
@@ -206,6 +210,49 @@ export function applyStoryDiveResolution(
         summaryText:
           'Standoff reconnaissance of the DBX-03 sector is logged. The distress signal reads as active; Research and Command have restricted the data package pending review.',
         speakerId: 'xo',
+        missionId: assignmentId,
+        diveStartedAt: dive.startedAt,
+      });
+    }
+  }
+
+  if (assignmentId === 'operation_dead_beacon_return') {
+    const contact = buildAnomalyContactDebrief(dive);
+    debrief = {
+      reconComplete: false,
+      headline: contact.headline,
+      summaryLine: contact.summaryLine,
+      firstContactComplete: contact.firstContactComplete,
+    };
+    if (contact.firstContactComplete) {
+      next = completeSpineEventIfValid(next, 'first_anomaly_contact');
+      if (def.spineEventId) {
+        next = completeSpineEventIfValid(next, def.spineEventId);
+      }
+      next = {
+        ...withSyncedLegacyEconomy({
+          ...next,
+          baseStorage: {
+            ...next.baseStorage,
+            scrap: next.baseStorage.scrap + RETURN_CONTACT_COMPLETION_SCRAP,
+            researchData: next.baseStorage.researchData + RETURN_CONTACT_COMPLETION_RESEARCH,
+          },
+        }),
+      };
+      next = {
+        ...next,
+        roberts: applyRobertsUpdate(next.roberts, {
+          delta: { stress: 2, obsession: 1 },
+          stance: 'cautious',
+        }),
+      };
+      next = withStoryBeat(next, {
+        type: 'mission_complete',
+        importance: 'high',
+        title: 'Return to DBX-03 Site — first contact logged',
+        summaryText:
+          'Controlled return dive complete. Command confirms contact with an unexplained phenomenon; sensor data remains contradictory and restricted.',
+        speakerId: 'research_lead',
         missionId: assignmentId,
         diveStartedAt: dive.startedAt,
       });

@@ -180,6 +180,9 @@ export function createDiveSessionForMission(
     lastEngineHeatVentAt: now,
     engineHeatWarned: false,
     expeditionCatalogItems: {},
+    anomalyInterferenceActive: false,
+    anomalyContactScans: 0,
+    anomalyFirstContactLogged: false,
   };
   return initializePacingGaps(base, mission);
 }

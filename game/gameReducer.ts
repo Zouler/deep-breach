@@ -120,6 +120,10 @@ import {
   resolveDeadBeaconDataDecision,
 } from '@/game/deadBeaconDecision';
 import {
+  applyAnomalyContactTick,
+  recordAnomalyContactScan,
+} from '@/game/anomalyContact';
+import {
   applyStoryDiveResolution,
   applyStoryMissionCompletion,
   canStartStoryDiveMission,
@@ -216,11 +220,16 @@ function startMissionFromBase(state: GameState, missionId: string): GameState {
     started = withStoryBeat(started, {
       type: 'mission_start',
       importance: 'high',
-      title: `${mission.name} — recon authorized`,
+      title:
+        missionId === 'operation_dead_beacon_return'
+          ? `${mission.name} — return authorized`
+          : `${mission.name} — recon authorized`,
       summaryText:
         missionId === 'operation_dead_beacon'
           ? 'An impossible DBX-03 distress signal triggered priority recon tasking. DBX-07 is cleared for standoff survey only.'
-          : missionStartSummary(mission.name, state.commander.name),
+          : missionId === 'operation_dead_beacon_return'
+            ? 'Hull Reinforcement Mk I is active. DBX-07 is cleared for controlled site verification — expect sensor interference near the contact zone.'
+            : missionStartSummary(mission.name, state.commander.name),
       speakerId: 'xo',
       missionId: mission.id,
       diveStartedAt: dive.startedAt,
@@ -485,7 +494,7 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       if (!mission) return state;
       const prevDive = state.dive;
       const hadPending = !!prevDive.pendingDiscovery;
-      const nextDive = tickActiveDive({
+      let nextDive = tickActiveDive({
         dive: state.dive,
         mission,
         submarine: state.submarine,
@@ -493,6 +502,12 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         deltaMs: action.deltaMs,
         now: action.now,
         roomContext: roomContextFromGameState(state),
+      });
+      nextDive = applyAnomalyContactTick({
+        dive: nextDive,
+        mission,
+        deltaMs: action.deltaMs,
+        now: action.now,
       });
       let next: GameState = { ...state, dive: nextDive };
       if (!hadPending && nextDive.pendingDiscovery) {
@@ -967,6 +982,7 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
         lastAreaScanAt: now,
         scansPerformed: d0.scansPerformed + 1,
       };
+      nextDive = recordAnomalyContactScan(nextDive);
       if (result.kind === 'found') {
         nextDive = {
           ...nextDive,
