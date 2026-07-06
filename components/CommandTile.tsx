@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.panelBorderStrong,
     borderRadius: theme.radiusInstrument,
-    backgroundColor: theme.panelBg,
+    backgroundColor: theme.panelBgSolid,
     paddingVertical: 12,
     paddingRight: 10,
     overflow: 'hidden',

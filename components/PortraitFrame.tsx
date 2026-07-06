@@ -10,6 +10,7 @@ type Props = {
 /** Small instrument-framed crew portrait for cards and briefings. */
 export function PortraitFrame({ source, size = 72 }: Props) {
   const border = Math.max(1, Math.round(size * 0.03));
+  const cropBias = Math.round(size * 0.05);
   return (
     <View
       style={[
@@ -22,7 +23,20 @@ export function PortraitFrame({ source, size = 72 }: Props) {
         },
       ]}
     >
-      <Image source={source} style={styles.image} resizeMode="cover" accessibilityIgnoresInvertColors />
+      <Image
+        source={source}
+        style={[
+          styles.image,
+          {
+            width: size * 1.08,
+            height: size * 1.12,
+            marginLeft: -size * 0.04,
+            marginTop: -cropBias,
+          },
+        ]}
+        resizeMode="cover"
+        accessibilityIgnoresInvertColors
+      />
       <View style={styles.tickTL} />
       <View style={styles.tickBR} />
     </View>

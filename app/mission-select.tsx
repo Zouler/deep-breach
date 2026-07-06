@@ -168,6 +168,7 @@ export default function MissionSelectScreen() {
             }}
           >
             <PanelCard
+              variant="document"
               style={[styles.card, highlight === m.id ? styles.cardHighlight : null]}
             >
               <View style={styles.rowTop}>
@@ -260,7 +261,7 @@ export default function MissionSelectScreen() {
                   });
                 }}
               >
-                <PanelCard style={styles.card}>
+                <PanelCard variant="document" style={styles.card}>
                   <View style={styles.rowTop}>
                     <Text style={styles.name}>{def.title}</Text>
                     <Text style={[styles.badge, badge.style]}>{badge.text}</Text>
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
   cardHighlight: {
     borderColor: theme.accent,
     borderWidth: 2,
-    backgroundColor: '#082f4966',
+    backgroundColor: theme.panelBgSolid,
   },
   rowTop: {
     flexDirection: 'row',

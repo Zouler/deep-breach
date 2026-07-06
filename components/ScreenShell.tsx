@@ -22,6 +22,8 @@ type Props = {
   backgroundScrimOpacity?: number;
   /** Subtle COLD HULL instrument scanline tile — does not block touches. */
   scanlineOverlay?: boolean;
+  /** Override scanline strength (defaults to theme.scanlineOpacity). */
+  scanlineOpacity?: number;
 };
 
 export function ScreenShell({
@@ -31,6 +33,7 @@ export function ScreenShell({
   backgroundImage,
   backgroundScrimOpacity = 0.72,
   scanlineOverlay = false,
+  scanlineOpacity = theme.scanlineOpacity,
 }: Props) {
   const transparent = Boolean(backgroundImage);
   const body = scroll ? (
@@ -53,7 +56,7 @@ export function ScreenShell({
           <View pointerEvents="none" style={styles.scanlineWrap}>
             <Image
               source={GAME_ASSETS.scanlineNoiseOverlay}
-              style={[styles.scanline, { opacity: theme.scanlineOpacity }]}
+              style={[styles.scanline, { opacity: scanlineOpacity }]}
               resizeMode="repeat"
             />
           </View>
@@ -69,7 +72,7 @@ export function ScreenShell({
         <View pointerEvents="none" style={styles.scanlineWrap}>
           <Image
             source={GAME_ASSETS.scanlineNoiseOverlay}
-            style={[styles.scanline, { opacity: theme.scanlineOpacity }]}
+            style={[styles.scanline, { opacity: scanlineOpacity }]}
             resizeMode="repeat"
           />
         </View>

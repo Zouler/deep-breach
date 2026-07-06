@@ -41,7 +41,7 @@ export default function BaseScreen() {
         kicker="DBX-07 · Command Hub"
       />
       {firstContactReviewPending ? (
-        <PanelCard style={styles.consoleCard}>
+        <PanelCard variant="document" style={styles.consoleCard}>
           <Text style={styles.cardTitle}>First Contact — Command Review</Text>
           <Text style={styles.meta}>
             Restricted telemetry from the DBX-03 return dive requires analysis authorization.
@@ -59,7 +59,7 @@ export default function BaseScreen() {
         </PanelCard>
       ) : null}
       <Text style={styles.commanderLine}>{nu.commanderLine(commander.name, commander.title)}</Text>
-      <PanelCard style={styles.consoleCard}>
+      <PanelCard variant="document" style={styles.consoleCard}>
         <Text style={styles.cardTitle}>Resources</Text>
         <IconLabelRow
           icon={GAME_ASSETS.icons.scrap}
@@ -77,7 +77,7 @@ export default function BaseScreen() {
           value={`×${state.treasureInventory.length}`}
         />
       </PanelCard>
-      <PanelCard style={styles.consoleCard}>
+      <PanelCard variant="document" style={styles.consoleCard}>
         <Text style={styles.cardTitle}>{nu.storageCardTitle}</Text>
         <Text style={styles.meta}>
           Scrap {baseStorage.scrap} · Research {baseStorage.researchData} · Treasures{' '}
@@ -93,7 +93,7 @@ export default function BaseScreen() {
           onPress={() => router.push('/base-storage' as never)}
         />
       </PanelCard>
-      <PanelCard>
+      <PanelCard variant="document">
         <Text style={styles.cardTitle}>
           {SUBMARINE_IDENTITY.displayName} · condition
         </Text>
@@ -102,7 +102,7 @@ export default function BaseScreen() {
           Hull {Math.round(submarine.hullIntegrityPercent)}% · band {hullBand}
         </Text>
       </PanelCard>
-      <PanelCard>
+      <PanelCard variant="document">
         <Text style={styles.cardTitle}>Modules</Text>
         {submarine.modules.map((m) => (
           <View key={m.id} style={styles.moduleRow}>
@@ -119,7 +119,7 @@ export default function BaseScreen() {
           Hull module L{moduleLevel(submarine, 'hull')} · Sonar L{moduleLevel(submarine, 'sonar')}
         </Text>
       </PanelCard>
-      <PanelCard>
+      <PanelCard variant="document">
         <Text style={styles.cardTitle}>Captain’s Log</Text>
         <Text style={styles.meta}>XO narrative summaries of recent trials and standing orders.</Text>
         <PrimaryButton
@@ -128,7 +128,7 @@ export default function BaseScreen() {
           onPress={() => router.push('/captains-log' as never)}
         />
       </PanelCard>
-      <PanelCard>
+      <PanelCard variant="document">
         <Text style={styles.cardTitle}>Crew status</Text>
         <Text style={styles.meta}>
           Condition · morale {Math.round(state.crewState.morale)} · stress{' '}
@@ -225,7 +225,6 @@ const styles = StyleSheet.create({
   },
   consoleCard: {
     borderColor: theme.panelBorderStrong,
-    backgroundColor: theme.panelBg,
   },
   cardTitle: { color: theme.text, fontWeight: '700', marginBottom: 10 },
   statusLine: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },

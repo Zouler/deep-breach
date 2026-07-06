@@ -196,6 +196,7 @@ export default function DiveScreen() {
         backgroundImage={GAME_ASSETS.diveScreenBg}
         backgroundScrimOpacity={0.68}
         scanlineOverlay
+        scanlineOpacity={theme.scanlineOpacityHud}
       >
         <HudPanel>
           <View style={styles.topRow}>
