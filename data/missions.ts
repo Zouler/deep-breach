@@ -29,7 +29,7 @@ export const STORY_DIVE_MISSIONS: Mission[] = [
     scrapRewardRange: [30, 55],
     researchRewardRange: [14, 32],
     treasureChance: 0.06,
-    specialEventChance: 0.28,
+    specialEventChance: 0.24,
     trialPurpose:
       'Controlled return to the DBX-03 loss zone under Hull Reinforcement Mk I — verify the site, gather readings through interference, and withdraw. No recovery authorized.',
   },

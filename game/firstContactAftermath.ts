@@ -182,5 +182,5 @@ export function growingOceanPlaceholderCopy(state: GameState): string {
   if (!hasStoryFlag(state, STORY_FLAG_ANOMALY_MONITORING_PREP)) {
     return 'Complete First Contact Analysis before strategic monitoring tasking unlocks.';
   }
-  return 'Passive monitoring protocol prepared — full Growing Ocean Anomaly tasking pending Command authorization. Coming soon.';
+  return 'Passive monitoring protocol prepared — full Growing Ocean Anomaly tasking pending Command authorization.';
 }

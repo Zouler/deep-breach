@@ -335,7 +335,7 @@ export const STORY_MISSION_DEFINITIONS: MissionDefinition[] = [
       classification: 'Clearance: Strategic Prep · DBX Program',
     },
     objectives: ['Await Command authorization for Growing Ocean Anomaly tasking.'],
-    restrictions: ['Placeholder — no playable mission at this stage.'],
+    restrictions: ['No dive authorized — preparation phase only.'],
     successSummary: 'Not yet available.',
     failureSummary: 'Not yet available.',
     unlockConditions: {
