@@ -484,7 +484,68 @@ export const STORY_MISSION_DEFINITIONS: MissionDefinition[] = [
       scrap: 0,
       researchData: 0,
     },
-    nextUnlocks: ['expansion_model_deployment_hold'],
+    nextUnlocks: ['engineering_stress_response', 'expansion_model_deployment_hold'],
+  },
+  {
+    id: 'engineering_stress_response',
+    title: 'Engineering Stress Response',
+    subtitle: 'Hull survivability · engineering posture',
+    category: 'story_spine',
+    canonEraRequired: 'anomaly_growth',
+    revealLevelRequired: REVEAL_LEVEL.ANOMALY_GROWTH,
+    spineEventId: 'engineering_stress_response',
+    isSpineMission: true,
+    description:
+      'Chief Engineer reports Mk I shielding and engine systems accumulating stress beyond nominal models. Declare an engineering posture before any further descent is discussed.',
+    briefing: {
+      kicker: 'Engineering Conference · Stress Response',
+      title: 'Engineering Stress Response',
+      subtitle: 'Chief Engineer · hull survivability review',
+      body: [
+        `Commander ${id.commanderName},`,
+        '',
+        'Your expansion model priority is on record. Engineering has correlated that decision against hull telemetry, engine bay heat cycles, and Mk I shielding micro-stress.',
+        '',
+        'Repeated anomaly exposure is accumulating cost outside nominal failure models. This is not a dive authorization. It is an engineering posture decision.',
+        '',
+        'Research will argue the models remain unverified. Command will argue the record must show declared limits. Engineering argues the hull does not wait for consensus.',
+      ],
+      leadLines: [
+        {
+          speakerId: 'chief_engineer',
+          text: 'Commander, Mk I shielding is logging stress we did not model for this exposure class. Pick how Engineering responds before anyone schedules another descent.',
+        },
+        {
+          speakerId: 'research_lead',
+          text: 'The prioritized model is a resource allocation — not a field truth. Engineering stress data still needs correlation before panic limits are filed.',
+        },
+      ],
+      classification: 'Clearance: RESTRICTED/DBX-07/PHOS · Engineering Stress Review',
+    },
+    objectives: [
+      'Review hull and engine stress accumulation against the prioritized expansion model.',
+      'Select one engineering response: hull tolerance, sensor stack, or repair supply preservation.',
+    ],
+    restrictions: [
+      'No dive authorized — base-side engineering posture only.',
+      'No anomaly explanation or organism identification at this stage.',
+    ],
+    successSummary:
+      'Engineering stress response logged. Descent authorization remains on hold pending Command review.',
+    failureSummary: 'Engineering posture deferred — stress accumulation unresolved on record.',
+    unlockConditions: {
+      requiredSpineEvents: ['abyssal_expansion_models'],
+      requiredAnyFlags: [
+        'model_current_drift',
+        'model_resonance_field',
+        'model_biological_contamination',
+      ],
+    },
+    rewards: {
+      scrap: 0,
+      researchData: 0,
+    },
+    nextUnlocks: ['descent_authorization_hold'],
   },
   {
     id: 'expansion_model_deployment_hold',
@@ -524,6 +585,51 @@ export const STORY_MISSION_DEFINITIONS: MissionDefinition[] = [
     failureSummary: 'Threshold review incomplete.',
     unlockConditions: {
       requiredSpineEvents: ['abyssal_expansion_models'],
+    },
+    rewards: {
+      scrap: 0,
+      researchData: 0,
+    },
+    nextUnlocks: [],
+  },
+  {
+    id: 'descent_authorization_hold',
+    title: 'Descent Authorization Hold',
+    subtitle: 'Command threshold · restricted hold',
+    category: 'story_spine',
+    canonEraRequired: 'anomaly_growth',
+    revealLevelRequired: REVEAL_LEVEL.ANOMALY_GROWTH,
+    isSpineMission: true,
+    isPlaceholder: true,
+    description:
+      'Deployment profile not yet authorized. Command has not cleared DBX-07 for further operational descent under current engineering and model thresholds.',
+    briefing: {
+      kicker: 'Operational Hold · Descent Authorization',
+      title: 'Descent Authorization Hold',
+      subtitle: 'DBX Program Command · threshold review',
+      body: [
+        `Commander ${id.commanderName},`,
+        '',
+        'Your engineering stress response is logged. Engineering, Research, and Command are reconciling survivability margins against the prioritized expansion model.',
+        '',
+        'Deployment profile not yet authorized. No further operational descent has been issued for DBX-07.',
+        '',
+        'DBX-07 holds position under restricted watch until Command completes threshold review.',
+      ],
+      leadLines: [
+        {
+          speakerId: 'xo',
+          text: 'Command is treating the next descent as an authorization problem — not a courage problem. We wait for a profile we do not yet have clearance to deploy.',
+        },
+      ],
+      classification: 'Clearance: RESTRICTED/DBX-07/PHOS · Descent Hold',
+    },
+    objectives: ['Await Command authorization for operational descent profile.'],
+    restrictions: ['No dive or operational launch authorized at this stage.'],
+    successSummary: 'Descent authorization hold active — threshold review pending.',
+    failureSummary: 'Authorization review incomplete.',
+    unlockConditions: {
+      requiredSpineEvents: ['engineering_stress_response'],
     },
     rewards: {
       scrap: 0,

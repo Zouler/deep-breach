@@ -34,8 +34,9 @@ See `docs/visual/phase-b-asset-production-pack.md` for the reconciled MVP vs P2 
 
 ## Story placeholders (intentional)
 
-- **Expansion Model Deployment Hold** — appears after P1.8 model priority. Copy: *"Model confidence remains below deployment threshold."* This is an in-world hold, not missing content.
-- **Engineering Stress Response (P1.9)** — specified in story canon but **not yet on main** at P1.10 branch time. Playtest spine ends at P1.8 until P1.9 merges.
+- **Expansion Model Deployment Hold** — appears after P1.8 model priority. Copy: *"Model confidence remains below deployment threshold."*
+- **Engineering Stress Response (P1.9)** — base-side engineering posture decision after model priority. Playable through P1.9 on current branch.
+- **Descent Authorization Hold** — appears after P1.9. Copy: *"Deployment profile not yet authorized."*
 - **Reserved retrofit designations** on Campaigns screen — lore-only entries; authorization pending Command review.
 - Full anomaly reveal, military escalation, and collapse-era content remain **future acts** — no supernatural or extraterrestrial reveal in current spine.
 
@@ -53,11 +54,11 @@ See `docs/visual/phase-b-asset-production-pack.md` for the reconciled MVP vs P2 
 
 These were hardening targets; report regressions if seen:
 
-- Decision phases (Dead Beacon data, First Contact Analysis, Command Pressure, Abyssal Expansion Models) should be **single-use**
+- Decision phases (Dead Beacon data, First Contact Analysis, Command Pressure, Abyssal Expansion Models, Engineering Stress Response) should be **single-use**
 - QA fast-forward helpers should produce **valid states** without duplicate spine entries or reward farming
 - Failed story dives should not grant spine events early
 
-Regression coverage: `game/__tests__/storyProgressionChain.test.ts` (P1.10 block through P1.8).
+Regression coverage: `game/__tests__/storyProgressionChain.test.ts` (P1.10 block through P1.9) and `game/__tests__/engineeringStressResponse.test.ts`.
 
 ---
 

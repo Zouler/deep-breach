@@ -32,6 +32,13 @@ import {
   isCommandPressurePending,
   type CommandPressureChoice,
 } from '@/game/commandPressure';
+import {
+  DESCENT_AUTHORIZATION_THRESHOLD_COPY,
+  ENGINEERING_STRESS_RESPONSE_OPTIONS,
+  isEngineeringStressResponsePending,
+  modelPriorityFlavorForState,
+  type EngineeringStressResponseChoice,
+} from '@/game/engineeringStressResponse';
 import { growingOceanMissionLockCopy } from '@/game/growingOceanAnomaly';
 import { getMissionDefinition, isMissionUnlocked, isStoryMissionCompleted } from '@/game/storyMissions';
 import { portraitForSpeakerId } from '@/game/portraitAssets';
@@ -70,6 +77,12 @@ export default function StoryMissionBriefingScreen() {
   const expansionModelsResolved =
     isExpansionModelsMission && state.completedSpineEvents.includes('abyssal_expansion_models');
   const postureFlavor = isExpansionModelsMission ? strategicPostureFlavorForState(state) : null;
+  const isEngineeringStressMission = def.id === 'engineering_stress_response';
+  const engineeringStressPending =
+    isEngineeringStressMission && isEngineeringStressResponsePending(state);
+  const engineeringStressResolved =
+    isEngineeringStressMission && state.completedSpineEvents.includes('engineering_stress_response');
+  const modelFlavor = isEngineeringStressMission ? modelPriorityFlavorForState(state) : null;
 
   const onAnalysisDecision = (choice: FirstContactAnalysisChoice) => {
     if (!analysisPending) return;
@@ -89,6 +102,12 @@ export default function StoryMissionBriefingScreen() {
   const onExpansionModelsDecision = (choice: AbyssalExpansionModelChoice) => {
     if (!expansionModelsPending) return;
     dispatch({ type: 'RESOLVE_ABYSSAL_EXPANSION_MODELS', choice });
+    router.replace('/mission-select');
+  };
+
+  const onEngineeringStressDecision = (choice: EngineeringStressResponseChoice) => {
+    if (!engineeringStressPending) return;
+    dispatch({ type: 'RESOLVE_ENGINEERING_STRESS_RESPONSE', choice });
     router.replace('/mission-select');
   };
   const isDiveAssignment = def.isDiveMission === true;
@@ -162,6 +181,13 @@ export default function StoryMissionBriefingScreen() {
             </PanelCard>
           ) : null}
 
+          {isEngineeringStressMission && modelFlavor ? (
+            <PanelCard variant="document" style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>Model priority context</Text>
+              <Text style={styles.listItemMuted}>{modelFlavor.briefingLine}</Text>
+            </PanelCard>
+          ) : null}
+
           {def.objectives.length > 0 ? (
             <PanelCard variant="document" style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>Objectives</Text>
@@ -223,6 +249,9 @@ export default function StoryMissionBriefingScreen() {
           {def.id === 'expansion_model_deployment_hold' ? (
             <Text style={styles.placeholderNote}>{MODEL_DEPLOYMENT_THRESHOLD_COPY}</Text>
           ) : null}
+          {def.id === 'descent_authorization_hold' ? (
+            <Text style={styles.placeholderNote}>{DESCENT_AUTHORIZATION_THRESHOLD_COPY}</Text>
+          ) : null}
           {isAnalysisMission && analysisResolved ? (
             <Text style={styles.resolvedNote}>
               Analysis complete — monitoring preparation logged. Growing Ocean Anomaly tasking pending.
@@ -278,9 +307,28 @@ export default function StoryMissionBriefingScreen() {
               ))}
               <PrimaryButton title="Back to schedule" variant="ghost" onPress={() => router.back()} />
             </>
+          ) : isEngineeringStressMission && engineeringStressPending && unlocked ? (
+            <>
+              <Text style={styles.lockedHint}>
+                Select one engineering posture. No dive will launch — this decision is logged for
+                Engineering and Command.
+              </Text>
+              {ENGINEERING_STRESS_RESPONSE_OPTIONS.map((option) => (
+                <PrimaryButton
+                  key={option.id}
+                  title={option.label}
+                  variant="ghost"
+                  onPress={() => onEngineeringStressDecision(option.id)}
+                />
+              ))}
+              <PrimaryButton title="Back to schedule" variant="ghost" onPress={() => router.back()} />
+            </>
           ) : def.isPlaceholder ? (
             <PrimaryButton title="Return to schedule" variant="ghost" onPress={() => router.back()} />
-          ) : completed || commandPressureResolved || expansionModelsResolved ? (
+          ) : completed ||
+            commandPressureResolved ||
+            expansionModelsResolved ||
+            engineeringStressResolved ? (
             <PrimaryButton title="Back to schedule" variant="ghost" onPress={() => router.back()} />
           ) : unlocked && isDiveAssignment ? (
             <>
