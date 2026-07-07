@@ -1,6 +1,6 @@
 # Deep Breach — Known Issues (Internal Playtest)
 
-Last updated for **P1.10 internal playtest hardening**. This document is intentionally honest about deferred work — especially visuals.
+Last updated for **P1.11 manual device playtest** (2026-07-06). This document is intentionally honest about deferred work — especially visuals.
 
 ---
 
@@ -60,7 +60,17 @@ These were hardening targets; report regressions if seen:
 
 Regression coverage: `game/__tests__/storyProgressionChain.test.ts` (P1.10 block through P1.9) and `game/__tests__/engineeringStressResponse.test.ts`.
 
-Playtest audit (2026-07-06, `main` @ `491182d`): P1.0–P1.8 progression stable under automated verification. P1.9 not on merged `main`. See [p1.10-playtest-results.md](./p1.10-playtest-results.md).
+Playtest audit (2026-07-06, `main` @ `7016e15`): P1.0–P1.9 progression stable under automated verification. See [p1.11-manual-device-playtest.md](./p1.11-manual-device-playtest.md). Prior P1.10 audit: [p1.10-playtest-results.md](./p1.10-playtest-results.md).
+
+---
+
+## Playtest findings (P1.11 manual device, 2026-07-06)
+
+| ID | Severity | Summary | Status |
+|----|----------|---------|--------|
+| M-02 | Major | Live save/load roundtrip not verified — manual device pass still recommended | Open |
+| N-01 | Minor / UX | Mission Select generic placeholder showed Dead Beacon hull copy for all `isPlaceholder` missions | **Fixed** — generic in-world authorization copy |
+| V-01–V-05 | Visual | Deferred — see [p1.11-manual-device-playtest.md](./p1.11-manual-device-playtest.md) | Open |
 
 ---
 
@@ -68,9 +78,9 @@ Playtest audit (2026-07-06, `main` @ `491182d`): P1.0–P1.8 progression stable 
 
 | ID | Severity | Summary |
 |----|----------|---------|
-| B-01 | Blocker (scope) | P1.9 Engineering Stress Response not on `main` — full checklist step 10 unavailable |
+| B-01 | Blocker (scope) | P1.9 Engineering Stress Response not on `main` at P1.10 audit — **resolved** on `7016e15` |
 | M-02 | Major | Live save/load roundtrip not verified in automated session — manual device pass recommended |
-| N-01 | Minor / UX | Mission Select generic placeholder shows Dead Beacon hull copy for all `isPlaceholder` missions |
+| N-01 | Minor / UX | Mission Select generic placeholder showed Dead Beacon hull copy — **fixed P1.11** |
 | V-01–V-05 | Visual | Deferred — see [p1.10-playtest-results.md](./p1.10-playtest-results.md) |
 
 ---

@@ -347,7 +347,7 @@ export default function MissionSelectScreen() {
                   def.id !== 'expansion_model_deployment_hold' &&
                   def.id !== 'descent_authorization_hold' ? (
                     <Text style={styles.requirement}>
-                      Hull Reinforcement Mk I authorization required.
+                      Further authorization required before launch clearance.
                     </Text>
                   ) : null}
                   <Text
