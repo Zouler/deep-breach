@@ -59,6 +59,19 @@ These were hardening targets; report regressions if seen:
 
 Regression coverage: `game/__tests__/storyProgressionChain.test.ts` (P1.10 block through P1.8).
 
+Playtest audit (2026-07-06, `main` @ `491182d`): P1.0–P1.8 progression stable under automated verification. P1.9 not on merged `main`. See [p1.10-playtest-results.md](./p1.10-playtest-results.md).
+
+---
+
+## Playtest findings (P1.10 internal, 2026-07-06)
+
+| ID | Severity | Summary |
+|----|----------|---------|
+| B-01 | Blocker (scope) | P1.9 Engineering Stress Response not on `main` — full checklist step 10 unavailable |
+| M-02 | Major | Live save/load roundtrip not verified in automated session — manual device pass recommended |
+| N-01 | Minor / UX | Mission Select generic placeholder shows Dead Beacon hull copy for all `isPlaceholder` missions |
+| V-01–V-05 | Visual | Deferred — see [p1.10-playtest-results.md](./p1.10-playtest-results.md) |
+
 ---
 
 ## Reporting new issues
