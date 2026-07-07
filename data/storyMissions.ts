@@ -524,7 +524,7 @@ export const STORY_MISSION_DEFINITIONS: MissionDefinition[] = [
     },
     objectives: [
       'Review hull and engine stress accumulation against the prioritized expansion model.',
-      'Select one engineering posture: audit, limits, or accelerated shielding review.',
+      'Select one engineering response: hull tolerance, sensor stack, or repair supply preservation.',
     ],
     restrictions: [
       'No dive authorized — base-side engineering posture only.',

@@ -13,25 +13,25 @@ import type { GameState } from '@/types';
 
 export const ENGINEERING_STRESS_RESPONSE_SPINE_EVENT: SpineEventId = 'engineering_stress_response';
 
-export const STORY_FLAG_ENGINEERING_STRESS_AUDIT = 'engineering_stress_audit';
-export const STORY_FLAG_ENGINEERING_OPERATIONAL_LIMITS = 'engineering_operational_limits';
-export const STORY_FLAG_ENGINEERING_SHIELDING_REVIEW = 'engineering_shielding_review';
+export const STORY_FLAG_ENGINEERING_HULL_TOLERANCE = 'engineering_hull_tolerance';
+export const STORY_FLAG_ENGINEERING_SENSOR_STACK = 'engineering_sensor_stack';
+export const STORY_FLAG_ENGINEERING_REPAIR_SUPPLIES = 'engineering_repair_supplies';
 
 export const ENGINEERING_STRESS_RESPONSE_FLAGS = [
-  STORY_FLAG_ENGINEERING_STRESS_AUDIT,
-  STORY_FLAG_ENGINEERING_OPERATIONAL_LIMITS,
-  STORY_FLAG_ENGINEERING_SHIELDING_REVIEW,
+  STORY_FLAG_ENGINEERING_HULL_TOLERANCE,
+  STORY_FLAG_ENGINEERING_SENSOR_STACK,
+  STORY_FLAG_ENGINEERING_REPAIR_SUPPLIES,
 ] as const;
 
 export type EngineeringStressResponseChoice =
-  | 'authorize_stress_audit'
-  | 'impose_operational_limits'
-  | 'accelerate_shielding_review';
+  | 'reinforce_hull_tolerance'
+  | 'shield_sensor_stack'
+  | 'preserve_repair_supplies';
 
 export const ENGINEERING_STRESS_RESPONSE_CHOICES: readonly EngineeringStressResponseChoice[] = [
-  'authorize_stress_audit',
-  'impose_operational_limits',
-  'accelerate_shielding_review',
+  'reinforce_hull_tolerance',
+  'shield_sensor_stack',
+  'preserve_repair_supplies',
 ] as const;
 
 export interface EngineeringStressResponseOption {
@@ -42,22 +42,22 @@ export interface EngineeringStressResponseOption {
 
 export const ENGINEERING_STRESS_RESPONSE_OPTIONS: readonly EngineeringStressResponseOption[] = [
   {
-    id: 'authorize_stress_audit',
-    label: 'Authorize Full Engineering Stress Audit',
+    id: 'reinforce_hull_tolerance',
+    label: 'Reinforce Hull Tolerance',
     summary:
-      'Task Engineering to log micro-stress accumulation across Mk I shielding, engine bay, and pressure skin. Restricted classification — no operational launch until audit cycle completes.',
+      'Redirect fabrication capacity to Mk I shielding tolerance margins and pressure-skin monitoring. Accept schedule delay on other compartments until hull survivability is re-baselined.',
   },
   {
-    id: 'impose_operational_limits',
-    label: 'Impose Operational Limits Pending Review',
+    id: 'shield_sensor_stack',
+    label: 'Shield Sensor Stack',
     summary:
-      'Declare interim descent and exposure limits until Engineering validates survivability margins against the prioritized expansion model.',
+      'Prioritize sensor and shielding correlation arrays to catch micro-stress before it propagates to the engine bay. Research assists under restricted watch — no descent authorized.',
   },
   {
-    id: 'accelerate_shielding_review',
-    label: 'Accelerate Shielding Review Cycle',
+    id: 'preserve_repair_supplies',
+    label: 'Preserve Repair Supplies',
     summary:
-      'Prioritize shielding correlation work with Research under restricted watch. Accept schedule pressure on Engineering crews without authorizing a new descent.',
+      'Hold repair stockpiles in reserve and tighten consumption protocols until Engineering validates exposure limits against the prioritized expansion model.',
   },
 ] as const;
 
@@ -66,15 +66,15 @@ export const DESCENT_AUTHORIZATION_THRESHOLD_COPY =
   'Deployment profile not yet authorized.';
 
 const CHOICE_TO_FLAG: Record<EngineeringStressResponseChoice, string> = {
-  authorize_stress_audit: STORY_FLAG_ENGINEERING_STRESS_AUDIT,
-  impose_operational_limits: STORY_FLAG_ENGINEERING_OPERATIONAL_LIMITS,
-  accelerate_shielding_review: STORY_FLAG_ENGINEERING_SHIELDING_REVIEW,
+  reinforce_hull_tolerance: STORY_FLAG_ENGINEERING_HULL_TOLERANCE,
+  shield_sensor_stack: STORY_FLAG_ENGINEERING_SENSOR_STACK,
+  preserve_repair_supplies: STORY_FLAG_ENGINEERING_REPAIR_SUPPLIES,
 };
 
 const REWARDS: Record<EngineeringStressResponseChoice, { scrap: number; researchData: number }> = {
-  authorize_stress_audit: { scrap: 0, researchData: 15 },
-  impose_operational_limits: { scrap: 15, researchData: 0 },
-  accelerate_shielding_review: { scrap: 10, researchData: 10 },
+  reinforce_hull_tolerance: { scrap: 15, researchData: 0 },
+  shield_sensor_stack: { scrap: 0, researchData: 15 },
+  preserve_repair_supplies: { scrap: 10, researchData: 10 },
 };
 
 type ModelPriority =
@@ -116,22 +116,22 @@ const CHOICE_RESOLUTION: Record<
   EngineeringStressResponseChoice,
   { headline: string; summary: string; stance: CommandStance }
 > = {
-  authorize_stress_audit: {
-    headline: 'Full engineering stress audit authorized',
+  reinforce_hull_tolerance: {
+    headline: 'Hull tolerance reinforcement prioritized',
     summary:
-      'Engineering will log micro-stress across Mk I shielding and engine systems under restricted classification. No operational launch until the audit cycle is filed.',
-    stance: 'procedural',
-  },
-  impose_operational_limits: {
-    headline: 'Interim operational limits imposed',
-    summary:
-      'Descent and exposure limits are in effect pending Engineering review against the prioritized expansion model. Command accepts survivability constraints as operational law aboard DBX-07.',
+      'Engineering will re-baseline Mk I shielding tolerance margins and pressure-skin monitoring under restricted classification. No operational launch until survivability review is filed.',
     stance: 'cautious',
   },
-  accelerate_shielding_review: {
-    headline: 'Shielding review cycle accelerated',
+  shield_sensor_stack: {
+    headline: 'Shield sensor stack prioritized',
     summary:
-      'Engineering and Research will run an accelerated shielding correlation pass under restricted watch. No dive authorized — schedule pressure accepted without field tasking.',
+      'Sensor and shielding correlation arrays take precedence in the next engineering cycle. Research assists under restricted watch — descent authorization remains on hold.',
+    stance: 'procedural',
+  },
+  preserve_repair_supplies: {
+    headline: 'Repair supply preservation logged',
+    summary:
+      'Repair stockpiles held in reserve with tightened consumption protocols until exposure limits are validated against the prioritized expansion model.',
     stance: 'cautious',
   },
 };

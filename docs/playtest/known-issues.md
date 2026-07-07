@@ -58,7 +58,7 @@ These were hardening targets; report regressions if seen:
 - QA fast-forward helpers should produce **valid states** without duplicate spine entries or reward farming
 - Failed story dives should not grant spine events early
 
-Regression coverage: `game/__tests__/storyProgressionChain.test.ts` (P1.10 block through P1.9).
+Regression coverage: `game/__tests__/storyProgressionChain.test.ts` (P1.10 block through P1.9) and `game/__tests__/engineeringStressResponse.test.ts`.
 
 ---
 

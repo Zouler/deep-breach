@@ -31,8 +31,8 @@ import {
   canResolveEngineeringStressResponse,
   isEngineeringStressResponsePending,
   resolveEngineeringStressResponse,
-  STORY_FLAG_ENGINEERING_OPERATIONAL_LIMITS,
-  STORY_FLAG_ENGINEERING_SHIELDING_REVIEW,
+  STORY_FLAG_ENGINEERING_HULL_TOLERANCE,
+  STORY_FLAG_ENGINEERING_REPAIR_SUPPLIES,
 } from '@/game/engineeringStressResponse';
 import {
   advanceQaToAbyssalExpansionModelsReady,
@@ -349,14 +349,14 @@ describe('story progression chain (P1.10 regression through P1.9)', () => {
     state = resolveAbyssalExpansionModels(state, 'prioritize_current_drift');
     expect(isEngineeringStressResponsePending(state)).toBe(true);
 
-    state = resolveEngineeringStressResponse(state, 'impose_operational_limits');
+    state = resolveEngineeringStressResponse(state, 'reinforce_hull_tolerance');
 
     for (const eventId of EXPECTED_SPINE_THROUGH_P1_9) {
       expect(state.completedSpineEvents).toContain(eventId);
     }
     expect(state.completedSpineEvents.filter((e) => e === 'engineering_stress_response')).toHaveLength(1);
     expect(state.storyFlags).toContain(STORY_FLAG_MODEL_CURRENT_DRIFT);
-    expect(state.storyFlags).toContain(STORY_FLAG_ENGINEERING_OPERATIONAL_LIMITS);
+    expect(state.storyFlags).toContain(STORY_FLAG_ENGINEERING_HULL_TOLERANCE);
     expect(state.completedSpineEvents).not.toContain('military_escalation');
     expect(isMissionUnlocked(state, 'expansion_model_deployment_hold')).toBe(true);
     expect(isMissionUnlocked(state, 'descent_authorization_hold')).toBe(true);
@@ -406,10 +406,10 @@ describe('story progression chain (P1.10 regression through P1.9)', () => {
     expect(state.resources.scrap).toBe(scrapAfterModel);
     expect(state.resources.researchData).toBe(researchAfterModel);
 
-    state = reduceGame(state, { type: 'RESOLVE_ENGINEERING_STRESS_RESPONSE', choice: 'impose_operational_limits' });
+    state = reduceGame(state, { type: 'RESOLVE_ENGINEERING_STRESS_RESPONSE', choice: 'reinforce_hull_tolerance' });
     const afterFirstEngineering = state;
     const scrapAfterEngineering = state.resources.scrap;
-    state = reduceGame(state, { type: 'RESOLVE_ENGINEERING_STRESS_RESPONSE', choice: 'authorize_stress_audit' });
+    state = reduceGame(state, { type: 'RESOLVE_ENGINEERING_STRESS_RESPONSE', choice: 'shield_sensor_stack' });
     expect(state).toBe(afterFirstEngineering);
     expect(canResolveEngineeringStressResponse(state)).toBe(false);
     expect(state.resources.scrap).toBe(scrapAfterEngineering);
@@ -437,7 +437,7 @@ describe('story progression chain (P1.10 regression through P1.9)', () => {
 
   it('save v6 migration remains stable after full P1.9 chain', () => {
     let state = advanceQaToEngineeringStressResponseReady();
-    state = resolveEngineeringStressResponse(state, 'accelerate_shielding_review');
+    state = resolveEngineeringStressResponse(state, 'preserve_repair_supplies');
 
     const migrated = migrateGameState({ ...state, version: 5 } as unknown as GameState);
     expect(migrated).not.toBeNull();
@@ -446,7 +446,7 @@ describe('story progression chain (P1.10 regression through P1.9)', () => {
     expect(migrated!.storyFlags).toEqual(
       expect.arrayContaining([
         STORY_FLAG_MODEL_CURRENT_DRIFT,
-        STORY_FLAG_ENGINEERING_SHIELDING_REVIEW,
+        STORY_FLAG_ENGINEERING_REPAIR_SUPPLIES,
       ]),
     );
   });

@@ -26,7 +26,7 @@ Operational snapshot for internal playtest (**P1.10**). Canon reference: `docs/s
 ## Regression testing
 
 - `game/__tests__/storyProgressionChain.test.ts` — full chain through P1.9 + decision idempotency + QA helpers + save migration
-- Phase-specific tests: `deadBeaconDecision.test.ts`, `firstContactAftermath.test.ts`, `commandPressure.test.ts`, `abyssalExpansionModels.test.ts`, `growingOceanAnomaly.test.ts`
+- Phase-specific tests: `deadBeaconDecision.test.ts`, `firstContactAftermath.test.ts`, `commandPressure.test.ts`, `abyssalExpansionModels.test.ts`, `engineeringStressResponse.test.ts`, `growingOceanAnomaly.test.ts`
 
 ---
 
@@ -47,6 +47,7 @@ Documentation: `docs/dev/qa-fast-forward.md`
 
 ## Playtest docs
 
+- [P1.9 engineering stress response](./p1.9-engineering-stress-response.md)
 - [P1.10 internal playtest checklist](../playtest/p1.10-internal-playtest-checklist.md)
 - [Known issues](../playtest/known-issues.md)
 
