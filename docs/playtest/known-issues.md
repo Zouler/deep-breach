@@ -1,6 +1,6 @@
 # Deep Breach — Known Issues (Internal Playtest)
 
-Last updated for **P1.11 manual device playtest** (2026-07-06). This document is intentionally honest about deferred work — especially visuals.
+Last updated for **P1.12 web manual playtest** (2026-07-13). This document is intentionally honest about deferred work — especially visuals.
 
 ---
 
@@ -60,7 +60,18 @@ These were hardening targets; report regressions if seen:
 
 Regression coverage: `game/__tests__/storyProgressionChain.test.ts` (P1.10 block through P1.9) and `game/__tests__/engineeringStressResponse.test.ts`.
 
-Playtest audit (2026-07-06, `main` @ `7016e15`): P1.0–P1.9 progression stable under automated verification. See [p1.11-manual-device-playtest.md](./p1.11-manual-device-playtest.md). Prior P1.10 audit: [p1.10-playtest-results.md](./p1.10-playtest-results.md).
+Playtest audit (2026-07-13, `main` @ `6bd872c`): P1.12 web playtest — early-spine live save/load verified on web; mid-spine QA helpers stall on web. See [p1.12-web-manual-playtest.md](./p1.12-web-manual-playtest.md). Prior audit (2026-07-06, `7016e15`): [p1.11-manual-device-playtest.md](./p1.11-manual-device-playtest.md). Prior P1.10 audit: [p1.10-playtest-results.md](./p1.10-playtest-results.md).
+
+---
+
+## Playtest findings (P1.12 web manual, 2026-07-13)
+
+| ID | Severity | Summary | Status |
+|----|----------|---------|--------|
+| M-02 | Major | Live save/load roundtrip — **early checkpoints verified on web** (`localStorage`); mid-spine not verified live | **Partially resolved (web)** — device pass still recommended |
+| N-03 | Major | QA helpers (Growing Ocean → Engineering Stress) stall on web after return dive; spine does not advance | **Open** |
+| N-04 | Minor / UX | Erase Local Save on web re-writes blank save — Continue stays enabled | **By design** — see P1.12 doc |
+| V-01–V-05 | Visual | Deferred — see [p1.12-web-manual-playtest.md](./p1.12-web-manual-playtest.md) | Open |
 
 ---
 
@@ -68,7 +79,7 @@ Playtest audit (2026-07-06, `main` @ `7016e15`): P1.0–P1.9 progression stable 
 
 | ID | Severity | Summary | Status |
 |----|----------|---------|--------|
-| M-02 | Major | Live save/load roundtrip not verified — manual device pass still recommended | Open |
+| M-02 | Major | Live save/load roundtrip not verified — manual device pass still recommended | **Superseded by P1.12** — partially resolved on web; see P1.12 |
 | N-01 | Minor / UX | Mission Select generic placeholder showed Dead Beacon hull copy for all `isPlaceholder` missions | **Fixed** — generic in-world authorization copy |
 | N-03 | Major | QA helpers Growing Ocean → Engineering Stress silently no-op when tapped from a mid-spine save (re-simulated completed dives failed to start; reducer swallowed errors) | **Fixed** — helpers skip completed dives/decisions; see `qaHelperIdempotency.test.ts` |
 | V-01–V-05 | Visual | Deferred — see [p1.11-manual-device-playtest.md](./p1.11-manual-device-playtest.md) | Open |
