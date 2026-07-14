@@ -70,6 +70,7 @@ Playtest audit (2026-07-06, `main` @ `7016e15`): P1.0–P1.9 progression stable 
 |----|----------|---------|--------|
 | M-02 | Major | Live save/load roundtrip not verified — manual device pass still recommended | Open |
 | N-01 | Minor / UX | Mission Select generic placeholder showed Dead Beacon hull copy for all `isPlaceholder` missions | **Fixed** — generic in-world authorization copy |
+| N-03 | Major | QA helpers Growing Ocean → Engineering Stress silently no-op when tapped from a mid-spine save (re-simulated completed dives failed to start; reducer swallowed errors) | **Fixed** — helpers skip completed dives/decisions; see `qaHelperIdempotency.test.ts` |
 | V-01–V-05 | Visual | Deferred — see [p1.11-manual-device-playtest.md](./p1.11-manual-device-playtest.md) | Open |
 
 ---

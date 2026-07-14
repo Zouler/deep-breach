@@ -1376,7 +1376,10 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       try {
         const next = advanceQaToDeadBeaconReady(state);
         return touch(next);
-      } catch {
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('[QA] Fast-forward to Dead Beacon failed:', error);
+        }
         return state;
       }
     }
@@ -1384,7 +1387,10 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       try {
         const next = advanceQaToReturnDiveReady(state);
         return touch(next);
-      } catch {
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('[QA] Fast-forward to Return Dive failed:', error);
+        }
         return state;
       }
     }
@@ -1392,7 +1398,10 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       try {
         const next = advanceQaToMonitoringReady(state);
         return touch(next);
-      } catch {
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('[QA] Fast-forward to Growing Ocean monitoring failed:', error);
+        }
         return state;
       }
     }
@@ -1400,7 +1409,10 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       try {
         const next = advanceQaToCommandPressureReady(state);
         return touch(next);
-      } catch {
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('[QA] Fast-forward to Command Pressure failed:', error);
+        }
         return state;
       }
     }
@@ -1408,7 +1420,10 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       try {
         const next = advanceQaToAbyssalExpansionModelsReady(state);
         return touch(next);
-      } catch {
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('[QA] Fast-forward to Abyssal Expansion Models failed:', error);
+        }
         return state;
       }
     }
@@ -1416,7 +1431,10 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
       try {
         const next = advanceQaToEngineeringStressResponseReady(state);
         return touch(next);
-      } catch {
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('[QA] Fast-forward to Engineering Stress Response failed:', error);
+        }
         return state;
       }
     }

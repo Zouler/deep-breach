@@ -46,3 +46,7 @@ import {
 ## Not for production players
 
 The Settings controls are gated behind `__DEV__` and are not part of normal gameplay progression.
+
+## Mid-spine safety (N-03)
+
+Helpers may be tapped from a save that already completed earlier dives. Internal simulation **skips completed story dives and already-resolved decisions** so `START_MISSION` is not re-attempted on finished assignments. Failed fast-forwards log a `__DEV__` console warning instead of failing silently without a reason.
