@@ -1,6 +1,6 @@
 # Deep Breach — Known Issues (Internal Playtest)
 
-Last updated for **P1.12 web manual playtest** (2026-07-13). This document is intentionally honest about deferred work — especially visuals.
+Last updated for **P1.12 internal QA closure** (2026-07-14). This document is intentionally honest about deferred work — especially visuals.
 
 ---
 
@@ -60,7 +60,7 @@ These were hardening targets; report regressions if seen:
 
 Regression coverage: `game/__tests__/storyProgressionChain.test.ts` (P1.10 block through P1.9) and `game/__tests__/engineeringStressResponse.test.ts`.
 
-Playtest audit (2026-07-13, `main` @ `6bd872c`): P1.12 web playtest — early-spine live save/load verified on web; mid-spine QA helpers stall on web. See [p1.12-web-manual-playtest.md](./p1.12-web-manual-playtest.md). Prior audit (2026-07-06, `7016e15`): [p1.11-manual-device-playtest.md](./p1.11-manual-device-playtest.md). Prior P1.10 audit: [p1.10-playtest-results.md](./p1.10-playtest-results.md).
+Playtest audit (2026-07-13, `main` @ `6bd872c`): P1.12 web playtest — early-spine live save/load verified on web; mid-spine QA helpers initially stalled (N-03). Fixed and closure-verified 2026-07-14 — see [../qa/p1.12-internal-qa-closure.md](../qa/p1.12-internal-qa-closure.md) and [p1.12-n03-verification.md](./p1.12-n03-verification.md). Prior audit (2026-07-06, `7016e15`): [p1.11-manual-device-playtest.md](./p1.11-manual-device-playtest.md).
 
 ---
 
@@ -68,8 +68,8 @@ Playtest audit (2026-07-13, `main` @ `6bd872c`): P1.12 web playtest — early-sp
 
 | ID | Severity | Summary | Status |
 |----|----------|---------|--------|
-| M-02 | Major | Live save/load roundtrip — early + mid-spine verified on web after N-03 | **Mostly closed (web)** — Android native pass still recommended |
-| N-03 | Major | QA helpers Growing Ocean → Engineering Stress stalled from mid-spine saves | **Fixed** — live re-verified 2026-07-13; see [p1.12-n03-verification.md](./p1.12-n03-verification.md) |
+| M-02 | Major | Live save/load roundtrip — early + mid-spine verified on web after N-03 | **Closed (web)** in P1.12 QA closure — Android native pass still recommended |
+| N-03 | Major | QA helpers Growing Ocean → Engineering Stress stalled from mid-spine saves | **Fixed** — live re-verified in [../qa/p1.12-internal-qa-closure.md](../qa/p1.12-internal-qa-closure.md) |
 | N-04 | Minor / UX | Erase Local Save on web re-writes blank save — Continue stays enabled | **By design** — see P1.12 doc |
 | V-01–V-05 | Visual | Deferred — see [p1.12-web-manual-playtest.md](./p1.12-web-manual-playtest.md) | Open |
 
