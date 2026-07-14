@@ -68,8 +68,8 @@ Playtest audit (2026-07-13, `main` @ `6bd872c`): P1.12 web playtest — early-sp
 
 | ID | Severity | Summary | Status |
 |----|----------|---------|--------|
-| M-02 | Major | Live save/load roundtrip — **early checkpoints verified on web** (`localStorage`); mid-spine not verified live | **Partially resolved (web)** — device pass still recommended |
-| N-03 | Major | QA helpers (Growing Ocean → Engineering Stress) stall on web after return dive; spine does not advance | **Open** |
+| M-02 | Major | Live save/load roundtrip — early + mid-spine verified on web after N-03 | **Mostly closed (web)** — Android native pass still recommended |
+| N-03 | Major | QA helpers Growing Ocean → Engineering Stress stalled from mid-spine saves | **Fixed** — live re-verified 2026-07-13; see [p1.12-n03-verification.md](./p1.12-n03-verification.md) |
 | N-04 | Minor / UX | Erase Local Save on web re-writes blank save — Continue stays enabled | **By design** — see P1.12 doc |
 | V-01–V-05 | Visual | Deferred — see [p1.12-web-manual-playtest.md](./p1.12-web-manual-playtest.md) | Open |
 
